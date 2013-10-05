@@ -24,6 +24,7 @@ setup(
         'numpy',
         'opster',
         'setuptools',
+        'nltk',
     ],
     entry_points={
         'console_scripts': [
