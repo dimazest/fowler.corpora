@@ -1,0 +1,16 @@
+.*\.py[co]$
+\.DS_Store$
+\.egg-info/
+^\.installed\.cfg$
+^bin/
+^develop-eggs/
+^build/
+^parts/
+^eggs/
+^downloads/
+^\.mr\.developer\.cfg$
+^var/
+^src/
+^docs/_build
+^htmlcov/
+^\.coverage$
