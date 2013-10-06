@@ -28,7 +28,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'corpora = opster:dispatch',
+            'corpora = fowler.corpora.main:dispatch',
         ],
     },
 )

@@ -60,7 +60,7 @@ class Metadata(object):
         appropriate).
         """
         csvreader = csv.reader(open(self.metadata_filename))
-        header = csvreader.next()
+        header = next(csvreader)
         for row in csvreader:
             d = dict(zip(header, row))
             for key in ('conversation_no', 'length', 'from_caller_education', 'to_caller_education'):
@@ -154,12 +154,12 @@ class Transcript:
         """
         self.swda_filename = swda_filename
         # If the supplied value is a filename:
-        if isinstance(metadata, str) or isinstance(metadata, unicode):
+        if isinstance(metadata, str):
             self.metadata = Metadata(metadata)
         else:  # Where the supplied value is already a Metadata object.
             self.metadata = metadata
         # Get the file rows:
-        rows = list(csv.reader(file(self.swda_filename)))
+        rows = list(csv.reader(open(self.swda_filename)))
         # Ge the header and remove it from the rows:
         self.header = rows[0]
         rows.pop(0)
@@ -171,12 +171,12 @@ class Transcript:
         self.ptd_basename = os.sep.join(row0dict['ptb_basename'].split("/"))
         # The dictionary of metadata for this transcript:
         transcript_metadata = self.metadata[self.conversation_no]
-        for key, val in transcript_metadata.iteritems():
+        for key, val in transcript_metadata.items():
             setattr(self, key, transcript_metadata[key])
         # Create the utterance list:
-        self.utterances = map((lambda x: Utterance(x, transcript_metadata)), rows)
+        utterances = (Utterance(r, transcript_metadata) for r in rows)
         # Coder's Manual: ``We also removed any line with a "@" (since @ marked slash-units with bad segmentation).''
-        self.utterances = filter((lambda x: not re.search(r"[@]", x.act_tag)), self.utterances)
+        self.utterances = [u for u in utterances if not re.search(r"[@]", u.act_tag)]
 
 
 class Utterance(object):
@@ -221,8 +221,7 @@ class Utterance(object):
         """
         ##################################################
         # Utterance data:
-        for i in xrange(len(Utterance.header)):
-            att_name = Utterance.header[i]
+        for i, att_name in enumerate(Utterance.header):
             row_value = None
             if i < len(row):
                 row_value = row[i].strip()
