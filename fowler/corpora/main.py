@@ -22,7 +22,6 @@ def transcripts(path):
 
 
 def get_terms(corpus):
-
     for utterance in corpus.iter_utterances(display_progress=False):
         yield from utterance.pos_lemmas()  # noqa
 
@@ -40,3 +39,13 @@ def info(path, n=10, lemmas='True'):
     for term, frequency in counter.most_common(int(n) or None):
         print(frequency, term)
 
+
+@command()
+def tags(path):
+    corpus = CorpusReader(path)
+
+    utterences = corpus.iter_utterances(display_progress=False)
+    counter = Counter(u.act_tag for u in utterences)
+
+    for tag, freq in counter.most_common():
+        print(freq, tag)
