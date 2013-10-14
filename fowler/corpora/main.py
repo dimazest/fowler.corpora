@@ -24,25 +24,6 @@ def transcripts(path):
         print()
 
 
-def get_terms(corpus):
-    for utterance in corpus.iter_utterances(display_progress=False):
-        yield from utterance.pos_lemmas()  # noqa
-
-
-@command()
-def info(path, n=10, lemmas='True'):
-    corpus = CorpusReader(path)
-
-    terms = get_terms(corpus)
-    if lemmas != 'True':
-        terms = (term for term, tag in terms)
-
-    counter = Counter(terms)
-
-    for term, frequency in counter.most_common(int(n) or None):
-        print(frequency, term)
-
-
 @command()
 def tags(path):
     corpus = CorpusReader(path)
@@ -54,27 +35,38 @@ def tags(path):
         print(freq, tag)
 
 
-def ContextBefore(utterances, n=3):
-    context = deque([], n)
+def tokens(utterances, n=1):
+    for utterance in utterances:
+        ngram = deque([], n)
+        for w, _ in utterance.pos_lemmas():
+            ngram.append(w)
+            yield utterance.act_tag, '_'.join(ngram)
+
+
+def ContextBefore(utterances, context_len=3, ngram_len=1):
+    context = deque([], context_len)
 
     for utterance in utterances:
-        for c in context:
-            for l, _ in c.pos_lemmas():
-                yield utterance.act_tag, l
-
         context.append(utterance)
+
+        yield from tokens(context, ngram_len)
 
 
 @command()
-def cooccurrence(path, mode='inner'):
+def cooccurrence(
+    path,
+    mode=('m', 'inner', 'Mode. innger or before'),
+    context_len=('c', 3, 'Lenght of the contex in "before mode."'),
+    ngram_len=('n', 1, 'Lenght of the tokens (bigrams, ngrams).')
+):
     corpus = CorpusReader(path)
 
     utterances = corpus.iter_utterances(display_progress=False)
 
     if mode == 'inner':
-        pairs = chain.from_iterable(((u.act_tag, l) for l, _ in u.pos_lemmas()) for u in utterances)
+        pairs = tokens(utterances, n=ngram_len)
     elif mode == 'before':
-        pairs = ContextBefore(utterances, 3)
+        pairs = ContextBefore(utterances, 3, ngram_len=ngram_len)
     else:
         raise NotImplementedError('The mode is not implemented.')
 
