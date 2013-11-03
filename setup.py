@@ -21,10 +21,16 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
+        'dissect',
+        'matplotlib',
+        'nltk',
         'numpy',
         'opster',
+        'pandas',
+        'scikit-learn',
+        'scipy',
         'setuptools',
-        'nltk',
+        'tables',
     ],
     entry_points={
         'console_scripts': [

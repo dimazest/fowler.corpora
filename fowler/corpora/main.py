@@ -1,90 +1,40 @@
-from collections import Counter, deque
-from itertools import chain, combinations, product
+from itertools import product
 
-from opster import command, dispatch
+from opster import command
+from opster import dispatch  # noqa
 
 import numpy as np
+import pandas as pd
 import pylab as pl
 from sklearn import manifold
 
 from composes.semantic_space.space import Space
 from composes.similarity.cos import CosSimilarity
 
-from .swda import CorpusReader
+from .io import load_cooccurrence_matrix
 
 
 @command()
-def transcripts(path):
-    corpus = CorpusReader(path)
-
-    for transcript in corpus.iter_transcripts(display_progress=False):
-        for utterance in transcript.utterances:
-            print('{u.caller} {u.act_tag}: {u.text}'.format(u=utterance))
-
-        print()
-
-
-@command()
-def tags(path):
-    corpus = CorpusReader(path)
-
-    utterences = corpus.iter_utterances(display_progress=False)
-    counter = Counter(u.act_tag for u in utterences)
-
-    for tag, freq in counter.most_common():
-        print(freq, tag)
-
-
-def tokens(utterances, n=1):
-    for utterance in utterances:
-        ngram = deque([], n)
-        for w, _ in utterance.pos_lemmas():
-            ngram.append(w)
-            yield utterance.act_tag, '_'.join(ngram)
-
-
-def ContextBefore(utterances, context_len=3, ngram_len=1):
-    context = deque([], context_len)
-
-    for utterance in utterances:
-        context.append(utterance)
-
-        yield from tokens(context, ngram_len)
-
-
-@command()
-def cooccurrence(
+def info(
     path,
-    mode=('m', 'inner', 'Mode. innger or before'),
-    context_len=('c', 3, 'Lenght of the contex in "before mode."'),
-    ngram_len=('n', 1, 'Lenght of the tokens (bigrams, ngrams).')
 ):
-    corpus = CorpusReader(path)
+    with pd.get_store(path, mode='r') as store:
+        matrix = load_cooccurrence_matrix(store)
 
-    utterances = corpus.iter_utterances(display_progress=False)
-
-    if mode == 'inner':
-        pairs = tokens(utterances, n=ngram_len)
-    elif mode == 'before':
-        pairs = ContextBefore(utterances, 3, ngram_len=ngram_len)
-    else:
-        raise NotImplementedError('The mode is not implemented.')
-
-    counter = Counter(pairs)
-
-    for (tag, lemma), count in counter.items():
-        print('{} {} {}'.format(tag, lemma, count))
+        print(
+            'The co-coocurance matrix shape is {m.shape}.'
+            ''.format(m=matrix)
+            )
 
 
 @command()
-def space(data, rows, cols, format='sm'):
+def draw_space(data, rows, cols, format='sm'):
     space = Space.build(data=data, rows=rows, cols=cols, format=format)
 
     X = space._cooccurrence_matrix.mat
 
     similarities = np.zeros((X.shape[0], X.shape[0]))
     metric = CosSimilarity()
-    # import ipdb; ipdb.set_trace()
 
     for (i, li), (j, lj) in product(list(enumerate(space.id2row)), repeat=2):
         similarities[i, j] = 1 - space.get_sim(li, lj, similarity=metric)
@@ -124,5 +74,3 @@ def plot_embedding(X, space, title=None):
 
     if title is not None:
         pl.title(title)
-
-
