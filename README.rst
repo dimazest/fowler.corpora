@@ -1,6 +1,13 @@
 Fowler.Corpora
 ==============
 
+.. image:: https://travis-ci.org/dimazest/fowler.corpora.png?branch=master
+  :target: https://travis-ci.org/dimazest/fowler.corpora
+
+.. image:: https://coveralls.io/repos/dimazest/fowler.corpora/badge.png?branch=master
+  :target: https://coveralls.io/r/dimazest/fowler.corpora?branch=master
+
+
 Development
 -----------
 
