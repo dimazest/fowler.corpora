@@ -1,10 +1,10 @@
 """IO functions."""
 
 import numpy as np
-from scipy.sparse import csr_matrix
+from scipy.sparse import csc_matrix
 
 
-def load_cooccurrence_matrix(store):
+def load_cooccurrence_matrix(store, matrix_type=csc_matrix):
     """Load a co-occurrence matrix from a store."""
 
     ij = np.vstack((
@@ -12,7 +12,7 @@ def load_cooccurrence_matrix(store):
         store['col_ids'].values,
     ))
 
-    matrix = csr_matrix((
+    matrix = matrix_type((
         store['data'].values,
         ij,
     ))

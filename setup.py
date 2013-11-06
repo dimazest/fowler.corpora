@@ -46,6 +46,7 @@ setup(
         'scikit-learn',
         'scipy',
         'setuptools',
+        'sparsesvd-cffi',
         'tables',
     ],
     entry_points={
