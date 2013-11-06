@@ -10,7 +10,7 @@ env:
 
 before_install:
   - sudo apt-get update -qq
-  - sudo apt-get install -qq python-numpy python-scipy python-matplotlib python-pandas python-pytables
+  - sudo apt-get install -qq python-numpy python-scipy python-matplotlib python-pandas python-tables
   - rm /home/travis/virtualenv/python*/lib/python*/no-global-site-packages.txt
   - pip install setuptools --upgrade --use-mirrors
   - pip install pip --upgrade --use-mirrors
