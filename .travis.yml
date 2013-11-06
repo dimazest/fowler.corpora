@@ -1,0 +1,28 @@
+language: python
+
+python:
+  - "2.7"
+  - "3.3"
+
+env:
+    global:
+        - WHEEL="pip install --find-links https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors"
+
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq python-numpy python-scipy
+  - pip install setuptools --upgrade --use-mirrors
+  - pip install pip --upgrade --use-mirrors
+  - pip install wheel --use-mirrors
+  - $WHEEL numpy==1.7.1 scipy==0.12.1 pytest==2.4.2
+  - $WHEEL https://dl.dropboxusercontent.com/u/50040986/index/sparsesvd-cffi-0.2.3-dev.tar.gz
+
+install:
+  - $WHEEL .
+
+script: python setup.py test
+after_success:
+  - sudo apt-get install python-yaml
+  - pip install coveralls pytest-cov . --use-mirrors
+  - py.test --cov=composes --cov=pipelines --cov-report=term-missing src/unitest
+  - coveralls
