@@ -21,6 +21,7 @@ on Human Language Technology: companion volume of the Proceedings of HLT-NAACL
 
 """
 import numpy as np
+from numpy.linalg import inv
 from scipy.sparse import csc_matrix
 from scipy.spatial.distance import cosine
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -32,15 +33,20 @@ class PlainLSA(BaseEstimator, ClassifierMixin):
         self.k = k
 
     def fit(self, X, y):
-        X = csc_matrix(X)
         self.y = y
 
-        ut, s, vt = sparsesvd(X, self.k)
-        self.M = np.dot(ut.T, np.dot(np.diag(s), vt))
+        ut, s, vt = sparsesvd(csc_matrix(X), self.k)
+
+        self.u = ut.T
+        self.inv_s = inv(np.diag(s))
+        self.v = vt.T
 
     def predict(self, X):
-        _, l = min(
-            (cosine(x, X), l)
-            for l, x in zip(self.y, self.M)
-        )
-        return l
+        u_inv_s = self.u.dot(self.inv_s)
+        X_ = [x.T.dot(u_inv_s) for x in X]
+
+        def score(x_):
+            for label, document in zip(self.y, self.v):
+                yield cosine(document, x_), label
+
+        return np.array([min(score(x_))[1] for x_ in X_])

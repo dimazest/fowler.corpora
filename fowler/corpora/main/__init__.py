@@ -1,30 +1,33 @@
 from itertools import product
 
-from opster import command
-from opster import dispatch  # noqa
-
 import numpy as np
-import pandas as pd
 import pylab as pl
 from sklearn import manifold
 
 from composes.semantic_space.space import Space
 from composes.similarity.cos import CosSimilarity
 
-from .io import load_cooccurrence_matrix
+from .options import Dispatcher
+from fowler.corpora.serafim03 import main as serafim03_main
+
+dispatcher = Dispatcher()
+command = dispatcher.command
+dispatch = dispatcher.dispatch
+
+
+dispatcher.nest(
+    'serafin03',
+    serafim03_main.dispatcher,
+    serafim03_main.__doc__,
+)
 
 
 @command()
-def info(
-    path,
-):
-    with pd.get_store(path, mode='r') as store:
-        matrix = load_cooccurrence_matrix(store)
-
-        print(
-            'The co-coocurance matrix shape is {m.shape}.'
-            ''.format(m=matrix)
-            )
+def info(cooccurrence_matrix):
+    print(
+        'The co-coocurance matrix shape is {m.shape}.'
+        ''.format(m=cooccurrence_matrix)
+        )
 
 
 @command()

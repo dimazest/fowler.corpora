@@ -9,21 +9,18 @@ import pytest
 def word_document_matrix():
     """A small word-document matrix that represents a toy dialog.
 
-    The utterences are::
+    The 6 utterances (documents) are::
 
         - How are you?
         - I am fine, thank you.
-
         - Are you OK?
         - Yes, I am.
-
         - Am I OK?
         - No, you are not.
 
-    Punctuation is ignored, the utterance tags are Q and A, for the questions
-    and the answers respectively.
+    Punctuation is ignored. Rows in the matrix correspond to the words,
+    collumns to the documents.
 
-    Rows in the matrix correspond to the words, collumns to the documents.
     """
     return np.matrix((
         (1, 0, 0, 0, 0, 0),  # how
@@ -47,22 +44,36 @@ def y():
 
 
 @pytest.mark.parametrize(
-    ('vector', 'expected_label'),
+    ('vector', 'expected_labels'),
     (
         # How are you?
-        (np.array([1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]), '0'),
+        (
+            np.array([[1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]]),
+            np.array(['0']),
+        ),
         # I am fine, thank you.
-        (np.array([0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0]), '1'),
+        (
+            np.array([[0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0]]),
+            np.array(['1']),
+        ),
         # I am *OK*, thank you.
-        (np.array([0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0]), '1'),
+        (
+            np.array([[0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0]]),
+            np.array(['1']),
+        ),
+        (
+            np.array([
+                [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0],
+                [0, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0],
+            ]),
+            np.array(['0', '1', '1']),
+        ),
     ),
 )
-def test_plainlsa(word_document_matrix, y, vector, expected_label):
-    X = word_document_matrix.T
-
+def test_plainlsa(word_document_matrix, y, vector, expected_labels):
     cl = PlainLSA(2)
+    cl.fit(word_document_matrix, y)
+    labels = cl.predict(vector)
 
-    cl.fit(X, y)
-
-    label = cl.predict(vector)
-    assert label == expected_label
+    assert (labels == expected_labels).all()

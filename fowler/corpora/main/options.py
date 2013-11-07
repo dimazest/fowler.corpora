@@ -3,7 +3,7 @@ import inspect
 import opster
 import pandas as pd
 
-from .io import load_cooccurrence_matrix
+from fowler.corpora.io import load_cooccurrence_matrix
 
 
 class Dispatcher(opster.Dispatcher):
