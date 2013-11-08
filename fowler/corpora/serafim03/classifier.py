@@ -33,6 +33,7 @@ class PlainLSA(BaseEstimator, ClassifierMixin):
         self.k = k
 
     def fit(self, X, y):
+        X = X.T
         self.y = y
 
         ut, s, vt = sparsesvd(csc_matrix(X), self.k)
@@ -43,7 +44,7 @@ class PlainLSA(BaseEstimator, ClassifierMixin):
 
     def predict(self, X):
         u_inv_s = self.u.dot(self.inv_s)
-        X_ = [x.T.dot(u_inv_s) for x in X]
+        X_ = [x.dot(u_inv_s) for x in X]
 
         def score(x_):
             for label, document in zip(self.y, self.v):

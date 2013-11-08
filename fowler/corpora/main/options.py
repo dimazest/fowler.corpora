@@ -3,7 +3,7 @@ import inspect
 import opster
 import pandas as pd
 
-from fowler.corpora.io import load_cooccurrence_matrix
+from fowler.corpora import io
 
 
 class Dispatcher(opster.Dispatcher):
@@ -11,7 +11,6 @@ class Dispatcher(opster.Dispatcher):
         globaloptions = (
             tuple(globaloptions) +
             (
-                ('v', 'verbose', False, 'Be verbose.'),
                 ('p', 'path', 'out.h5', 'The path to the store hd5 file.'),
             )
         )
@@ -29,13 +28,14 @@ def _middleware(func):
 
         f_args = inspect.getargspec(func)[0]
 
-        verbose = kwargs.pop('verbose')
         path = kwargs.pop('path')
 
-        if 'cooccurrence_matrix' in f_args:
-            with pd.get_store(path, mode='r') as store:
-                cooccurrence_matrix = load_cooccurrence_matrix(store)
-            kwargs['cooccurrence_matrix'] = cooccurrence_matrix
+        with pd.get_store(path, mode='r') as store:
+            if 'cooccurrence_matrix' in f_args:
+                kwargs['cooccurrence_matrix'] = io.load_cooccurrence_matrix(store)
+
+            if 'labels' in f_args:
+                kwargs['labels'] = io.load_labels(store)
 
         return func(*args, **kwargs)
 

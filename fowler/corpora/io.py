@@ -18,3 +18,7 @@ def load_cooccurrence_matrix(store, matrix_type=csc_matrix):
     ))
 
     return matrix
+
+
+def load_labels(store):
+    return store['labels'].values.astype(str)

@@ -8,7 +8,7 @@ from composes.semantic_space.space import Space
 from composes.similarity.cos import CosSimilarity
 
 from .options import Dispatcher
-from fowler.corpora.serafim03 import main as serafim03_main
+import fowler.corpora.serafim03.main as serafim03_main
 
 dispatcher = Dispatcher()
 command = dispatcher.command

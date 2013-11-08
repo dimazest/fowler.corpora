@@ -1,6 +1,8 @@
 import numpy as np
+from sklearn import cross_validation
 
 from fowler.corpora.serafim03.classifier import PlainLSA
+from fowler.corpora.serafim03.main import dispatcher
 
 import pytest
 
@@ -40,7 +42,7 @@ def word_document_matrix():
 @pytest.fixture
 def y():
     """The tags for the toy dialog."""
-    return np.array(list('012345'))
+    return np.array(list('QAQAQA'))
 
 
 @pytest.mark.parametrize(
@@ -71,9 +73,34 @@ def y():
         ),
     ),
 )
-def test_plainlsa(word_document_matrix, y, vector, expected_labels):
+def test_plainlsa(word_document_matrix, vector, expected_labels):
     cl = PlainLSA(2)
-    cl.fit(word_document_matrix, y)
+    cl.fit(word_document_matrix.T, np.array(list('012345')))
     labels = cl.predict(vector)
 
     assert (labels == expected_labels).all()
+
+
+def test_evaluation(word_document_matrix, y):
+    scores = cross_validation.cross_val_score(
+        PlainLSA(2),
+        word_document_matrix.T,
+        y,
+        cv=5,
+    )
+
+    assert (scores > 0).any()
+
+
+def test_plain_lsa(swda_100_path, capsys):
+    dispatcher.dispatch(
+        'plain-lsa -p {swda_100_path} -k 10'
+        ''.format(
+            swda_100_path=swda_100_path,
+            ).split()
+    )
+
+    out, err = capsys.readouterr()
+
+    assert out
+
