@@ -2,7 +2,7 @@ import numpy as np
 from sklearn import cross_validation
 
 from fowler.corpora.serafim03.classifier import PlainLSA
-from fowler.corpora.serafim03.main import dispatcher
+from fowler.corpora.main import dispatcher
 
 import pytest
 
@@ -94,7 +94,7 @@ def test_evaluation(word_document_matrix, y):
 
 def test_plain_lsa(swda_100_path, capsys):
     dispatcher.dispatch(
-        'plain-lsa -p {swda_100_path} -k 10'
+        'serafin03 plain-lsa -p {swda_100_path} -k 10'
         ''.format(
             swda_100_path=swda_100_path,
             ).split()
