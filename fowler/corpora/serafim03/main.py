@@ -18,9 +18,10 @@ def plain_lsa(
     k=('k', 50, 'The number of dimensions after SVD applicaion.'),
     n_jobs=('j', -1, 'The number of CPUs to use to do the computation. -1 means all CPUs.'),
     n_folds=('f', 10, 'The number of folds used for cross validation.'),
+    cache=('c', False, 'Cache similarity measures.')
 ):
     """Perform the Plain LSA method."""
-    classifier = PlainLSA(k)
+    classifier = PlainLSA(k, cache=cache)
     scores = cross_validation.cross_val_score(
         classifier,
         cooccurrence_matrix.T,
