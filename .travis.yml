@@ -2,6 +2,7 @@ language: python
 
 python:
   - "2.7"
+  - "3.3"
 
 env:
     global:
@@ -16,7 +17,8 @@ before_install:
   - pip install setuptools --upgrade --use-mirrors
   - pip install pip --upgrade --use-mirrors
   - pip install wheel --use-mirrors
-  - $WHEEL numpy==1.7.1 scipy==0.12.1 pytest==2.4.2
+  - $WHEEL numpy==1.7.1
+  - $WHEEL scipy==0.12.1 pytest==2.4.2 numexpr==2.2.2
   - $WHEEL https://dl.dropboxusercontent.com/u/50040986/index/sparsesvd-cffi-0.2.3-dev.tar.gz
 
 install:
