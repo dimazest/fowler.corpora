@@ -22,6 +22,20 @@ def plain_lsa(
 ):
     """Perform the Plain LSA method."""
     classifier = PlainLSA(k, n_jobs=n_jobs)
+
+    print(
+        "Paper: Serafin et al. '03.\n"
+        'Command: {argv}\n'
+        'Classifier: {classifier}\n'
+        'Evaluation parameters: {items} items, {folds} folds'
+        ''.format(
+            classifier=classifier,
+            items=len(labels),
+            folds=n_folds,
+            argv=' '.join(sys.argv),
+        )
+    )
+
     scores = cross_validation.cross_val_score(
         classifier,
         cooccurrence_matrix.T,
@@ -31,20 +45,12 @@ def plain_lsa(
     )
 
     print(
-        "Paper: Serafin et al. '03.\n"
-        'Command: {argv}\n'
-        'Classifier: {classifier}\n'
-        'Evaluation parameters: {items} items, {folds} folds\n'
         'Accuracy: average {:0.2%} (+/- {:0.2%}), max {:0.2%}'
         ''.format(
             scores.mean(),
             scores.std() * 2,
             scores.max(),
-            classifier=classifier,
-            items=len(labels),
-            folds=n_folds,
-            argv=' '.join(sys.argv),
-            )
+        )
     )
 
 
