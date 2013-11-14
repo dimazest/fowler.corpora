@@ -20,13 +20,12 @@ def plain_lsa(
     n_folds=('f', 10, 'The number of folds used for cross validation.'),
 ):
     """Perform the Plain LSA method."""
-    classifier = PlainLSA(k)
+    classifier = PlainLSA(k, n_jobs=n_jobs)
     scores = cross_validation.cross_val_score(
         classifier,
         cooccurrence_matrix.T,
         labels,
         cv=n_folds,
-        n_jobs=n_jobs,
     )
 
     print(

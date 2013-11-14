@@ -1,15 +1,5 @@
 """Implementation of Latent Semantic Analysis for dialogue act classification.
 
-Usefull links
--------------
-
-    * http://blog.josephwilk.net/projects/latent-semantic-analysis-in-python.html
-      suggests to use::
-
-        U . SIGMA' . VT = MATRIX'
-
-    for the closest document look up.
-
 References
 ----------
 
@@ -20,35 +10,54 @@ on Human Language Technology: companion volume of the Proceedings of HLT-NAACL
 2003--short papers-Volume 2. Association for Computational Linguistics, 2003.
 
 """
-import numpy as np
-from numpy.linalg import inv
-from scipy.sparse import csc_matrix
-from scipy.spatial.distance import cosine
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sparsesvd import sparsesvd
+from sklearn.decomposition import TruncatedSVD
+from sklearn.metrics import pairwise_distances
 
 
 class PlainLSA(BaseEstimator, ClassifierMixin):
-    def __init__(self, k=100):
+    """The Plain LSA method described by Serafin et al.
+
+    :param int k: the number of dimensions the training matrix is reduced to.
+
+    :param int n_jobs: the number of workers the distance computaion will be
+    parallelized duting prediction.
+
+    """
+
+    def __init__(self, k=100, n_jobs=1):
         self.k = k
+        self.n_jobs = n_jobs
+        self.truncated_SVD = TruncatedSVD(n_components=k)
 
     def fit(self, X, y):
-        X = X.T
+        """Fit plain LSA on the training data X.
+
+        :param sparse matrix X: training data of the shape
+        (n_samples, n_features).
+
+        :param y: the labels of the training data.
+
+        """
         self.y = y
-
-        ut, s, vt = sparsesvd(csc_matrix(X), self.k)
-
-        self.u = ut.T
-        self.inv_s = inv(np.diag(s))
-        self.v = vt.T
-        self.v.flags.writeable = False
+        self.U_SigmaT = self.truncated_SVD.fit_transform(X)
 
     def predict(self, X):
-        u_inv_s = self.u.dot(self.inv_s)
-        X_ = [x.dot(u_inv_s) for x in X]
+        """Predict the labels of the unseen data X.
 
-        def score(x_):
-            for label, document in zip(self.y, self.v):
-                yield cosine(document, x_), label
+        :param sparse matrix X: training data of the shape
+        (n_samples, n_features).
 
-        return np.array([min(score(x_))[1] for x_ in X_])
+        :return: the predicted labels for the imput data.
+
+        """
+        X_ = self.truncated_SVD.transform(X)
+
+        distances = pairwise_distances(
+            self.U_SigmaT,
+            X_,
+            metric='cosine',
+            n_jobs=self.n_jobs,
+        )
+        closest_indices = distances.argmin(axis=0)
+        return self.y[closest_indices]
