@@ -16,12 +16,11 @@ def plain_lsa(
     cooccurrence_matrix,
     labels,
     k=('k', 50, 'The number of dimensions after SVD applicaion.'),
-    n_jobs=('j', -1, 'The number of CPUs to use to do small computations. -1 means all CPUs.'),
-    n_big_jobs=('J', 1, 'The number of CPUs to use to do big computations. -1 means all CPUs.'),
+    n_jobs=('j', -1, 'The number of CPUs to use to do computations. -1 means all CPUs.'),
     n_folds=('f', 10, 'The number of folds used for cross validation.'),
 ):
     """Perform the Plain LSA method."""
-    classifier = PlainLSA(k, n_jobs=n_jobs)
+    classifier = PlainLSA(k)
 
     print(
         "Paper: Serafin et al. '03.\n"
@@ -41,7 +40,7 @@ def plain_lsa(
         cooccurrence_matrix.T,
         labels,
         cv=n_folds,
-        n_jobs=n_big_jobs,
+        n_jobs=n_jobs,
     )
 
     print(

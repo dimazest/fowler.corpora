@@ -12,7 +12,7 @@ on Human Language Technology: companion volume of the Proceedings of HLT-NAACL
 """
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.decomposition import TruncatedSVD
-from sklearn.metrics import pairwise_distances
+from sklearn.metrics import pairwise_distances_argmin, pairwise_distances
 
 
 class PlainLSA(BaseEstimator, ClassifierMixin):
@@ -20,14 +20,10 @@ class PlainLSA(BaseEstimator, ClassifierMixin):
 
     :param int k: the number of dimensions the training matrix is reduced to.
 
-    :param int n_jobs: the number of workers the distance computaion will be
-    parallelized duting prediction.
-
     """
 
-    def __init__(self, k=100, n_jobs=1):
+    def __init__(self, k=100):
         self.k = k
-        self.n_jobs = n_jobs
         self.truncated_SVD = TruncatedSVD(n_components=k)
 
     def fit(self, X, y):
@@ -52,12 +48,11 @@ class PlainLSA(BaseEstimator, ClassifierMixin):
 
         """
         X_ = self.truncated_SVD.transform(X)
-
-        distances = pairwise_distances(
-            self.U_SigmaT,
-            X_,
+        import numpy as np;
+        closest_indices = pairwise_distances_argmin(
+            np.array(X_),
+            np.array(self.U_SigmaT),
             metric='cosine',
-            n_jobs=self.n_jobs,
         )
-        closest_indices = distances.argmin(axis=0)
+
         return self.y[closest_indices]
