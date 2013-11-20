@@ -12,7 +12,7 @@ on Human Language Technology: companion volume of the Proceedings of HLT-NAACL
 """
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.decomposition import TruncatedSVD
-from sklearn.metrics import pairwise_distances_argmin, pairwise_distances
+from sklearn.metrics import pairwise_distances_argmin
 
 
 class PlainLSA(BaseEstimator, ClassifierMixin):
@@ -24,7 +24,6 @@ class PlainLSA(BaseEstimator, ClassifierMixin):
 
     def __init__(self, k=100):
         self.k = k
-        self.truncated_SVD = TruncatedSVD(n_components=k)
 
     def fit(self, X, y):
         """Fit plain LSA on the training data X.
@@ -36,6 +35,7 @@ class PlainLSA(BaseEstimator, ClassifierMixin):
 
         """
         self.y = y
+        self.truncated_SVD = TruncatedSVD(n_components=self.k)
         self.U_SigmaT = self.truncated_SVD.fit_transform(X)
 
     def predict(self, X):
@@ -48,10 +48,9 @@ class PlainLSA(BaseEstimator, ClassifierMixin):
 
         """
         X_ = self.truncated_SVD.transform(X)
-        import numpy as np;
         closest_indices = pairwise_distances_argmin(
-            np.array(X_),
-            np.array(self.U_SigmaT),
+            X_,
+            self.U_SigmaT,
             metric='cosine',
         )
 
