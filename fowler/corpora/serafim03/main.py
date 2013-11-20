@@ -17,7 +17,6 @@ command = dispatcher.command
 def plain_lsa(
     cooccurrence_matrix,
     labels,
-    k=('k', 50, 'The number of dimensions after SVD applicaion.'),
     n_jobs=('j', -1, 'The number of CPUs to use to do computations. -1 means all CPUs.'),
     n_folds=('f', 10, 'The number of folds used for cross validation.'),
 ):
