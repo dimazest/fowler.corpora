@@ -18,7 +18,7 @@ from sklearn.metrics import pairwise_distances_argmin
 class PlainLSA(BaseEstimator, ClassifierMixin):
     """The Plain LSA method described by Serafin et al.
 
-    :param int k: the number of dimensions the training matrix is reduced to.
+    :param int k: the number of dimensions in the reduced vectors.
 
     """
 
@@ -26,12 +26,16 @@ class PlainLSA(BaseEstimator, ClassifierMixin):
         self.k = k
 
     def fit(self, X, y):
-        """Fit plain LSA on the training data X.
+        """Train the model on the labeled documents X.
 
         :param sparse matrix X: training data of the shape
         (n_samples, n_features).
 
         :param y: the labels of the training data.
+
+        Perform the SVD decomposition. The documents transformed to the reduced
+        vector space are stored in `U_SigmaT`. The SVD model itself is stored
+        in `truncated_SVD`.
 
         """
         self.y = y
@@ -39,14 +43,20 @@ class PlainLSA(BaseEstimator, ClassifierMixin):
         self.U_SigmaT = self.truncated_SVD.fit_transform(X)
 
     def predict(self, X):
-        """Predict the labels of the unseen data X.
+        """Predict the labels of the unlabeled documents X.
 
-        :param sparse matrix X: training data of the shape
+        :param sparse matrix X: unlabeled data of the shape
         (n_samples, n_features).
 
-        :return: the predicted labels for the imput data.
+        :return: the labels for the input data.
+
+        The input documents are transformed into the reduced vector space. Then
+        for each transformed vector the closest vector in the training data is
+        looked up. The label of that document is the label of the input
+        document.
 
         """
+
         X_ = self.truncated_SVD.transform(X)
         closest_indices = pairwise_distances_argmin(
             X_,
