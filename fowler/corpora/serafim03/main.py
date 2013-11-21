@@ -41,10 +41,9 @@ def plain_lsa(
         scoring='accuracy',
         n_jobs=n_jobs,
     )
-
     clf.fit(X_train, y_train)
-
     prfs = precision_recall_fscore_support(y_test, clf.predict(X_test))
+
     print(
         templates_env.get_template('classification_report.rst').render(
             argv=' '.join(sys.argv),
