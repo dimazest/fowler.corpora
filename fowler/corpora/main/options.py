@@ -2,7 +2,9 @@ import inspect
 
 import opster
 import pandas as pd
+from jinja2 import Environment, PackageLoader
 
+import fowler.corpora
 from fowler.corpora import io
 
 
@@ -36,6 +38,11 @@ def _middleware(func):
 
             if 'labels' in f_args:
                 kwargs['labels'] = io.load_labels(store)
+
+            if 'templates_env' in f_args:
+                kwargs['templates_env'] = Environment(
+                    loader=PackageLoader(fowler.corpora.__name__, 'templates')
+                )
 
         return func(*args, **kwargs)
 
