@@ -48,8 +48,23 @@ import numpy as np
 
 from sklearn.utils import atleast2d_or_csr
 from sklearn.utils import safe_asarray
-from sklearn.utils.extmath import row_norms, safe_sparse_dot
+from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.preprocessing import normalize
+
+
+def row_norms(X, squared=False):
+    """Row-wise (squared) Euclidean norm of X.
+
+    Equivalent to (X * X).sum(axis=1), but also supports CSR sparse matrices.
+    With newer NumPy versions, prevents an X.shape-sized temporary.
+
+    Performs no input validation.
+    """
+    norms = (X * X).sum(axis=1)
+
+    if not squared:
+        np.sqrt(norms, norms)
+    return norms
 
 
 def gen_batches(n, batch_size):
