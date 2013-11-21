@@ -47,10 +47,34 @@ kernel:
 import numpy as np
 
 from sklearn.utils import atleast2d_or_csr
-from sklearn.utils import gen_batches
 from sklearn.utils import safe_asarray
 from sklearn.utils.extmath import row_norms, safe_sparse_dot
 from sklearn.preprocessing import normalize
+
+
+def gen_batches(n, batch_size):
+    """Generator to create slices containing batch_size elements, from 0 to n.
+
+    The last slice may contain less than batch_size elements, when batch_size
+    does not divide n.
+
+    Examples
+    --------
+    >>> from sklearn.utils import gen_batches
+    >>> list(gen_batches(7, 3))
+    [slice(0, 3, None), slice(3, 6, None), slice(6, 7, None)]
+    >>> list(gen_batches(6, 3))
+    [slice(0, 3, None), slice(3, 6, None)]
+    >>> list(gen_batches(2, 3))
+    [slice(0, 2, None)]
+    """
+    start = 0
+    for _ in range(int(n // batch_size)):
+        end = start + batch_size
+        yield slice(start, end)
+        start = end
+    if start < n:
+        yield slice(start, n)
 
 
 # Utility Functions
