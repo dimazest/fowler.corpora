@@ -44,6 +44,9 @@ def _middleware(func):
                     loader=PackageLoader(fowler.corpora.__name__, 'templates')
                 )
 
+            if 'store_metadata' in f_args:
+                kwargs['store_metadata'] = store.get_storer('data').attrs.metadata
+
         return func(*args, **kwargs)
 
     return wrapper

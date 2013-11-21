@@ -4,7 +4,8 @@ import sys
 import numpy as np
 from sklearn.cross_validation import train_test_split
 from sklearn.grid_search import GridSearchCV
-from sklearn.metrics import precision_recall_fscore_support
+from sklearn.metrics import precision_recall_fscore_support, accuracy_score
+from sklearn.utils.multiclass import unique_labels
 
 from fowler.corpora.main.options import Dispatcher
 
@@ -19,6 +20,7 @@ def plain_lsa(
     cooccurrence_matrix,
     labels,
     templates_env,
+    store_metadata,
     n_jobs=('j', -1, 'The number of CPUs to use to do computations. -1 means all CPUs.'),
     n_folds=('f', 10, 'The number of folds used for cross validation.'),
 ):
@@ -42,17 +44,19 @@ def plain_lsa(
         n_jobs=n_jobs,
     )
     clf.fit(X_train, y_train)
-    prfs = precision_recall_fscore_support(y_test, clf.predict(X_test))
-
+    y_predicted = clf.predict(X_test)
+    prfs = precision_recall_fscore_support(y_test, y_predicted)
     print(
         templates_env.get_template('classification_report.rst').render(
             argv=' '.join(sys.argv),
             paper='Serafin et al. 2003',
             clf=clf,
-            tprfs=zip(y_test, *prfs),
+            tprfs=zip(unique_labels(y_test, y_predicted), *prfs),
             p_avg=np.average(prfs[0], weights=prfs[3]),
             r_avg=np.average(prfs[1], weights=prfs[3]),
             f_avg=np.average(prfs[2], weights=prfs[3]),
             s_sum=np.sum(prfs[3]),
+            store_metadata=store_metadata,
+            accuracy=accuracy_score(y_test, y_predicted),
         )
     )
