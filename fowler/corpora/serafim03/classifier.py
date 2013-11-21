@@ -1,4 +1,4 @@
-"""Implementation of Latent Semantic Analysis for dialogue act classification.
+"""Implementation of Latent Semantic Analysis for dialog act classification.
 
 References
 ----------
