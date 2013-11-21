@@ -12,7 +12,8 @@ on Human Language Technology: companion volume of the Proceedings of HLT-NAACL
 """
 from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.decomposition import TruncatedSVD
-from sklearn.metrics import pairwise_distances_argmin
+
+from .pairwise import pairwise_distances_argmin
 
 
 class PlainLSA(BaseEstimator, ClassifierMixin):
