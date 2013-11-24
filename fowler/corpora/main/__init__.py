@@ -1,5 +1,9 @@
+from itertools import islice
+
 import fowler.corpora.serafim03.main as serafim03_main
 import fowler.corpora.google_ngrams.main as google_ngrams_main
+
+from fowler.corpora.io import readline_folder as io_readline_folder
 
 from .options import Dispatcher
 
@@ -20,3 +24,22 @@ dispatcher.nest(
     google_ngrams_main.dispatcher,
     serafim03_main.__doc__,
 )
+
+
+@command()
+def readline_folder(
+    path,
+    limit=('l', 0, 'Home many items to show, 0 shows all'),
+):
+    """Concatinate files in the folder and print them.
+
+    Files might be compressed.
+
+    """
+    limit = limit or None
+
+    with io_readline_folder(path) as lines:
+        lines = islice(lines, limit)
+
+        for line in lines:
+            print(line.decode('utf-8').strip())
