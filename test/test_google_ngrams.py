@@ -67,13 +67,13 @@ def test_get_indices_manygrams(bigrams_indices):
 
 
 @pytest.mark.parametrize(
-    'verbose',
+    ('verbose', 'err_len'),
     (
-        (True, ),
-        (False, ),
+        (False, 1),
+        (True, 725),
     ),
 )
-def test_download(capsys, tmpdir, monkeypatch, verbose):
+def test_download(capsys, tmpdir, monkeypatch, verbose, err_len):
     urls = []
 
     def mocked_get(self, url, **kwargs):
@@ -94,13 +94,12 @@ def test_download(capsys, tmpdir, monkeypatch, verbose):
         'google-ngrams download -o {tmpdir} -n 2 {verbose}'
         ''.format(
             tmpdir=tmpdir,
-            verbose='-v' if verbose else '',
+            verbose=('-v' if verbose else ''),
         ).split()
     )
 
     assert len(urls) == len(tmpdir.listdir()) == 724
 
     out, err = capsys.readouterr()
-
     assert not out
-    # TODO check err
+    assert len(err.split('\n')) == err_len

@@ -6,7 +6,7 @@ Version 20120701 dataset.
 """
 from itertools import product, chain
 from string import ascii_lowercase, digits
-from sys import stderr
+import sys
 
 import requests
 from opster import Dispatcher
@@ -44,7 +44,7 @@ def download(
         url = URL_TEMPLATE.format(fname)
 
         if verbose:
-            stderr.write(
+            sys.stderr.write(
                 'Downloading {url} to {output_path} '
                 ''.format(
                     url=url,
@@ -57,15 +57,15 @@ def download(
 
             for num, block in enumerate(request.iter_content(1024)):
                     if verbose and not divmod(num, 1024)[1]:
-                        stderr.write('.')
-                        stderr.flush()
+                        sys.stderr.write('.')
+                        sys.stderr.flush()
 
                     if not block:
                         break
 
                     f.write(block)
             if verbose:
-                stderr.write('\n')
+                sys.stderr.write('\n')
 
 
 def get_indices(ngram_len):
