@@ -63,7 +63,8 @@ def download(
                         break
 
                     f.write(block)
-            stderr.write('\n')
+            if verbose:
+                stderr.write('\n')
 
 
 def get_indices(ngram_len):
