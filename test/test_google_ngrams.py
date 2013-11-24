@@ -1,4 +1,3 @@
-import abc
 from requests import Session
 
 from fowler.corpora.google_ngrams.main import get_indices
@@ -81,12 +80,11 @@ def test_download(capsys, tmpdir, monkeypatch, verbose, err_len):
 
         class FakeRequest:
 
-            @abc.abstractmethod
-            def iter_content(buffer):
+            def iter_content(self, buffer):
                 if False:
                     yield
 
-        return FakeRequest
+        return FakeRequest()
 
     monkeypatch.setattr(Session, 'get', mocked_get)
 
