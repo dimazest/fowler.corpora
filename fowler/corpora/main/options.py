@@ -30,22 +30,25 @@ def _middleware(func):
 
         f_args = inspect.getargspec(func)[0]
 
-        path = kwargs.pop('path')
+        if kwargs['path'].endswith('.h5'):
 
-        with pd.get_store(path, mode='r') as store:
-            if 'cooccurrence_matrix' in f_args:
-                kwargs['cooccurrence_matrix'] = io.load_cooccurrence_matrix(store)
+            with pd.get_store(kwargs['path'], mode='r') as store:
+                if 'cooccurrence_matrix' in f_args:
+                    kwargs['cooccurrence_matrix'] = io.load_cooccurrence_matrix(store)
 
-            if 'labels' in f_args:
-                kwargs['labels'] = io.load_labels(store)
+                if 'labels' in f_args:
+                    kwargs['labels'] = io.load_labels(store)
 
-            if 'templates_env' in f_args:
-                kwargs['templates_env'] = Environment(
-                    loader=PackageLoader(fowler.corpora.__name__, 'templates')
-                )
+                if 'templates_env' in f_args:
+                    kwargs['templates_env'] = Environment(
+                        loader=PackageLoader(fowler.corpora.__name__, 'templates')
+                    )
 
-            if 'store_metadata' in f_args:
-                kwargs['store_metadata'] = store.get_storer('data').attrs.metadata
+                if 'store_metadata' in f_args:
+                    kwargs['store_metadata'] = store.get_storer('data').attrs.metadata
+
+        if 'path' not in f_args:
+            del kwargs['path']
 
         return func(*args, **kwargs)
 
