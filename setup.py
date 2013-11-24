@@ -42,6 +42,8 @@ setup(
         'numpy',
         'opster',
         'pandas',
+        'py',
+        'requests',
         'scikit-learn',
         'scipy',
         'setuptools',
