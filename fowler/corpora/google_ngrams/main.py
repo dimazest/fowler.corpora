@@ -112,17 +112,15 @@ def get_indices(ngram_len):
     more details.
 
     """
+    other_indices = ('other', 'punctuation')
+
     if ngram_len == 1:
         letter_indices = ascii_lowercase
-        other_idices = (
-            'other',
-            'pos',
-            'punctuation',
-        ),
+        other_indices += 'pos',
 
     else:
         letter_indices = ((''.join(i) for i in product(ascii_lowercase, ascii_lowercase + '_')))
-        other_idices = (
+        other_indices += (
             '_ADJ_',
             '_ADP_',
             '_ADV_',
@@ -135,4 +133,4 @@ def get_indices(ngram_len):
             '_VERB_',
         )
 
-    return chain(digits, letter_indices, other_idices)
+    return chain(digits, letter_indices, other_indices)
