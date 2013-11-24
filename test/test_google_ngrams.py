@@ -94,7 +94,7 @@ def test_download(capsys, tmpdir, monkeypatch, verbose, err_len):
         'google-ngrams download -o {tmpdir} -n 2 {verbose}'
         ''.format(
             tmpdir=tmpdir,
-            verbose=('-v' if verbose else ''),
+            verbose='-v' if verbose else '',
         ).split()
     )
 
