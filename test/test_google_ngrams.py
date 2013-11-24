@@ -1,4 +1,8 @@
+import abc
+from requests import Session
+
 from fowler.corpora.google_ngrams.main import get_indices
+from fowler.corpora.main import dispatcher
 
 import pytest
 
@@ -60,3 +64,43 @@ def test_get_indices_manygrams(bigrams_indices):
     assert len(set(indices)) == len(indices)
 
     assert set(indices) == bigrams_indices
+
+
+@pytest.mark.parametrize(
+    'verbose',
+    (
+        (True, ),
+        (False, ),
+    ),
+)
+def test_download(capsys, tmpdir, monkeypatch, verbose):
+    urls = []
+
+    def mocked_get(self, url, **kwargs):
+        urls.append(url)
+
+        class FakeRequest:
+
+            @abc.abstractmethod
+            def iter_content(buffer):
+                if False:
+                    yield
+
+        return FakeRequest
+
+    monkeypatch.setattr(Session, 'get', mocked_get)
+
+    dispatcher.dispatch(
+        'google-ngrams download -o {tmpdir} -n 2 {verbose}'
+        ''.format(
+            tmpdir=tmpdir,
+            verbose='-v' if verbose else '',
+        ).split()
+    )
+
+    assert len(urls) == len(tmpdir.listdir()) == 724
+
+    out, err = capsys.readouterr()
+
+    assert not out
+    # TODO check err

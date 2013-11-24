@@ -45,7 +45,7 @@ def download(
 
         if verbose:
             stderr.write(
-                'Downloading {url} to {output_path}. '
+                'Downloading {url} to {output_path} '
                 ''.format(
                     url=url,
                     output_path=output_path,
@@ -54,6 +54,7 @@ def download(
 
         with output_path.open('wb') as f:
             request = session.get(url, stream=True)
+
             for num, block in enumerate(request.iter_content(1024)):
                     if verbose and not divmod(num, 1024)[1]:
                         stderr.write('.')
