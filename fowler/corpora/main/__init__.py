@@ -42,4 +42,4 @@ def readline_folder(
         lines = islice(lines, limit)
 
         for line in lines:
-            print(line.decode('utf-8').strip())
+            print(line.strip())

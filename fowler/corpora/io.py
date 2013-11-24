@@ -1,6 +1,7 @@
 """IO functions."""
 import fileinput
 import contextlib
+import codecs
 
 import numpy as np
 from scipy.sparse import csc_matrix
@@ -45,4 +46,4 @@ def readline_folder(input_dir=None):
             mode='rb',
         ),
     ) as lines:
-        yield lines
+        yield codecs.iterdecode(lines, 'utf-8')
