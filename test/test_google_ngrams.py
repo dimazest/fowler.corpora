@@ -81,8 +81,7 @@ def test_download(capsys, tmpdir, monkeypatch, verbose, err_len):
         class FakeRequest:
 
             def iter_content(self, buffer):
-                if False:
-                    yield
+                yield b'some data'
 
         return FakeRequest()
 
