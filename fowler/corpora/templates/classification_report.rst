@@ -2,12 +2,11 @@ Hyper parameter estimation
 ==========================
 
 :paper: {{ paper }}
-:accuracy: {{accuracy.round(3)}}
+:accuracy: {{ accuracy.round(3) }}
 :best estimator: {{ clf.best_estimator_ }}
 {%- for key, value in store_metadata.items()  %}
 :{{  key }}: {{ value }}
 {%- endfor %}
-
 :command: {{ argv }}
 
 Grid accuracy scores on development set::
