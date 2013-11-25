@@ -112,7 +112,7 @@ def iter_google_store(ngram_len, verbose=False):
             sys.stderr.write('\n')
 
 
-def readline_google_store(ngram_len, chunk_size=30, verbose=False):
+def readline_google_store(ngram_len, chunk_size=512, verbose=False):
     for fname, url, request in iter_google_store(ngram_len, verbose=verbose):
         dec = zlib.decompressobj(wbits=16 + zlib.MAX_WBITS)
 
