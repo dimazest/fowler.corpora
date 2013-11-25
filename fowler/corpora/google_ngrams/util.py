@@ -8,7 +8,6 @@ import requests
 
 
 URL_TEMPLATE = 'http://storage.googleapis.com/books/ngrams/books/{}'
-URL_TEMPLATE = 'http://localhost:8001/{}'
 FILE_TEMPLATE = 'googlebooks-eng-all-{ngram_len}gram-{version}-{index}.gz'
 
 Record = namedtuple('Record', 'ngram year match_count volume_count')
