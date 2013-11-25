@@ -1,5 +1,17 @@
+import sys
+import zlib
+from collections import namedtuple
 from itertools import product, chain
 from string import ascii_lowercase, digits
+
+import requests
+
+
+URL_TEMPLATE = 'http://storage.googleapis.com/books/ngrams/books/{}'
+URL_TEMPLATE = 'http://localhost:8001/{}'
+FILE_TEMPLATE = 'googlebooks-eng-all-{ngram_len}gram-{version}-{index}.gz'
+
+Record = namedtuple('Record', 'ngram year match_count volume_count')
 
 
 def get_indices(ngram_len):
@@ -71,3 +83,51 @@ def get_indices(ngram_len):
 
     return chain(digits, letter_indices, other_indices)
 
+
+def iter_google_store(ngram_len, verbose=False):
+    """Iterate over the collection files stored at Google."""
+    version = '20120701'
+    session = requests.Session()
+
+    for index in get_indices(ngram_len):
+        fname = FILE_TEMPLATE.format(
+            ngram_len=ngram_len,
+            version=version,
+            index=index,
+        )
+
+        url = URL_TEMPLATE.format(fname)
+
+        if verbose:
+            sys.stderr.write(
+                'Downloading {url} '
+                ''.format(
+                    url=url,
+                ),
+            )
+            sys.stderr.flush()
+
+        yield fname, url, session.get(url, stream=True)
+
+        if verbose:
+            sys.stderr.write('\n')
+
+
+def readline_google_store(ngram_len, chunk_size=30, verbose=False):
+    for fname, url, request in iter_google_store(ngram_len, verbose=verbose):
+        dec = zlib.decompressobj(wbits=16 + zlib.MAX_WBITS)
+
+        def lines():
+            last = b''
+            for compressed_chunk in request.iter_content(chunk_size=chunk_size):
+                chunk = dec.decompress(compressed_chunk)
+
+                lines = (last + chunk).split(b'\n')  # noqa
+                lines, last = lines[:-1], lines[-1]
+
+                for line in lines:
+                    yield Record(*line.decode('utf-8').split('\t'))
+
+            assert not last
+
+        yield fname, url, lines()

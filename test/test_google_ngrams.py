@@ -1,6 +1,6 @@
 from requests import Session
 
-from fowler.corpora.google_ngrams.main import get_indices
+from fowler.corpora.google_ngrams.util import get_indices
 from fowler.corpora.main import dispatcher
 
 import pytest
