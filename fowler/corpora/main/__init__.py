@@ -1,6 +1,6 @@
 from itertools import islice
 
-import fowler.corpora.serafim03.main as serafim03_main
+import fowler.corpora.serafin03.main as serafin03_main
 import fowler.corpora.google_ngrams.main as google_ngrams_main
 
 from fowler.corpora.io import readline_folder as io_readline_folder
@@ -15,14 +15,14 @@ dispatch = dispatcher.dispatch
 
 dispatcher.nest(
     'serafin03',
-    serafim03_main.dispatcher,
-    serafim03_main.__doc__,
+    serafin03_main.dispatcher,
+    serafin03_main.__doc__,
 )
 
 dispatcher.nest(
     'google-ngrams',
     google_ngrams_main.dispatcher,
-    serafim03_main.__doc__,
+    google_ngrams_main.__doc__,
 )
 
 

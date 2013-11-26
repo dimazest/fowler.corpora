@@ -6,6 +6,8 @@ Version 20120701 dataset.
 """
 import sys
 import csv
+from collections import Counter
+from itertools import product
 
 from opster import Dispatcher
 from py.path import local
@@ -21,7 +23,7 @@ command = dispatcher.command
 @command()
 def download(
     ngram_len=('n', 1, 'The length of ngrams to be downloaded.'),
-    output=('o', 'downloads/google_ngrams/{ngram_len}', 'The destination folder for downoaded files.'),
+    output=('o', 'downloads/google_ngrams/{ngram_len}', 'The destination folder for downloaded files.'),
     verbose=('v', False, 'Be verbose.'),
 ):
     """Download The Google Books Ngram Viewer dataset version 20120701."""
@@ -41,13 +43,30 @@ def download(
 @command()
 def cooccurrence(
     ngram_len=('n', 2, 'The length of ngrams to be downloaded.'),
+    output=('o', 'downloads/google_ngrams/{ngram_len}_coocurrence_matrix', 'The destination folder for downloaded files.'),
     verbose=('v', False, 'Be verbose.'),
 ):
     assert ngram_len > 1
 
-    for fname, url, lines in readline_google_store(ngram_len, verbose=verbose):
-        for line in lines:
-            print(line)
+    middle_index = ngram_len // 2
+
+    for fname, url, records in readline_google_store(ngram_len, verbose=verbose):
+        cooc = Counter()
+
+        for record in records:
+
+            ngram = record.ngram.split()
+            # Filter out any annotations. E.g. removes `_NUM` from  `+32_NUM`
+            ngram = tuple(n.split('_')[0] for n in ngram)
+            count = int(record.match_count)
+
+            item = ngram[middle_index]
+            context = ngram[:middle_index] + ngram[middle_index + 1:]
+
+            cooc.update({p: count for p in product([item], context)})
+
+        print(ngram)
+        print(cooc)
 
         break
 

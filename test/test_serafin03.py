@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn import cross_validation
 
-from fowler.corpora.serafim03.classifier import PlainLSA
+from fowler.corpora.serafin03.classifier import PlainLSA
 from fowler.corpora.main import dispatcher
 
 import pytest
