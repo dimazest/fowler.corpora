@@ -1,56 +1,121 @@
-"""Helpers to get The Google Books Ngram Viewer dataset.
-
-.. warning:: The script is in very early stage and is targeted to downlad the English
-Version 20120701 dataset.
-
-"""
-import json
-from collections import Counter
-from itertools import product
-
+"""The Google Books Ngram Viewer dataset helper routines."""
+import csv
 
 from opster import Dispatcher
 from py.path import local
 
-from google_ngram_downloader import readline_google_store
-
+import numpy as np
+import pandas as pd
 
 dispatcher = Dispatcher()
 command = dispatcher.command
 
 
 @command()
-def cooccurrence(
-    ngram_len=('n', 2, 'The length of ngrams to be downloaded.'),
-    output=('o', 'downloads/google_ngrams/{ngram_len}_cooccurrence_matrix/', 'The destination folder for downloaded files.'),
-    verbose=('v', False, 'Be verbose.'),
+def dictionary(
+    input_dir=('i', local('./downloads/google_ngrams/1'), 'The path to the directory with the Google unigram files.'),
+    output=('o', 'dictionary.csv', 'The output file.'),
+    with_pos=('', False, 'Include ngrams that are POS tagged.'),
 ):
-    assert ngram_len > 1
-    middle_index = ngram_len // 2
-    output_dir = local(output.format(ngram_len=ngram_len))
+    """Build the dictionary, sorted by frequency.
 
-    for fname, _, records in readline_google_store(ngram_len, verbose=verbose):
-        output_file = output_dir.join(fname + '.json')
+    The items in the are sorted by frequency. The output contains two columns
+    separated by tab. The first column is the element, the second is its frequency.
 
-        if output_file.check():
-            continue
+    """
 
-        cooc = Counter()
+    pieces = []
+    for file_name in input_dir.listdir():
+        print('Processing {}'.format(file_name))
+        frame = pd.read_csv(
+            str(file_name),
+            names=('ngram', 'year', 'count', 'volume_count'),
+            usecols=('ngram', 'count'),
+            header=0,
+            encoding='utf8',
+            compression='gzip',
+            delim_whitespace=True,
+            quoting=csv.QUOTE_NONE,
+            dtype={
+                'ngram': str,
+                'count': int,
+            }
+        )
 
-        for i, record in enumerate(records, start=1):
+        frame['ngram'].fillna('U+F8F0:<INVALIDCHARACTER>', inplace=True)
 
-            ngram = record.ngram.split()
-            # Filter out any annotations. E.g. removes `_NUM` from  `+32_NUM`
-            ngram = tuple(n.split('_')[0] for n in ngram)
-            count = int(record.match_count)
+        if not with_pos:
+            frame = frame[np.invert(frame['ngram'].str.contains('_'))]
 
-            item = ngram[middle_index]
-            context = ngram[:middle_index] + ngram[middle_index + 1:]
+        pieces.append(frame.groupby('ngram', as_index=False).sum())
 
-            cooc.update({p: count for p in product([item], context)})
+    counts = pd.concat(pieces, ignore_index=True)
+    counts.sort(
+        'count',
+        inplace=True,
+        ascending=False,
+    )
 
-        with output_file.open('w') as f:
-            json.dump(cooc, f)
+    counts.to_csv(
+        output,
+        header=False,
+        sep='\t',
+        index=False,
+    )
 
 
+@command()
+def cooccurrence(
+    dictionary=('d', 'dictionary.csv.gz', 'The dictionary file.'),
+    input_dir=('i', local('./downloads/google_ngrams/5_cooccurrence'), 'The path to the directory with the Google unigram files.'),
+    with_pos=('', False, 'Include ngrams that are POS tagged.'),
+):
+    """Build the cooccurrence matrix.
 
+    :param str dictionary: the file with contexts that
+
+    """
+    dictionary = pd.read_csv(
+        dictionary,
+        names=('ngram', 'count'),
+        usecols=('ngram', ),
+        index_col='ngram',
+        header=0,
+        encoding='utf8',
+        compression='gzip',
+        delim_whitespace=True,
+        quoting=csv.QUOTE_NONE,
+    )
+    enum = pd.Series(np.arange(len(dictionary)), index=dictionary.index)
+
+    dictionary['id'] = enum
+
+    pieces = []
+    for file_name in input_dir.listdir():
+        print('Processing {}'.format(file_name))
+
+        frame = pd.read_csv(
+            str(file_name),
+            names=('ngram', 'context', 'count'),
+            header=0,
+            encoding='utf8',
+            compression='gzip',
+            delim_whitespace=True,
+            quoting=csv.QUOTE_NONE,
+        )
+
+        frame['ngram'].fillna('U+F8F0:<INVALIDCHARACTER>', inplace=True)
+
+        if not with_pos:
+            frame = frame[np.invert(frame['ngram'].str.contains('_'))]
+
+        pieces.append(
+            frame
+            .merge(dictionary, left_on='ngram', right_index=True, sort=False)
+            .merge(dictionary, left_on='context', right_index=True, sort=False, suffixes=('_target', '_context'))
+            [['id_target', 'id_context', 'count']]
+        )
+
+    cooc = pd.concat(pieces, ignore_index=True)
+
+    print(cooc.head(100))
