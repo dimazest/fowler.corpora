@@ -89,7 +89,7 @@ def cooccurrence(
     dictionary['id'] = pd.Series(np.arange(len(dictionary)), index=dictionary.index)
 
     pieces = []
-    for file_name in input_dir.listdir():
+    for file_name in input_dir.listdir(sort=True):
         print('Processing {}'.format(file_name))
 
         frame = pd.read_csv(
