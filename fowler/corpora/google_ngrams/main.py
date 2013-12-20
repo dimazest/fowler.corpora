@@ -69,6 +69,7 @@ def cooccurrence(
     dictionary=('d', 'dictionary.csv.gz', 'The dictionary file.'),
     input_dir=('i', local('./downloads/google_ngrams/5_cooccurrence'), 'The path to the directory with the Google unigram files.'),
     with_pos=('', False, 'Include ngrams that are POS tagged.'),
+    output=('o', 'cooccurrence.csv', 'The output file.'),
 ):
     """Build the cooccurrence matrix.
 
@@ -80,15 +81,12 @@ def cooccurrence(
         names=('ngram', 'count'),
         usecols=('ngram', ),
         index_col='ngram',
-        header=0,
         encoding='utf8',
         compression='gzip',
         delim_whitespace=True,
         quoting=csv.QUOTE_NONE,
     )
-    enum = pd.Series(np.arange(len(dictionary)), index=dictionary.index)
-
-    dictionary['id'] = enum
+    dictionary['id'] = pd.Series(np.arange(len(dictionary)), index=dictionary.index)
 
     pieces = []
     for file_name in input_dir.listdir():
@@ -97,7 +95,6 @@ def cooccurrence(
         frame = pd.read_csv(
             str(file_name),
             names=('ngram', 'context', 'count'),
-            header=0,
             encoding='utf8',
             compression='gzip',
             delim_whitespace=True,
@@ -109,13 +106,20 @@ def cooccurrence(
         if not with_pos:
             frame = frame[np.invert(frame['ngram'].str.contains('_'))]
 
-        pieces.append(
+        piece = (
             frame
             .merge(dictionary, left_on='ngram', right_index=True, sort=False)
             .merge(dictionary, left_on='context', right_index=True, sort=False, suffixes=('_target', '_context'))
             [['id_target', 'id_context', 'count']]
         )
 
-    cooc = pd.concat(pieces, ignore_index=True)
+        piece = piece.groupby(['id_target', 'id_context'], as_index=False).sum()
+        pieces.append(piece)
 
-    print(cooc.head(100))
+    cooc = pd.concat(pieces, ignore_index=True).groupby(['id_target', 'id_context']).sum()
+
+    cooc.to_csv(
+        output,
+        header=False,
+        sep='\t',
+    )
