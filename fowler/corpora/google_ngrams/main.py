@@ -7,6 +7,7 @@ from py.path import local
 import numpy as np
 import pandas as pd
 
+
 dispatcher = Dispatcher()
 command = dispatcher.command
 
@@ -126,7 +127,7 @@ def cooccurrence(
 
     matrix = pd.concat(pieces, ignore_index=True).groupby(['id_target', 'id_context']).sum()
 
-    with pd.get_store(output) as store:
+    with pd.get_store(output, mode='w') as store:
 
         store['context'] = context
         store['targets'] = targets
