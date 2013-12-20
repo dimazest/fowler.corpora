@@ -1,4 +1,7 @@
 import gzip
+
+import pandas as pd
+
 from fowler.corpora.main import dispatcher
 
 import pytest
@@ -103,18 +106,14 @@ def test_cooccurrence(context_path, cooccurrence_dir_path, capsys, tmpdir, targe
 
     assert len(out.split('\n')) == 4
 
-    out = output_path.read().split('\n')
-    assert len(out) == len(set(out))
-    out = set(out)
+    matrix = pd.read_hdf(str(output_path), 'matrix')
+    assert len(matrix) == 6
 
-    assert out == set(
-        (
-            '0\t5\t310',
-            '0\t7\t960',
-            '1\t7\t120',
-            '2\t5\t1300',
-            '3\t7\t420',
-            '4\t6\t510',
-            '',
-        )
-    )
+    counts = matrix['count']
+
+    assert counts.loc[0, 5] == 310
+    assert counts.loc[0, 7] == 960
+    assert counts.loc[1, 7] == 120
+    assert counts.loc[2, 5] == 1300
+    assert counts.loc[3, 7] == 420
+    assert counts.loc[4, 6] == 510

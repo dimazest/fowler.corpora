@@ -70,7 +70,7 @@ def cooccurrence(
     targets=('t', 'targets.csv.gz', 'The file with target words.'),
     input_dir=('i', local('./downloads/google_ngrams/5_cooccurrence'), 'The path to the directory with the Google unigram files.'),
     with_pos=('', False, 'Include ngrams that are POS tagged.'),
-    output=('o', 'matrix.csv', 'The output matrix file.'),
+    output=('o', 'matrix.h5', 'The output matrix file.'),
 ):
     """Build the cooccurrence matrix."""
     context = pd.read_csv(
@@ -124,10 +124,10 @@ def cooccurrence(
         piece = piece.groupby(['id_target', 'id_context'], as_index=False).sum()
         pieces.append(piece)
 
-    cooc = pd.concat(pieces, ignore_index=True).groupby(['id_target', 'id_context']).sum()
+    matrix = pd.concat(pieces, ignore_index=True).groupby(['id_target', 'id_context']).sum()
 
-    cooc.to_csv(
-        output,
-        header=False,
-        sep='\t',
-    )
+    with pd.get_store(output) as store:
+
+        store['context'] = context
+        store['targets'] = targets
+        store['matrix'] = matrix
