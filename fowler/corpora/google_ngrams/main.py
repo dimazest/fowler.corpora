@@ -131,3 +131,6 @@ def cooccurrence(
         store['context'] = context
         store['targets'] = targets
         store['matrix'] = matrix
+
+        # TODO it would be nice to write metadata, e.g. the command the file
+        # was generated, the date and so on.
