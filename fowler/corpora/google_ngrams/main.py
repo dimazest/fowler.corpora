@@ -66,18 +66,15 @@ def dictionary(
 
 @command()
 def cooccurrence(
-    dictionary=('d', 'dictionary.csv.gz', 'The dictionary file.'),
+    context=('c', 'context.csv.gz', 'The file with context words.'),
+    targets=('t', 'targets.csv.gz', 'The file with target words.'),
     input_dir=('i', local('./downloads/google_ngrams/5_cooccurrence'), 'The path to the directory with the Google unigram files.'),
     with_pos=('', False, 'Include ngrams that are POS tagged.'),
-    output=('o', 'cooccurrence.csv', 'The output file.'),
+    output=('o', 'matrix.csv', 'The output matrix file.'),
 ):
-    """Build the cooccurrence matrix.
-
-    :param str dictionary: the file with contexts that
-
-    """
-    dictionary = pd.read_csv(
-        dictionary,
+    """Build the cooccurrence matrix."""
+    context = pd.read_csv(
+        context,
         names=('ngram', 'count'),
         usecols=('ngram', ),
         index_col='ngram',
@@ -86,7 +83,18 @@ def cooccurrence(
         delim_whitespace=True,
         quoting=csv.QUOTE_NONE,
     )
-    dictionary['id'] = pd.Series(np.arange(len(dictionary)), index=dictionary.index)
+    context['id'] = pd.Series(np.arange(len(context)), index=context.index)
+
+    targets = pd.read_csv(
+        targets,
+        names=('ngram', ),
+        index_col='ngram',
+        encoding='utf8',
+        compression='gzip',
+        delim_whitespace=True,
+        quoting=csv.QUOTE_NONE,
+    )
+    targets['id'] = pd.Series(np.arange(len(targets)), index=targets.index)
 
     pieces = []
     for file_name in input_dir.listdir(sort=True):
@@ -108,8 +116,8 @@ def cooccurrence(
 
         piece = (
             frame
-            .merge(dictionary, left_on='ngram', right_index=True, sort=False)
-            .merge(dictionary, left_on='context', right_index=True, sort=False, suffixes=('_target', '_context'))
+            .merge(targets, left_on='ngram', right_index=True, sort=False)
+            .merge(context, left_on='context', right_index=True, sort=False, suffixes=('_target', '_context'))
             [['id_target', 'id_context', 'count']]
         )
 

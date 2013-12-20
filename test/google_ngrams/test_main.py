@@ -5,8 +5,8 @@ import pytest
 
 
 @pytest.fixture
-def dictionary_path(tmpdir):
-    path = tmpdir.join('dictionary.csv.gz')
+def context_path(tmpdir):
+    path = tmpdir.join('context.csv.gz')
 
     with gzip.open(str(path), 'wt') as f:
         f.write(
@@ -19,6 +19,27 @@ def dictionary_path(tmpdir):
             'ab\t60\n'  # 6
             'ac\t50\n'  # 7
             'AA_NOUN\t3\n'  # 8
+            'xx\t2'  # 9
+        )
+
+    return path
+
+
+@pytest.fixture
+def targets_path(tmpdir):
+    path = tmpdir.join('targets.csv.gz')
+
+    with gzip.open(str(path), 'wt') as f:
+        f.write(
+            'AA\n'  # 0
+            'BB\n'  # 1
+            'XX\n'  # 2
+            'YY\n'  # 3
+            'ZZ\n'  # 4
+            'aa\n'  # 5
+            'ab\n'  # 6
+            'ac\n'  # 7
+            'AA_NOUN\n'  # 8
         )
 
     return path
@@ -36,6 +57,7 @@ def cooccurrence_dir_path(tmpdir):
             'BB\tac\t120\n'
             'AA\taa\t210\n'
             'AA\tac\t330\n'
+            'xx\tac\t99\n'
         )
 
     with gzip.open(str(path.join('a_1.gz')), 'wt') as f:
@@ -60,18 +82,20 @@ def cooccurrence_dir_path(tmpdir):
     return path
 
 
-def test_cooccurrence(dictionary_path, cooccurrence_dir_path, capsys, tmpdir):
-    output_path = tmpdir.join('cooccurrence.csv')
+def test_cooccurrence(context_path, cooccurrence_dir_path, capsys, tmpdir, targets_path):
+    output_path = tmpdir.join('matrix.csv')
 
     dispatcher.dispatch(
         'google-ngrams cooccurrence '
-        '--dictionary {dictionary_path} '
+        '--context {context_path} '
+        '--targets {targets_path} '
         '-i {cooccurrence_dir_path} '
         '-o {output_path}'
         ''.format(
-            dictionary_path=dictionary_path,
+            context_path=context_path,
             cooccurrence_dir_path=cooccurrence_dir_path,
             output_path=output_path,
+            targets_path=targets_path,
         ).split()
     )
 
