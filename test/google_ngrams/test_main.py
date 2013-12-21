@@ -42,7 +42,6 @@ def targets_path(tmpdir):
             'aa\n'  # 5
             'ab\n'  # 6
             'ac\n'  # 7
-            'AA_NOUN\n'  # 8
         )
 
     return path

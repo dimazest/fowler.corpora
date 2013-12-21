@@ -70,7 +70,6 @@ def cooccurrence(
     context=('c', 'context.csv.gz', 'The file with context words.'),
     targets=('t', 'targets.csv.gz', 'The file with target words.'),
     input_dir=('i', local('./downloads/google_ngrams/5_cooccurrence'), 'The path to the directory with the Google unigram files.'),
-    with_pos=('', False, 'Include ngrams that are POS tagged.'),
     output=('o', 'matrix.h5', 'The output matrix file.'),
 ):
     """Build the cooccurrence matrix."""
@@ -109,11 +108,6 @@ def cooccurrence(
             delim_whitespace=True,
             quoting=csv.QUOTE_NONE,
         )
-
-        frame['ngram'].fillna('U+F8F0:<INVALIDCHARACTER>', inplace=True)
-
-        if not with_pos:
-            frame = frame[np.invert(frame['ngram'].str.contains('_'))]
 
         piece = (
             frame
