@@ -1,7 +1,8 @@
 from itertools import islice
 
-import fowler.corpora.serafin03.main as serafin03_main
 import fowler.corpora.google_ngrams.main as google_ngrams_main
+import fowler.corpora.wordsim353.main as wordsim353_main
+import fowler.corpora.serafin03.main as serafin03_main
 
 from fowler.corpora.io import readline_folder as io_readline_folder
 
@@ -23,6 +24,12 @@ dispatcher.nest(
     'google-ngrams',
     google_ngrams_main.dispatcher,
     google_ngrams_main.__doc__,
+)
+
+dispatcher.nest(
+    'wordsim353',
+    wordsim353_main.dispatcher,
+    wordsim353_main.__doc__,
 )
 
 
