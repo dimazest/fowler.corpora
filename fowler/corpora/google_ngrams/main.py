@@ -1,5 +1,6 @@
 """The Google Books Ngram Viewer dataset helper routines."""
 import csv
+from multiprocessing import Pool
 
 from py.path import local
 
@@ -11,7 +12,12 @@ from fowler.corpora.main.options import Dispatcher
 from .util import load_cooccurrence
 
 
-dispatcher = Dispatcher()
+def middleware_hook(kwargs, f_args):
+    if 'pool' in f_args:
+        kwargs['pool'] = Pool(kwargs['jobs_num'] or None)
+
+
+dispatcher = Dispatcher(middleware_hook=middleware_hook)
 command = dispatcher.command
 
 
@@ -70,6 +76,7 @@ def dictionary(
 
 @command()
 def cooccurrence(
+    pool=None,
     context=('c', 'context.csv.gz', 'The file with context words.'),
     targets=('t', 'targets.csv.gz', 'The file with target words.'),
     input_dir=(
@@ -79,6 +86,7 @@ def cooccurrence(
     ),
     output=('o', 'matrix.h5', 'The output matrix file.'),
 ):
+
     """Build the cooccurrence matrix."""
     context = pd.read_csv(
         context,
@@ -103,9 +111,10 @@ def cooccurrence(
     )
     targets['id'] = pd.Series(np.arange(len(targets)), index=targets.index)
 
-    pieces = []
-    for file_name in input_dir.listdir(sort=True):
-        pieces.append(load_cooccurrence(file_name, targets, context))
+    file_names = input_dir.listdir(sort=True)
+    pieces = pool.map(load_cooccurrence, ((f, targets, context) for f in file_names))
+    # for file_name in
+    #     pieces.append(load_cooccurrence(file_name, targets, context))
     matrix = pd.concat(pieces, ignore_index=True).groupby(['id_target', 'id_context']).sum()
 
     with pd.get_store(output, mode='w') as store:

@@ -7,7 +7,9 @@ import pandas as pd
 logger = logging.getLogger(__name__)
 
 
-def load_cooccurrence(file_name, targets, context):
+def load_cooccurrence(args):
+    file_name, targets, context = args
+
     logger.info('Processing %s', file_name)
 
     frame = pd.read_csv(

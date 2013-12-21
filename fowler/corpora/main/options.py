@@ -9,7 +9,8 @@ class Dispatcher(opster.Dispatcher):
         globaloptions = (
             tuple(globaloptions) +
             (
-                ('v', 'verbose', False, 'Be verbose'),
+                ('v', 'verbose', False, 'Be verbose.'),
+                ('j', 'jobs_num', 0, 'Number of jobs for parallel tasks.'),
             )
         )
 
@@ -27,7 +28,7 @@ class Dispatcher(opster.Dispatcher):
 
             f_args = inspect.getargspec(func)[0]
 
-            verbose = kwargs.pop('verbose')
+            verbose = kwargs['verbose']
 
             logger = logging.getLogger('fowler')
             handler = logging.StreamHandler()
@@ -42,7 +43,14 @@ class Dispatcher(opster.Dispatcher):
                 logger.setLevel(logging.CRITICAL)
 
             if self.middleware_hook:
-                self.middleware_hook(f_args, kwargs)
+                self.middleware_hook(kwargs, f_args)
+
+            # Remove global options if we don't need them.
+            if 'verbose' not in f_args:
+                del kwargs['verbose']
+
+            if 'jobs_num' not in f_args:
+                del kwargs['jobs_num']
 
             return func(*args, **kwargs)
 
