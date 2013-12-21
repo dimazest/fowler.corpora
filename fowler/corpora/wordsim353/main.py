@@ -1,9 +1,9 @@
 """The WordSimilarity-353 Test."""
 
-from opster import Dispatcher
-
 import pandas as pd
 from scipy.sparse import csc_matrix
+
+from fowler.corpora.main.options import Dispatcher
 
 
 dispatcher = Dispatcher()

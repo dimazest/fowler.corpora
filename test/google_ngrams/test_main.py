@@ -92,7 +92,8 @@ def test_cooccurrence(context_path, cooccurrence_dir_path, capsys, tmpdir, targe
         '--context {context_path} '
         '--targets {targets_path} '
         '-i {cooccurrence_dir_path} '
-        '-o {output_path}'
+        '-o {output_path} '
+        '-v '
         ''.format(
             context_path=context_path,
             cooccurrence_dir_path=cooccurrence_dir_path,
@@ -100,10 +101,6 @@ def test_cooccurrence(context_path, cooccurrence_dir_path, capsys, tmpdir, targe
             targets_path=targets_path,
         ).split()
     )
-
-    out, _ = capsys.readouterr()
-
-    assert len(out.split('\n')) == 4
 
     matrix = pd.read_hdf(str(output_path), 'matrix')
     assert len(matrix) == 6

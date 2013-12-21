@@ -1,11 +1,14 @@
 """The Google Books Ngram Viewer dataset helper routines."""
 import csv
 
-from opster import Dispatcher
 from py.path import local
 
 import numpy as np
 import pandas as pd
+
+from fowler.corpora.main.options import Dispatcher
+
+from .util import load_cooccurrence
 
 
 dispatcher = Dispatcher()
@@ -69,7 +72,11 @@ def dictionary(
 def cooccurrence(
     context=('c', 'context.csv.gz', 'The file with context words.'),
     targets=('t', 'targets.csv.gz', 'The file with target words.'),
-    input_dir=('i', local('./downloads/google_ngrams/5_cooccurrence'), 'The path to the directory with the Google unigram files.'),
+    input_dir=(
+        'i',
+        local('./downloads/google_ngrams/5_cooccurrence'),
+        'The path to the directory with the co-occurence.',
+    ),
     output=('o', 'matrix.h5', 'The output matrix file.'),
 ):
     """Build the cooccurrence matrix."""
@@ -98,27 +105,7 @@ def cooccurrence(
 
     pieces = []
     for file_name in input_dir.listdir(sort=True):
-        print('Processing {}'.format(file_name))
-
-        frame = pd.read_csv(
-            str(file_name),
-            names=('ngram', 'context', 'count'),
-            encoding='utf8',
-            compression='gzip',
-            delim_whitespace=True,
-            quoting=csv.QUOTE_NONE,
-        )
-
-        piece = (
-            frame
-            .merge(targets, left_on='ngram', right_index=True, sort=False)
-            .merge(context, left_on='context', right_index=True, sort=False, suffixes=('_target', '_context'))
-            [['id_target', 'id_context', 'count']]
-        )
-
-        piece = piece.groupby(['id_target', 'id_context'], as_index=False).sum()
-        pieces.append(piece)
-
+        pieces.append(load_cooccurrence(file_name, targets, context))
     matrix = pd.concat(pieces, ignore_index=True).groupby(['id_target', 'id_context']).sum()
 
     with pd.get_store(output, mode='w') as store:

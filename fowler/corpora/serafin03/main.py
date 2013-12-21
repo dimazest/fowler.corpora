@@ -1,17 +1,50 @@
 """Implementation of Latent Semantic Analysis for dialogue act classification."""
 import sys
 
+import pandas as pd
 import numpy as np
 from sklearn.cross_validation import train_test_split
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 from sklearn.utils.multiclass import unique_labels
 
+from jinja2 import Environment, PackageLoader
+
+import fowler.corpora
+from fowler.corpora import io
 from fowler.corpora.main.options import Dispatcher
 
 from .classifier import PlainLSA
 
-dispatcher = Dispatcher()
+
+def middleware_hook(kwargs, f_args):
+    if kwargs['path'].endswith('.h5'):
+
+        with pd.get_store(kwargs['path'], mode='r') as store:
+            if 'cooccurrence_matrix' in f_args:
+                kwargs['cooccurrence_matrix'] = io.load_cooccurrence_matrix(store)
+
+            if 'labels' in f_args:
+                kwargs['labels'] = io.load_labels(store)
+
+            if 'templates_env' in f_args:
+                kwargs['templates_env'] = Environment(
+                    loader=PackageLoader(fowler.corpora.__name__, 'templates')
+                )
+
+            if 'store_metadata' in f_args:
+                kwargs['store_metadata'] = store.get_storer('data').attrs.metadata
+
+    if 'path' not in f_args:
+        del kwargs['path']
+
+
+dispatcher = Dispatcher(
+    middleware_hook=middleware_hook,
+    globaloptions=(
+        ('p', 'path', 'out.h5', 'The path to the store hd5 file.'),
+    ),
+)
 command = dispatcher.command
 
 
