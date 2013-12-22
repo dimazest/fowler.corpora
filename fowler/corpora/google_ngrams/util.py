@@ -31,3 +31,22 @@ def load_cooccurrence(args):
     piece = piece.groupby(['id_target', 'id_context'], as_index=False).sum()
 
     return piece
+
+
+def load_dictionary(file_name):
+    logger.info('Processing {}'.format(file_name))
+
+    return pd.read_csv(
+        str(file_name),
+        names=('ngram', 'year', 'count', 'volume_count'),
+        usecols=('ngram', 'count'),
+        header=0,
+        encoding='utf8',
+        compression='gzip',
+        delim_whitespace=True,
+        quoting=csv.QUOTE_NONE,
+        dtype={
+            'ngram': str,
+            'count': int,
+        }
+    ).groupby('ngram', as_index=False).sum()

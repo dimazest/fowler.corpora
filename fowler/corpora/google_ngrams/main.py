@@ -9,7 +9,7 @@ import pandas as pd
 
 from fowler.corpora.dispatcher import Dispatcher
 
-from .util import load_cooccurrence
+from .util import load_cooccurrence, load_dictionary
 
 
 def middleware_hook(kwargs, f_args):
@@ -23,6 +23,7 @@ command = dispatcher.command
 
 @command()
 def dictionary(
+    pool,
     input_dir=('i', local('./downloads/google_ngrams/1'), 'The path to the directory with the Google unigram files.'),
     output=('o', 'dictionary.csv', 'The output file.'),
     with_pos=('', False, 'Include ngrams that are POS tagged.'),
@@ -34,31 +35,8 @@ def dictionary(
 
     """
 
-    pieces = []
-    for file_name in input_dir.listdir():
-        print('Processing {}'.format(file_name))
-        frame = pd.read_csv(
-            str(file_name),
-            names=('ngram', 'year', 'count', 'volume_count'),
-            usecols=('ngram', 'count'),
-            header=0,
-            encoding='utf8',
-            compression='gzip',
-            delim_whitespace=True,
-            quoting=csv.QUOTE_NONE,
-            dtype={
-                'ngram': str,
-                'count': int,
-            }
-        )
-
-        frame['ngram'].fillna('U+F8F0:<INVALIDCHARACTER>', inplace=True)
-
-        if not with_pos:
-            frame = frame[np.invert(frame['ngram'].str.contains('_'))]
-
-        pieces.append(frame.groupby('ngram', as_index=False).sum())
-
+    file_names = sorted(input_dir.listdir())
+    pieces = pool.map(load_dictionary, file_names)
     counts = pd.concat(pieces, ignore_index=True)
     counts.sort(
         'count',

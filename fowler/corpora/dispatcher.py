@@ -1,3 +1,9 @@
+import warnings
+
+with warnings.catch_warnings():
+    import sklearn
+
+
 import inspect
 import logging
 
@@ -35,6 +41,7 @@ class Dispatcher(opster.Dispatcher):
 
             verbose = kwargs['verbose']
 
+            logging.captureWarnings(True)
             logger = logging.getLogger('fowler')
             handler = logging.StreamHandler()
             formatter = logging.Formatter('%(asctime)-6s: %(name)s - %(levelname)s - %(message)s')
