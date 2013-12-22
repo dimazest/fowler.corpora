@@ -38,7 +38,9 @@ setup(
     zip_safe=False,
     install_requires=[
         'google-ngram-downloader',
+        'ipython[notebook,parallel,nbconvert]',
         'jinja2',
+        'matplotlib',
         'nltk',
         'numpy',
         'opster',
@@ -52,6 +54,7 @@ setup(
     entry_points={
         'console_scripts': [
             'corpora = fowler.corpora.main:dispatch',
+            'corpora-ipython = fowler.corpora.main:ipython',
         ],
     },
     tests_require=['pytest>=2.4.2'],

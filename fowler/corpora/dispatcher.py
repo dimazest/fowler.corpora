@@ -1,6 +1,8 @@
 import inspect
 import logging
 
+import pandas as pd
+
 import opster
 
 
@@ -11,6 +13,7 @@ class Dispatcher(opster.Dispatcher):
             (
                 ('v', 'verbose', False, 'Be verbose.'),
                 ('j', 'jobs_num', 0, 'Number of jobs for parallel tasks.'),
+                ('', 'display_max_rows', 10, 'Maximum numpber of rows to show in pandas.'),
             )
         )
 
@@ -27,6 +30,8 @@ class Dispatcher(opster.Dispatcher):
                 return func(*args, **kwargs)
 
             f_args = inspect.getargspec(func)[0]
+
+            pd.set_option('display.max_rows', kwargs.pop('display_max_rows'))
 
             verbose = kwargs['verbose']
 
@@ -52,6 +57,6 @@ class Dispatcher(opster.Dispatcher):
             if 'jobs_num' not in f_args:
                 del kwargs['jobs_num']
 
-            return func(*args, **kwargs)
+            func(*args, **kwargs)
 
         return wrapper

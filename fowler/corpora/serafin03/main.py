@@ -12,7 +12,7 @@ from jinja2 import Environment, PackageLoader
 
 import fowler.corpora
 from fowler.corpora import io
-from fowler.corpora.main.options import Dispatcher
+from fowler.corpora.dispatcher import Dispatcher
 
 from .classifier import PlainLSA
 

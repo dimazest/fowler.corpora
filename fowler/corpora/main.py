@@ -1,3 +1,7 @@
+from IPython.terminal.ipapp import launch_new_instance
+
+import os
+import sys
 from itertools import islice
 
 import fowler.corpora.google_ngrams.main as google_ngrams_main
@@ -6,7 +10,7 @@ import fowler.corpora.serafin03.main as serafin03_main
 
 from fowler.corpora.io import readline_folder as io_readline_folder
 
-from .options import Dispatcher
+from .dispatcher import Dispatcher
 
 
 dispatcher = Dispatcher()
@@ -50,3 +54,8 @@ def readline_folder(
 
         for line in lines:
             print(line.strip())
+
+
+def ipython():
+    os.environ['PYTHONPATH'] = ':'.join(sys.path)
+    sys.exit(launch_new_instance())

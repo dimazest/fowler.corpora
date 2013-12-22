@@ -7,7 +7,7 @@ from py.path import local
 import numpy as np
 import pandas as pd
 
-from fowler.corpora.main.options import Dispatcher
+from fowler.corpora.dispatcher import Dispatcher
 
 from .util import load_cooccurrence
 
@@ -113,8 +113,6 @@ def cooccurrence(
 
     file_names = input_dir.listdir(sort=True)
     pieces = pool.map(load_cooccurrence, ((f, targets, context) for f in file_names))
-    # for file_name in
-    #     pieces.append(load_cooccurrence(file_name, targets, context))
     matrix = pd.concat(pieces, ignore_index=True).groupby(['id_target', 'id_context']).sum()
 
     with pd.get_store(output, mode='w') as store:
