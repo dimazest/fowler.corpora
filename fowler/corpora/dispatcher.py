@@ -13,7 +13,7 @@ class Dispatcher(opster.Dispatcher):
             (
                 ('v', 'verbose', False, 'Be verbose.'),
                 ('j', 'jobs_num', 0, 'Number of jobs for parallel tasks.'),
-                ('', 'display_max_rows', 10, 'Maximum numpber of rows to show in pandas.'),
+                ('', 'display_max_rows', 10, 'Maximum number of rows to show in pandas.'),
             )
         )
 
