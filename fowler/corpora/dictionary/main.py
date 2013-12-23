@@ -1,6 +1,7 @@
 """Dictionary helpers."""
 from multiprocessing import Pool
 
+import numpy as np
 import pandas as pd
 
 from fowler.corpora.dispatcher import Dispatcher
@@ -31,7 +32,7 @@ command = dispatcher.command
 @command()
 def limit(
     dictionary,
-    limit=('l', 30000, 'Numbers of rows to leave in the index.'),
+    limit=('l', 30000, 'Number of rows to leave in the index.'),
     output=('o', 'dicitionary_limited.h5', 'The output file.'),
     output_key=('', 'dictionary', 'An identifier for the group in the store.'),
 ):
@@ -46,11 +47,12 @@ def limit(
 
 
 @command()
-def filter(
+def select(
     dictionary,
-    output=('o', 'ngrams.h5', 'The output file.'),
-    output_key=('', 'ngrams', 'An identifier for the group in the store.'),
-    limit=('l', 0, 'Number of ngrams in the output.'),
+    output=('o', 'ngrams.csv', 'The output file.'),
+    slice_start=('', 0, 'Number of ngrams in the output.'),
+    slice_end=('', 0, 'Number of ngrams in the output.'),
+    pos_tagged=('', False, 'Get POS tagged items.'),
 ):
     """Retrieve ngrams from the dictionary.
 
@@ -62,25 +64,23 @@ def filter(
     """
     del dictionary['count']
 
-    ngrams = dictionary[dictionary['ngram'].str.contains('^._')]
+    if pos_tagged:
+        ngrams = dictionary[dictionary['ngram'].str.contains('^[^_]+_')]
+        ngrams['ngram'] = ngrams['ngram'].str.split('_').str[0]
+    else:
+        ngrams = dictionary[dictionary['ngram'].str.contains('_')]
+
+    if slice_start or slice_end:
+        ngrams = ngrams[slice_start or None:slice_end or None]
+
     ngrams.reset_index(drop=True, inplace=True)
-
-    ngrams['ngram'] = ngrams['ngram'].str.split('_').str.get(0)
-
-    if limit:
-        ngrams = ngrams.head(limit)
-
-    ngrams.reset_index(drop=False, inplace=True)
-    ngrams.rename(columns={'index': 'id'}, inplace=True)
-    ngrams.set_index('ngram', inplace=True)
 
     print(ngrams)
 
-    ngrams.to_hdf(
+    ngrams.to_csv(
         output,
-        output_key,
-        mode='w',
-        complevel=9,
-        complib='zlib',
+        sep='\t',
+        header=False,
+        index=True,
     )
 

@@ -59,8 +59,7 @@ def dictionary(
 @command()
 def cooccurrence(
     pool=None,
-    context=('c', 'context.h5', 'The file with context words.'),
-    context_key=('', 'ngrams', 'An identifier for the group in the context store.'),
+    context=('c', 'context.csv', 'The file with context words.'),
     targets=('t', 'targets.csv.gz', 'The file with target words.'),
     input_dir=(
         'i',
@@ -71,9 +70,13 @@ def cooccurrence(
 ):
 
     """Build the cooccurrence matrix."""
-    context = pd.read_hdf(
+    context = pd.read_csv(
         context,
-        key=context_key,
+        names=('id', 'ngram'),
+        index_col='ngram',
+        encoding='utf8',
+        delim_whitespace=True,
+        quoting=csv.QUOTE_NONE,
     )
 
     targets = pd.read_csv(

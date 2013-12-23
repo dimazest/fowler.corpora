@@ -8,6 +8,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_cooccurrence(args):
+    """Retriece the cooccurrances that contain both passed targets and contexts."""
     file_name, targets, context = args
 
     logger.info('Processing %s', file_name)

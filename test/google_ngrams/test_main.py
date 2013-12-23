@@ -9,17 +9,19 @@ import pytest
 
 @pytest.fixture
 def context_path(tmpdir):
-    path = tmpdir.join('context.h5')
+    path = tmpdir.join('context.csv')
 
     context = pd.DataFrame(
-        {
-            'id': list(range(10)),
-            'ngram': ['AA', 'BB', 'XX', 'YY', 'ZZ', 'aa', 'ab', 'ac', 'AA_NOUN', 'xx'],
-        },
+        ['AA', 'BB', 'XX', 'YY', 'ZZ', 'aa', 'ab', 'ac', 'AA_NOUN', 'xx'],
+        columns=('ngram', ),
     )
-    context.set_index('ngram', inplace=True)
 
-    context.to_hdf(str(path), 'ngrams')
+    context.to_csv(
+        str(path),
+        sep='\t',
+        header=False,
+        index=True,
+    )
 
     return path
 
