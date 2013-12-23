@@ -9,21 +9,17 @@ import pytest
 
 @pytest.fixture
 def context_path(tmpdir):
-    path = tmpdir.join('context.csv.gz')
+    path = tmpdir.join('context.h5')
 
-    with gzip.open(str(path), 'wt') as f:
-        f.write(
-            'AA\t99\n'  # 0
-            'BB\t90\n'  # 1
-            'XX\t89\n'  # 2
-            'YY\t88\n'  # 3
-            'ZZ\t87\n'  # 4
-            'aa\t80\n'  # 5
-            'ab\t60\n'  # 6
-            'ac\t50\n'  # 7
-            'AA_NOUN\t3\n'  # 8
-            'xx\t2'  # 9
-        )
+    context = pd.DataFrame(
+        {
+            'id': list(range(10)),
+            'ngram': ['AA', 'BB', 'XX', 'YY', 'ZZ', 'aa', 'ab', 'ac', 'AA_NOUN', 'xx'],
+        },
+    )
+    context.set_index('ngram', inplace=True)
+
+    context.to_hdf(str(path), 'ngrams')
 
     return path
 

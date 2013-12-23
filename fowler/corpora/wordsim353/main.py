@@ -23,6 +23,7 @@ def evaluate(
     with pd.get_store(matrix, mode='r') as store:
         targets = store['targets']
         matrix = store['matrix'].reset_index()
+        context_len = len(store['context'])
 
     result = (
         pd.read_csv(gold_standard)
@@ -38,7 +39,7 @@ def evaluate(
         word2 = space[row['id_word2']]
         return pairwise.cosine_similarity(word1, word2)[0][0]
 
-    space = csc_matrix((counts, ij))
+    space = csc_matrix((counts, ij), shape=(len(targets), context_len))
 
     result['cosine_similarity'] = result.apply(cosine_similarity, axis=1)
     del result['id_word1']

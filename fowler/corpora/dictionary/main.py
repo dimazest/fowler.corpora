@@ -1,7 +1,6 @@
 """Dictionary helpers."""
 from multiprocessing import Pool
 
-import numpy as np
 import pandas as pd
 
 from fowler.corpora.dispatcher import Dispatcher
@@ -41,17 +40,23 @@ def filter(
     Tokens in with parts of speech should contain an underscore. For example,
     ``the_DET``.
 
+    In the output, the part of speech tags are removed.
+
     """
+    del dictionary['count']
 
-    dictionary = dictionary[dictionary['ngram'].str.contains('_')]
-    dictionary.reset_index(drop=True, inplace=True)
+    ngrams = dictionary[dictionary['ngram'].str.contains('^._')]
+    ngrams.reset_index(drop=True, inplace=True)
 
-    ngrams = dictionary['ngram']
+    ngrams['ngram'] = ngrams['ngram'].str.split('_').str.get(0)
 
     if limit:
         ngrams = ngrams.head(limit)
 
-    ngrams = pd.DataFrame(ngrams.index, index=ngrams, columns=('id', ))
+    ngrams.reset_index(drop=False, inplace=True)
+    ngrams.rename(columns={'index': 'id'}, inplace=True)
+    ngrams.set_index('ngram', inplace=True)
+
     print(ngrams)
 
     ngrams.to_hdf(

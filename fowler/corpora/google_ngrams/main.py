@@ -1,6 +1,5 @@
 """The Google Books Ngram Viewer dataset helper routines."""
 import csv
-import gzip
 from multiprocessing import Pool
 
 from py.path import local
@@ -92,7 +91,7 @@ def cooccurrence(
     pieces = pool.map(load_cooccurrence, ((f, targets, context) for f in file_names))
     matrix = pd.concat(pieces, ignore_index=True).groupby(['id_target', 'id_context']).sum()
 
-    with pd.get_store(output, mode='w') as store:
+    with pd.get_store(output, mode='w', complevel=9, complib='zlib',) as store:
 
         store['context'] = context
         store['targets'] = targets
