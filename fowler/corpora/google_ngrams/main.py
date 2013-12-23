@@ -1,5 +1,6 @@
 """The Google Books Ngram Viewer dataset helper routines."""
 import csv
+import gzip
 from multiprocessing import Pool
 
 from py.path import local
@@ -25,8 +26,8 @@ command = dispatcher.command
 def dictionary(
     pool,
     input_dir=('i', local('./downloads/google_ngrams/1'), 'The path to the directory with the Google unigram files.'),
-    output=('o', 'dictionary.csv', 'The output file.'),
-    with_pos=('', False, 'Include ngrams that are POS tagged.'),
+    output=('o', 'dictionary.h5', 'The output file.'),
+    output_key=('', 'dictionary', 'An identifier for the group in the store.')
 ):
     """Build the dictionary, sorted by frequency.
 
@@ -43,19 +44,24 @@ def dictionary(
         inplace=True,
         ascending=False,
     )
+    counts.reset_index(drop=True, inplace=True)
 
-    counts.to_csv(
+    print(counts)
+
+    counts.to_hdf(
         output,
-        header=False,
-        sep='\t',
-        index=False,
+        key=output_key,
+        mode='w',
+        complevel=9,
+        complib='zlib',
     )
 
 
 @command()
 def cooccurrence(
     pool=None,
-    context=('c', 'context.csv.gz', 'The file with context words.'),
+    context=('c', 'context.h5', 'The file with context words.'),
+    context_key=('', 'ngrams', 'An identifier for the group in the context store.'),
     targets=('t', 'targets.csv.gz', 'The file with target words.'),
     input_dir=(
         'i',
@@ -66,17 +72,10 @@ def cooccurrence(
 ):
 
     """Build the cooccurrence matrix."""
-    context = pd.read_csv(
+    context = pd.read_hdf(
         context,
-        names=('ngram', 'count'),
-        usecols=('ngram', ),
-        index_col='ngram',
-        encoding='utf8',
-        compression='gzip',
-        delim_whitespace=True,
-        quoting=csv.QUOTE_NONE,
+        key=context_key,
     )
-    context['id'] = pd.Series(np.arange(len(context)), index=context.index)
 
     targets = pd.read_csv(
         targets,

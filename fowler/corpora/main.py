@@ -4,9 +4,10 @@ import os
 import sys
 from itertools import islice
 
+import fowler.corpora.dictionary.main as dictionary_main
 import fowler.corpora.google_ngrams.main as google_ngrams_main
-import fowler.corpora.wordsim353.main as wordsim353_main
 import fowler.corpora.serafin03.main as serafin03_main
+import fowler.corpora.wordsim353.main as wordsim353_main
 
 from fowler.corpora.io import readline_folder as io_readline_folder
 
@@ -34,6 +35,13 @@ dispatcher.nest(
     'wordsim353',
     wordsim353_main.dispatcher,
     wordsim353_main.__doc__,
+)
+
+
+dispatcher.nest(
+    'dictionary',
+    dictionary_main.dispatcher,
+    dictionary_main.__doc__,
 )
 
 
