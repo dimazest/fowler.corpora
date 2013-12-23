@@ -29,6 +29,23 @@ command = dispatcher.command
 
 
 @command()
+def limit(
+    dictionary,
+    limit=('l', 30000, 'Numbers of rows to leave in the index.'),
+    output=('o', 'dicitionary_limited.h5', 'The output file.'),
+    output_key=('', 'dictionary', 'An identifier for the group in the store.'),
+):
+    dictionary = dictionary.head(limit)
+    dictionary.to_hdf(
+        output,
+        output_key,
+        mode='w',
+        complevel=9,
+        complib='zlib',
+    )
+
+
+@command()
 def filter(
     dictionary,
     output=('o', 'ngrams.h5', 'The output file.'),
