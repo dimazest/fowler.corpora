@@ -84,7 +84,6 @@ def cooccurrence(
         names=('ngram', ),
         index_col='ngram',
         encoding='utf8',
-        compression='gzip',
         delim_whitespace=True,
         quoting=csv.QUOTE_NONE,
     )
