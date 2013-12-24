@@ -72,12 +72,13 @@ def cooccurrence(
     """Build the cooccurrence matrix."""
     context = pd.read_csv(
         context,
-        names=('id', 'ngram'),
+        names=('ngram', ),
         index_col='ngram',
         encoding='utf8',
         delim_whitespace=True,
         quoting=csv.QUOTE_NONE,
     )
+    context['id'] = pd.Series(np.arange(len(context)), index=context.index)
 
     targets = pd.read_csv(
         targets,

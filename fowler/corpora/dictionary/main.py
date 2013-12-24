@@ -1,7 +1,6 @@
 """Dictionary helpers."""
 from multiprocessing import Pool
 
-import numpy as np
 import pandas as pd
 
 from fowler.corpora.dispatcher import Dispatcher
@@ -73,14 +72,12 @@ def select(
     if slice_start or slice_end:
         ngrams = ngrams[slice_start or None:slice_end or None]
 
-    ngrams.reset_index(drop=True, inplace=True)
-
     print(ngrams)
 
     ngrams.to_csv(
         output,
         sep='\t',
         header=False,
-        index=True,
+        index=False,
     )
 
