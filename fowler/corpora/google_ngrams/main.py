@@ -1,5 +1,4 @@
 """The Google Books Ngram Viewer dataset helper routines."""
-import csv
 from multiprocessing import Pool
 
 from py.path import local
@@ -8,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from fowler.corpora.dispatcher import Dispatcher
+from fowler.corpora.space.util import read_tokens, write_space
 
 from .util import load_cooccurrence, load_dictionary
 
@@ -68,37 +68,15 @@ def cooccurrence(
     ),
     output=('o', 'matrix.h5', 'The output matrix file.'),
 ):
-
     """Build the cooccurrence matrix."""
-    context = pd.read_csv(
-        context,
-        names=('ngram', ),
-        index_col='ngram',
-        encoding='utf8',
-        delim_whitespace=True,
-        quoting=csv.QUOTE_NONE,
-    )
+    context = read_tokens(context)
     context['id'] = pd.Series(np.arange(len(context)), index=context.index)
 
-    targets = pd.read_csv(
-        targets,
-        names=('ngram', ),
-        index_col='ngram',
-        encoding='utf8',
-        delim_whitespace=True,
-        quoting=csv.QUOTE_NONE,
-    )
+    targets = read_tokens(targets)
     targets['id'] = pd.Series(np.arange(len(targets)), index=targets.index)
 
     file_names = input_dir.listdir(sort=True)
     pieces = pool.map(load_cooccurrence, ((f, targets, context) for f in file_names))
     matrix = pd.concat(pieces, ignore_index=True).groupby(['id_target', 'id_context']).sum()
 
-    with pd.get_store(output, mode='w', complevel=9, complib='zlib',) as store:
-
-        store['context'] = context
-        store['targets'] = targets
-        store['matrix'] = matrix
-
-        # TODO it would be nice to write metadata, e.g. the command the file
-        # was generated, the date and so on.
+    write_space(output, context, targets, matrix)

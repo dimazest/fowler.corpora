@@ -34,12 +34,12 @@ def evaluate(
     counts = matrix['count'].values
     ij = matrix[['id_target', 'id_context']].values.T
 
+    space = csc_matrix((counts, ij), shape=(len(targets), context_len))
+
     def cosine_similarity(row):
         word1 = space[row['id_word1']]
         word2 = space[row['id_word2']]
         return pairwise.cosine_similarity(word1, word2)[0][0]
-
-    space = csc_matrix((counts, ij), shape=(len(targets), context_len))
 
     result['cosine_similarity'] = result.apply(cosine_similarity, axis=1)
     del result['id_word1']
