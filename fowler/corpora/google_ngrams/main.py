@@ -60,7 +60,7 @@ def dictionary(
 def cooccurrence(
     pool=None,
     context=('c', 'context.csv', 'The file with context words.'),
-    targets=('t', 'targets.csv.gz', 'The file with target words.'),
+    targets=('t', 'targets.csv', 'The file with target words.'),
     input_dir=(
         'i',
         local('./downloads/google_ngrams/5_cooccurrence'),
