@@ -58,16 +58,13 @@ def select(
     Tokens in with parts of speech should contain an underscore. For example,
     ``the_DET``.
 
-    In the output, the part of speech tags are removed.
-
     """
     del dictionary['count']
 
     if pos_tagged:
         ngrams = dictionary[dictionary['ngram'].str.contains('^[^_]+_')]
-        ngrams['ngram'] = ngrams['ngram'].str.split('_').str[0]
     else:
-        ngrams = dictionary[dictionary['ngram'].str.contains('_')]
+        ngrams = dictionary[~dictionary['ngram'].str.contains('_')]
 
     if slice_start or slice_end:
         ngrams = ngrams[slice_start or None:slice_end or None]
