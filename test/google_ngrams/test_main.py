@@ -20,7 +20,7 @@ def context_path(tmpdir):
         str(path),
         sep='\t',
         header=False,
-        index=True,
+        index=False,
     )
 
     return path
@@ -28,19 +28,18 @@ def context_path(tmpdir):
 
 @pytest.fixture
 def targets_path(tmpdir):
-    path = tmpdir.join('targets.csv.gz')
+    path = tmpdir.join('targets.csv')
 
-    with gzip.open(str(path), 'wt') as f:
-        f.write(
-            'AA\n'  # 0
-            'BB\n'  # 1
-            'XX\n'  # 2
-            'YY\n'  # 3
-            'ZZ\n'  # 4
-            'aa\n'  # 5
-            'ab\n'  # 6
-            'ac\n'  # 7
-        )
+    path.write(
+        'AA\n'  # 0
+        'BB\n'  # 1
+        'XX\n'  # 2
+        'YY\n'  # 3
+        'ZZ\n'  # 4
+        'aa\n'  # 5
+        'ab\n'  # 6
+        'ac\n'  # 7
+    )
 
     return path
 
