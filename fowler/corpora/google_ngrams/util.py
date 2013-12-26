@@ -20,6 +20,11 @@ def load_cooccurrence(args):
         compression='gzip',
         delim_whitespace=True,
         quoting=csv.QUOTE_NONE,
+        dtype={
+            'ngram': str,
+            'context': str,
+            'count': 'uint64',
+        }
     )
 
     piece = (
@@ -29,7 +34,9 @@ def load_cooccurrence(args):
         [['id_target', 'id_context', 'count']]
     )
 
-    piece = piece.groupby(['id_target', 'id_context'], as_index=False).sum()
+    piece = piece.groupby(
+        ['id_target', 'id_context'],
+    ).sum()
 
     return piece
 

@@ -1,5 +1,6 @@
 """The Google Books Ngram Viewer dataset helper routines."""
 from multiprocessing import Pool
+import logging
 
 from py.path import local
 
@@ -10,6 +11,9 @@ from fowler.corpora.dispatcher import Dispatcher
 from fowler.corpora.space.util import read_tokens, write_space
 
 from .util import load_cooccurrence, load_dictionary
+
+
+logger = logging.getLogger(__name__)
 
 
 def middleware_hook(kwargs, f_args):
@@ -77,6 +81,35 @@ def cooccurrence(
 
     file_names = input_dir.listdir(sort=True)
     pieces = pool.map(load_cooccurrence, ((f, targets, context) for f in file_names))
-    matrix = pd.concat(pieces, ignore_index=True).groupby(['id_target', 'id_context']).sum()
+
+    # Get rid of empty frames
+    pieces = list(filter(len, pieces))
+
+    while len(pieces) > 1:
+        logger.info('Pairs left %s', len(pieces))
+
+        if divmod(len(pieces), 2)[1]:
+            odd = [pieces.pop()]
+        else:
+            odd = []
+
+        pieces = list(pool.map(group_sum, get_pairs(pieces))) + odd
+
+    matrix, = pieces
 
     write_space(output, context, targets, matrix)
+
+
+def group_sum(args):
+    f1, f2 = args
+    return f1.append(f2).groupby(level=['id_target', 'id_context']).sum()
+
+
+def get_pairs(seq):
+    assert not divmod(len(seq), 2)[1]
+    seq = iter(seq)
+
+    while True:
+        f = next(seq)
+        s = next(seq)
+        yield f, s

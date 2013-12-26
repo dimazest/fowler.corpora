@@ -80,7 +80,7 @@ def tf_idf(
     output=('o', 'matrix_tf-idf.h5', 'The output matrix file.'),
     norm=('', '', 'One of ‘l1’, ‘l2’ or None. Norm used to normalize term vectors. None for no normalization.'),
     use_idf=('', True, 'Enable inverse-document-frequency reweighting.'),
-    smooth_idf=('', True, 'Smooth idf weights by adding one to document frequencies, as if an extra document was seen containing every term in the collection exactly once. Prevents zero divisions.'),
+    smooth_idf=('', False, 'Smooth idf weights by adding one to document frequencies, as if an extra document was seen containing every term in the collection exactly once. Prevents zero divisions.'),
     sublinear_tf=('', False, 'Apply sublinear tf scaling, i.e. replace tf with 1 + log(tf).'),
 ):
     """Perform tf-idf transformation."""
