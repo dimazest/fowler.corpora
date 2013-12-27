@@ -55,8 +55,8 @@ dispatcher.nest(
 
 @command()
 def readline_folder(
-    path,
-    limit=('l', 0, 'Home many items to show, 0 shows all'),
+    path=('p', '.', 'The folder to read files from.'),
+    limit=('l', 0, 'Home many lines to show, 0 shows all.'),
 ):
     """Concatinate files in the folder and print them.
 
