@@ -1,13 +1,13 @@
 """The WordSimilarity-353 Test."""
 
+import numpy as np
 import pandas as pd
 from scipy.sparse import csc_matrix
 from sklearn.metrics import pairwise
 from scipy.stats import spearmanr
-from numpy import corrcoef
 
-from IPython.display import display
 
+from fowler.corpora.util import display
 from fowler.corpora.dispatcher import Dispatcher
 
 dispatcher = Dispatcher()
@@ -16,6 +16,7 @@ command = dispatcher.command
 
 @command()
 def evaluate(
+    templates_env,
     matrix=('m', 'matrix.h5', 'The cooccurrence matrix.'),
     gold_standard=('g', 'wordsim353/combined.csv', 'Word similarities'),
 ):
@@ -41,21 +42,27 @@ def evaluate(
         word2 = space[row['id_word2']]
         return pairwise.cosine_similarity(word1, word2)[0][0]
 
-    result['cosine_similarity'] = result.apply(cosine_similarity, axis=1)
+    def inner_product(row):
+        word1 = space[row['id_word1']].toarray()
+        word2 = space[row['id_word2']].toarray()
+
+        return np.inner(word1, word2)[0][0]
+
+    result['Cosine similarity'] = result.apply(cosine_similarity, axis=1)
+    result['Inner (scalar) product similarity'] = result.apply(inner_product, axis=1)
+
     del result['id_word1']
     del result['id_word2']
 
     human = result['Human (mean)']
-    cosine_similarity = result['cosine_similarity']
+    cosine_similarity = result['Cosine similarity']
 
-    print(
-        'Spearman rho={spearman[0]:0.3}, p-value={spearman[1]:0.3}\n'
-        '\n'
-        'Correlation coefficients:\n'
-        '{corrcoef}'
-        ''.format(
-            spearman=spearmanr(human, cosine_similarity),
-            corrcoef=corrcoef(human, cosine_similarity),
+    display(
+        templates_env.get_template('wordsim353_report.rst').render(
+            cor_coof=(
+                ('Cosine', spearmanr(human, cosine_similarity)),
+                ('Inner product', spearmanr(human, result['Inner (scalar) product similarity'])),
+            )
         )
     )
 
@@ -64,7 +71,6 @@ def evaluate(
 
 
 def _plot(x, y):
-    import numpy as np
     import matplotlib.pyplot as plt
 
     # definitions for the axes
@@ -102,4 +108,4 @@ def _plot(x, y):
     axHistx.set_xlim(axScatter.get_xlim())
     axHisty.set_ylim(axScatter.get_ylim())
 
-    display(plt)
+    plt.plot()

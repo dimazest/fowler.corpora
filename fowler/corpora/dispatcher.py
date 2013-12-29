@@ -1,15 +1,12 @@
-import warnings
-
-with warnings.catch_warnings():
-    import sklearn
-
-
 import inspect
 import logging
 
 import pandas as pd
 
 import opster
+from jinja2 import Environment, PackageLoader
+
+import fowler.corpora
 
 
 class Dispatcher(opster.Dispatcher):
@@ -19,7 +16,7 @@ class Dispatcher(opster.Dispatcher):
             (
                 ('v', 'verbose', False, 'Be verbose.'),
                 ('j', 'jobs_num', 0, 'Number of jobs for parallel tasks.'),
-                ('', 'display_max_rows', 10, 'Maximum number of rows to show in pandas.'),
+                ('', 'display_max_rows', 0, 'Maximum number of rows to show in pandas.'),
             )
         )
 
@@ -37,7 +34,9 @@ class Dispatcher(opster.Dispatcher):
 
             f_args = inspect.getargspec(func)[0]
 
-            pd.set_option('display.max_rows', kwargs.pop('display_max_rows'))
+            display_max_rows = kwargs.pop('display_max_rows')
+            if display_max_rows:
+                pd.set_option('display.max_rows', display_max_rows)
 
             verbose = kwargs['verbose']
 
@@ -63,6 +62,11 @@ class Dispatcher(opster.Dispatcher):
 
             if 'jobs_num' not in f_args:
                 del kwargs['jobs_num']
+
+            if 'templates_env' in f_args:
+                kwargs['templates_env'] = Environment(
+                    loader=PackageLoader(fowler.corpora.__name__, 'templates')
+                )
 
             func(*args, **kwargs)
 

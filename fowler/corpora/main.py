@@ -1,8 +1,14 @@
-from IPython.terminal.ipapp import launch_new_instance
+import warnings
+
+with warnings.catch_warnings():
+    import sklearn  # noqa
+
 
 import os
 import sys
 from itertools import islice
+
+from IPython.terminal.ipapp import launch_new_instance
 
 import fowler.corpora.dictionary.main as dictionary_main
 import fowler.corpora.google_ngrams.main as google_ngrams_main

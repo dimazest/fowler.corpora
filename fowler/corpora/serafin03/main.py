@@ -8,10 +8,7 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 from sklearn.utils.multiclass import unique_labels
 
-from jinja2 import Environment, PackageLoader
-
-import fowler.corpora
-from fowler.corpora import io
+from fowler.corpora import io, util
 from fowler.corpora.dispatcher import Dispatcher
 
 from .classifier import PlainLSA
@@ -26,11 +23,6 @@ def middleware_hook(kwargs, f_args):
 
             if 'labels' in f_args:
                 kwargs['labels'] = io.load_labels(store)
-
-            if 'templates_env' in f_args:
-                kwargs['templates_env'] = Environment(
-                    loader=PackageLoader(fowler.corpora.__name__, 'templates')
-                )
 
             if 'store_metadata' in f_args:
                 kwargs['store_metadata'] = store.get_storer('data').attrs.metadata
@@ -80,9 +72,9 @@ def plain_lsa(
     y_predicted = clf.predict(X_test)
     prfs = precision_recall_fscore_support(y_test, y_predicted)
 
-    display(
+    util.display(
         templates_env.get_template('classification_report.rst').render(
-            argv=' '.join(sys.argv) if not inside_ipython() else 'ipython',
+            argv=' '.join(sys.argv) if not util.inside_ipython() else 'ipython',
             paper='Serafin et al. 2003',
             clf=clf,
             tprfs=zip(unique_labels(y_test, y_predicted), *prfs),
@@ -94,24 +86,3 @@ def plain_lsa(
             accuracy=accuracy_score(y_test, y_predicted),
         )
     )
-
-
-def inside_ipython():
-    try:
-        return __IPYTHON__
-    except NameError:
-        pass
-
-
-def display(value):
-    if inside_ipython():
-        from IPython.display import display as ipython_display, HTML
-        ipython_display(HTML(rst_to_html(value)))
-    else:
-        print(value)
-
-
-def rst_to_html(value):
-    from docutils.examples import html_body
-    return html_body(value)
-
