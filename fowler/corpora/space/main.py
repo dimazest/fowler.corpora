@@ -47,7 +47,7 @@ def select(
     context_select=('c', '', 'The file with context words.'),
     output=('o', 'matrix_sliced.h5', 'The output matrix file.'),
 ):
-    """Select only targets and contexts of interest."""
+    """Select only contexts of interest."""
     if context_select:
         context_select = read_tokens(context_select)
         context = context.loc[context_select.index]
