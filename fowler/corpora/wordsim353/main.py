@@ -2,7 +2,7 @@
 
 import numpy as np
 import pandas as pd
-from scipy.sparse import csc_matrix
+from scipy.sparse import csr_matrix
 from sklearn.metrics import pairwise
 from scipy.stats import spearmanr
 
@@ -14,28 +14,51 @@ dispatcher = Dispatcher()
 command = dispatcher.command
 
 
-@command()
-def evaluate(
-    templates_env,
-    matrix=('m', 'matrix.h5', 'The cooccurrence matrix.'),
-    gold_standard=('g', 'wordsim353/combined.csv', 'Word similarities'),
-):
-    """Evaluate a distributional semantic vector space."""
-    with pd.get_store(matrix, mode='r') as store:
+def get_space_targets(gold_standard, store_file):
+    """Build a vector space from the store file.
+
+    The output space contains only vectors for targets in the gold standard.
+
+    :return: the space and it's targets
+
+    """
+    with pd.get_store(store_file, mode='r') as store:
         targets = store['targets']
         matrix = store['matrix'].reset_index()
         context_len = len(store['context'])
 
-    result = (
-        pd.read_csv(gold_standard)
-        .merge(targets, left_on='Word 1', right_index=True)
-        .merge(targets, left_on='Word 2', right_index=True, suffixes=('_word1', '_word2'))
-    ).sort('Human (mean)', ascending=False)
+    # Get the targets used in the gold standard together with their ids.
+    targets_of_interest = pd.DataFrame(
+        {'ngram': list(set(gold_standard['Word 1']).union(gold_standard['Word 2']))}
+    ).merge(targets, left_on='ngram', right_index=True)
+    # We are only interested in that targets which appear in the gold standard.
+    matrix = matrix[matrix['id_target'].isin(targets_of_interest['id'])]
 
     counts = matrix['count'].values
     ij = matrix[['id_target', 'id_context']].values.T
 
-    space = csc_matrix((counts, ij), shape=(len(targets), context_len))
+    # Sparse *row* matrix behaves faster, because we select certain rows.
+    space = csr_matrix((counts, ij), shape=(len(targets), context_len))
+
+    return space, targets_of_interest.set_index('ngram')
+
+
+@command()
+def evaluate(
+    templates_env,
+    matrix=('m', 'matrix.h5', 'The cooccurrence matrix.'),
+    gold_standard=('g', 'downloads/wordsim353/combined.csv', 'Word similarities'),
+    show_details=('d', False, 'Show more details.')
+):
+    """Evaluate a distributional semantic vector space."""
+    gold_standard = pd.read_csv(gold_standard)
+    space, targets = get_space_targets(gold_standard, matrix)
+
+    result = (
+        gold_standard
+        .merge(targets, left_on='Word 1', right_index=True)
+        .merge(targets, left_on='Word 2', right_index=True, suffixes=('_word1', '_word2'))
+    ).sort('Human (mean)', ascending=False)
 
     def cosine_similarity(row):
         word1 = space[row['id_word1']]
@@ -49,7 +72,7 @@ def evaluate(
         return np.inner(word1, word2)[0][0]
 
     result['Cosine similarity'] = result.apply(cosine_similarity, axis=1)
-    result['Inner (scalar) product similarity'] = result.apply(inner_product, axis=1)
+    result['Inner product similarity'] = result.apply(inner_product, axis=1)
 
     del result['id_word1']
     del result['id_word2']
@@ -61,13 +84,14 @@ def evaluate(
         templates_env.get_template('wordsim353_report.rst').render(
             cor_coof=(
                 ('Cosine', spearmanr(human, cosine_similarity)),
-                ('Inner product', spearmanr(human, result['Inner (scalar) product similarity'])),
+                ('Inner product', spearmanr(human, result['Inner product similarity'])),
             )
         )
     )
 
-    display(result)
-    _plot(human, cosine_similarity)
+    if show_details:
+        display(result)
+        _plot(human, cosine_similarity)
 
 
 def _plot(x, y):
