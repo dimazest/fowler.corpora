@@ -6,8 +6,13 @@ class CorporaMagics(Magics):
 
     @line_magic
     def corpora(self, parameter_s=''):
-        from fowler.corpora import main
+        import sys
 
+        for module in list(sys.modules.keys()):
+            if module.startswith('fowler'):
+                del sys.modules[module]
+
+        from fowler.corpora import main
         main.dispatch(parameter_s.split())
 
 
