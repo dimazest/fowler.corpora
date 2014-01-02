@@ -67,7 +67,7 @@ def line_normalize(
 ):
     """Normalize the matrix, so the sum of values in a row is equal to 1.
 
-    An element $(i, j)$ in the matrix is equal to $P(c_j | t_i)$, but I'm not sure.
+    An element $(i, j)$ in the matrix is equal to P(c_j | t_i).
 
     """
     space = normalize(space.astype(float), norm='l1', axis=1)
