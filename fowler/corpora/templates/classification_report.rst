@@ -3,7 +3,6 @@ Hyper parameter estimation
 
 :paper: {{ paper }}
 :accuracy: {{ accuracy.round(3) }}
-:best estimator: {{ clf.best_estimator_ }}
 {%- for key, value in store_metadata.items()  %}
 :{{  key }}: {{ value }}
 {%- endfor %}

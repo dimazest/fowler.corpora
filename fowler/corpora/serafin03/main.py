@@ -3,15 +3,17 @@ import sys
 
 import pandas as pd
 import numpy as np
+
 from sklearn.cross_validation import train_test_split
+from sklearn.decomposition import TruncatedSVD
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import Pipeline
 from sklearn.utils.multiclass import unique_labels
 
 from fowler.corpora import io, util
 from fowler.corpora.dispatcher import Dispatcher
-
-from .classifier import PlainLSA
 
 
 def middleware_hook(kwargs, f_args):
@@ -57,12 +59,19 @@ def plain_lsa(
         random_state=0,
     )
 
-    tuned_parameters = [
-        {'k': [3, 10, 40, 50, 60, 100]},
-    ]
+    tuned_parameters = {
+        'nn__n_neighbors': (1, 5),
+    }
+
+    pipeline = Pipeline(
+        [
+            ('svd', TruncatedSVD(n_components=50)),
+            ('nn', KNeighborsClassifier()),
+        ]
+    )
 
     clf = GridSearchCV(
-        PlainLSA(),
+        pipeline,
         tuned_parameters,
         cv=n_folds,
         scoring='accuracy',
