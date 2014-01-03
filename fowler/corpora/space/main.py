@@ -106,7 +106,7 @@ def write(output, context, targets, space):
             'id_target': space.row,
             'id_context': space.col,
         }
-    )
+    ).set_index(['id_target', 'id_context'])
 
     write_space(output, context, targets, matrix)
 

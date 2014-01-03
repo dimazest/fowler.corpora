@@ -57,7 +57,7 @@ setup(
             'corpora-ipython = fowler.corpora.main:ipython',
         ],
     },
-    tests_require=['pytest>=2.4.2'],
+    tests_require=['pytest>=2.4.2', 'pytest-bdd'],
     cmdclass={'test': PyTest},
 
 )
