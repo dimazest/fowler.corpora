@@ -1,6 +1,4 @@
 """Dictionary helpers."""
-from multiprocessing import Pool
-
 import pandas as pd
 
 from fowler.corpora.dispatcher import Dispatcher
@@ -12,8 +10,6 @@ def middleware_hook(kwargs, f_args):
             kwargs['dictionary'],
             key=kwargs['input_key'],
         )
-    if 'pool' in f_args:
-        kwargs['pool'] = Pool(kwargs['jobs_num'] or None)
 
     if 'input_key' not in f_args:
         del kwargs['input_key']
