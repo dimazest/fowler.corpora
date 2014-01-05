@@ -37,11 +37,15 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
+        'google-ngram-downloader',
+        'ipython[notebook,parallel,nbconvert]',
         'jinja2',
+        'matplotlib',
         'nltk',
         'numpy',
         'opster',
         'pandas',
+        'py',
         'scikit-learn',
         'scipy',
         'setuptools',
@@ -50,9 +54,10 @@ setup(
     entry_points={
         'console_scripts': [
             'corpora = fowler.corpora.main:dispatch',
+            'corpora-ipython = fowler.corpora.main:ipython',
         ],
     },
-    tests_require=['pytest>=2.4.2'],
+    tests_require=['pytest>=2.4.2', 'pytest-bdd'],
     cmdclass={'test': PyTest},
 
 )

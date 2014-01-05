@@ -1,17 +1,44 @@
 """Implementation of Latent Semantic Analysis for dialogue act classification."""
 import sys
 
+import pandas as pd
 import numpy as np
+
 from sklearn.cross_validation import train_test_split
+from sklearn.decomposition import TruncatedSVD
 from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.pipeline import Pipeline
 from sklearn.utils.multiclass import unique_labels
 
-from fowler.corpora.main.options import Dispatcher
+from fowler.corpora import io, util
+from fowler.corpora.dispatcher import Dispatcher
 
-from .classifier import PlainLSA
 
-dispatcher = Dispatcher()
+def middleware_hook(kwargs, f_args):
+    if kwargs['path'].endswith('.h5'):
+
+        with pd.get_store(kwargs['path'], mode='r') as store:
+            if 'cooccurrence_matrix' in f_args:
+                kwargs['cooccurrence_matrix'] = io.load_cooccurrence_matrix(store)
+
+            if 'labels' in f_args:
+                kwargs['labels'] = io.load_labels(store)
+
+            if 'store_metadata' in f_args:
+                kwargs['store_metadata'] = store.get_storer('data').attrs.metadata
+
+    if 'path' not in f_args:
+        del kwargs['path']
+
+
+dispatcher = Dispatcher(
+    middleware_hook=middleware_hook,
+    globaloptions=(
+        ('p', 'path', 'out.h5', 'The path to the store hd5 file.'),
+    ),
+)
 command = dispatcher.command
 
 
@@ -32,12 +59,19 @@ def plain_lsa(
         random_state=0,
     )
 
-    tuned_parameters = [
-        {'k': [3, 10, 40, 50, 60, 100]},
-    ]
+    tuned_parameters = {
+        'nn__n_neighbors': (1, 5),
+    }
+
+    pipeline = Pipeline(
+        [
+            ('svd', TruncatedSVD(n_components=50)),
+            ('nn', KNeighborsClassifier()),
+        ]
+    )
 
     clf = GridSearchCV(
-        PlainLSA(),
+        pipeline,
         tuned_parameters,
         cv=n_folds,
         scoring='accuracy',
@@ -46,9 +80,10 @@ def plain_lsa(
     clf.fit(X_train, y_train)
     y_predicted = clf.predict(X_test)
     prfs = precision_recall_fscore_support(y_test, y_predicted)
-    print(
+
+    util.display(
         templates_env.get_template('classification_report.rst').render(
-            argv=' '.join(sys.argv),
+            argv=' '.join(sys.argv) if not util.inside_ipython() else 'ipython',
             paper='Serafin et al. 2003',
             clf=clf,
             tprfs=zip(unique_labels(y_test, y_predicted), *prfs),

@@ -19,7 +19,7 @@ def store(tmpdir):
         0, 9, 0, 3
 
     """
-    with pd.get_store(str(tmpdir.join('store.hd5')), 'w') as store:
+    with pd.get_store(str(tmpdir.join('store.hd5'))) as store:
         store['row_ids'] = pd.Series([0, 0, 0, 1, 3, 4, 4])
         store['col_ids'] = pd.Series([0, 1, 3, 2, 0, 1, 3])
         store['data'] = pd.Series([1, 7, 9, 6, 3, 9, 3])
