@@ -29,11 +29,16 @@ def swda_100_store(swda_100_path):
 
 
 @pytest.fixture
+def wordsim_353_path(datadir):
+    return datadir.join('wordsim353')
+
+
+@pytest.fixture
 def context_path(tmpdir):
     path = tmpdir.join('context.csv')
 
     context = pd.DataFrame(
-        ['AA', 'BB', 'XX', 'YY', 'ZZ', 'aa', 'ab', 'ac', 'AA_NOUN', 'xx'],
+        ['king', 'queen', 'drink', 'company', 'bishop', 'knows', 'send', 'loves', 'king_NOUN', 'tiger'],
         columns=('ngram', ),
     )
 
@@ -52,14 +57,14 @@ def targets_path(tmpdir):
     path = tmpdir.join('targets.csv')
 
     path.write(
-        'AA\n'  # 0
-        'BB\n'  # 1
-        'XX\n'  # 2
-        'YY\n'  # 3
-        'ZZ\n'  # 4
-        'aa\n'  # 5
-        'ab\n'  # 6
-        'ac\n'  # 7
+        'king\n'     # 0
+        'queen\n'    # 1
+        'drink\n'    # 2
+        'company\n'  # 3
+        'bishop\n'   # 4
+        'knows\n'    # 5
+        'send\n'     # 6
+        'loves\n'    # 7
     )
 
     return path
@@ -73,30 +78,30 @@ def cooccurrence_dir_path(tmpdir):
     with gzip.open(str(path.join('a_0.gz')), 'wt') as f:
 
         f.write(
-            'AA\taa\t100\n'
-            'BB\tac\t120\n'
-            'AA\taa\t210\n'
-            'AA\tac\t330\n'
-            'xx\tac\t99\n'
+            'king\tknows\t100\n'
+            'queen\tloves\t120\n'
+            'king\tknows\t210\n'
+            'king\tloves\t330\n'
+            'tiger\tloves\t99\n'
         )
 
     with gzip.open(str(path.join('a_1.gz')), 'wt') as f:
 
         f.write(
-            'XX\taa\t300\n'
-            'YY\tac\t420\n'
-            'ZZ\tab\t510\n'
-            'AA\tac\t630\n'
-            'AA_NOUN\tac\t630\n'
-            'UNKNOWN\taa\t10000\n'
-            'a\tUNKNOWN\t1000\n'
+            'drink\tknows\t300\n'
+            'company\tloves\t420\n'
+            'bishop\tsend\t510\n'
+            'king\tloves\t630\n'
+            'king_NOUN\tloves\t630\n'
+            'UNKNOWN\tknows\t10000\n'
+            'drink\tUNKNOWN\t1000\n'
             '\uf8f0\tda\t333\n'
         )
 
     with gzip.open(str(path.join('a_2.gz')), 'wt') as f:
 
         f.write(
-            'XX\taa\t1000\n'
+            'drink\tknows\t1000\n'
         )
 
     return path
