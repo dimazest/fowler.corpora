@@ -1,5 +1,4 @@
 """The WordSimilarity-353 Test."""
-
 import numpy as np
 import pandas as pd
 from scipy.sparse import csr_matrix

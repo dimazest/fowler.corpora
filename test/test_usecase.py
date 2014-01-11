@@ -1,6 +1,3 @@
-from fowler.corpora.main import dispatcher
-
-import pytest
 from pytest_bdd import scenario, given, when, then
 
 
@@ -27,45 +24,8 @@ test_google_ngrams_nmf = scenario(
 )
 
 
-@pytest.fixture
-def cooccurrence_dir_path(text_path, tmpdir):
-    path_dir = tmpdir.ensure_dir('coocurrence')
-    path = path_dir.join('cooccurrence_counts.csv.gz')
-
-    dispatcher.dispatch(
-        'preprocessing cooccurrence '
-        '-w 5 '
-        '-p {input_path} '
-        '-o {output_path} '
-        ''.format(
-            input_path=text_path,
-            output_path=path,
-        ).split()
-    )
-    return path_dir
-
-given('I have co-occurrence counts', fixture='cooccurrence_dir_path')
-
-
-@given('I have the dictionary from the counts')
-def dictionary_path(text_path, tmpdir):
-    path = tmpdir.join('dictionary.h5')
-
-    dispatcher.dispatch(
-        'preprocessing dictionary '
-        '-p {text_path} '
-        '-o {output_path} '
-        ''.format(
-            text_path=text_path,
-            output_path=path,
-        ).split()
-    )
-
-    return path
-
-
 @when('I build a co-occurrence matrix')
-def build_cooccurrence_matrix(cooccurrence_dir_path, store_path, context_path, targets_path):
+def build_cooccurrence_matrix(dispatcher, cooccurrence_dir_path, store_path, context_path, targets_path):
     dispatcher.dispatch(
         'google-ngrams cooccurrence '
         '--context {context_path} '
@@ -81,23 +41,6 @@ def build_cooccurrence_matrix(cooccurrence_dir_path, store_path, context_path, t
     )
 
 
-@given('I select the 100 most used tokens as context')
-def context_path(dictionary_path, tmpdir):
-    path = tmpdir.join('contex.csv')
-    dispatcher.dispatch(
-        'dictionary select '
-        '-d {dictionary_path} '
-        '-o {context_path} '
-        '--slice-end 100 '
-        ''.format(
-            dictionary_path=dictionary_path,
-            context_path=path,
-        ).split()
-    )
-
-    return path
-
-
 @given('I select wordsim353 tokens as targets')
 def targets_path(datadir):
     return datadir.join('targets_wordsim353.csv')
@@ -105,12 +48,12 @@ def targets_path(datadir):
 
 @then('I should see the evaluation report')
 def i_should_see_evaluation_report():
-    # import pdb; pdb.set_trace()
+    # Still has to be implemented...
     pass
 
 
 @when('I apply tf-idf weighting')
-def apply_tf_idf(store_path):
+def apply_tf_idf(dispatcher, store_path):
     dispatcher.dispatch(
         'space tf-idf '
         '-m {input_path} '
@@ -123,7 +66,7 @@ def apply_tf_idf(store_path):
 
 
 @when('I line-normalize the matrix')
-def line_normalize(store_path):
+def line_normalize(dispatcher, store_path):
     dispatcher.dispatch(
         'space line-normalize '
         '-m {input_path} '
@@ -136,7 +79,7 @@ def line_normalize(store_path):
 
 
 @when('I apply NMF')
-def apply_nmf(store_path):
+def apply_nmf(dispatcher, store_path):
     dispatcher.dispatch(
         'space nmf '
         '-m {input_path} '
@@ -151,7 +94,7 @@ def apply_nmf(store_path):
 
 
 @when('I evaluate the space on the wordsim353 dataset')
-def evaluate_wordsim353(wordsim_353_path, store_path):
+def evaluate_wordsim353(dispatcher, wordsim_353_path, store_path):
     dispatcher.dispatch(
         'wordsim353 evaluate '
         '-m {store_path} '

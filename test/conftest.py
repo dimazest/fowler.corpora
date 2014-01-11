@@ -1,5 +1,4 @@
 import py
-import pandas as pd
 
 import pytest
 
@@ -16,26 +15,31 @@ def datadir():
 
 
 @pytest.fixture
-def swda_100_path(datadir):
-    return datadir.join('swda100.h5')
-
-
-@pytest.yield_fixture
-def swda_100_store(swda_100_path):
-    with pd.get_store(str(swda_100_path), 'r') as store:
-        yield store
-
-
-@pytest.fixture
 def wordsim_353_path(datadir):
     return datadir.join('wordsim353')
 
 
 @pytest.fixture
-def text_path(datadir):
-    return datadir.join('gutenberg', 'pg16436.txt')
+def context_path(datadir):
+    return datadir.join('context.csv')
+
+
+@pytest.fixture
+def google_ngrams_path(datadir):
+    return datadir.join('google_ngrams')
 
 
 @pytest.fixture
 def store_path(tmpdir):
     return tmpdir.join('store.h5')
+
+
+@pytest.fixture
+def cooccurrence_dir_path(google_ngrams_path):
+    return google_ngrams_path.join('5_cooccurrence')
+
+
+@pytest.fixture
+def dispatcher():
+    from fowler.corpora.main import dispatcher
+    return dispatcher
