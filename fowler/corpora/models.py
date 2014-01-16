@@ -68,7 +68,7 @@ class Space:
 
     def add(self, *targets):
         """Add vectors of the row labels (target words) element-wise."""
-        return np.add(*self.matrix[self.row_labels.loc[['cow', 'row']].id])
+        return np.add(*self.matrix[self.row_labels.loc[list(targets)].id])
 
 
 def read_space_from_file(f_name):
