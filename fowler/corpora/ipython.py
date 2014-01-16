@@ -1,3 +1,5 @@
+from imp import reload
+
 from IPython.core.magic import Magics, magics_class, line_magic
 
 
@@ -10,7 +12,7 @@ class CorporaMagics(Magics):
 
         for module in list(sys.modules.keys()):
             if module.startswith('fowler'):
-                del sys.modules[module]
+                reload(sys.modules[module])
 
         from fowler.corpora import main
         main.dispatch(parameter_s.split())
