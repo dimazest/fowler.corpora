@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 
 from scipy.sparse import csc_matrix, coo_matrix
@@ -64,3 +65,22 @@ class Space:
         reduced_matrix = nmf.fit_transform(self.matrix)
         # TODO: it is incorrect to pass self.column_labels! There are not column labels.
         return Space(reduced_matrix, self.row_labels, self.column_labels)
+
+    def add(self, *targets):
+        """Add vectors of the row labels (target words) element-wise."""
+        return np.add(*self.matrix[self.row_labels.loc[['cow', 'row']].id])
+
+
+def read_space_from_file(f_name):
+    """Read the space form the file."""
+    with pd.get_store(f_name, mode='r') as store:
+
+        matrix = store['matrix'].reset_index()
+        data = matrix['count'].values
+        ij = matrix[['id_target', 'id_context']].values.T
+
+        return Space(
+            (data, ij),
+            row_labels=store['targets'],
+            column_labels=store['context']
+        )

@@ -1,24 +1,12 @@
-import pandas as pd
-
 from fowler.corpora.dispatcher import Dispatcher
-from fowler.corpora.models import Space
+from fowler.corpora.models import read_space_from_file
 
 
 def middleware_hook(kwargs, f_args):
-    with pd.get_store(kwargs['matrix'], mode='r') as store:
+    kwargs['space'] = read_space_from_file(kwargs['matrix'])
 
-        matrix = store['matrix'].reset_index()
-        data = matrix['count'].values
-        ij = matrix[['id_target', 'id_context']].values.T
-
-        kwargs['space'] = Space(
-            (data, ij),
-            row_labels=store['targets'],
-            column_labels=store['context']
-        )
-
-        if 'matrix' not in f_args:
-            del kwargs['matrix']
+    if 'matrix' not in f_args:
+        del kwargs['matrix']
 
 
 dispatcher = Dispatcher(

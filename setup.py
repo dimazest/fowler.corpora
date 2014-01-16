@@ -37,6 +37,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
+        'fowler.switchboard',
         'google-ngram-downloader',
         'ipython[notebook,parallel,nbconvert]',
         'jinja2',
