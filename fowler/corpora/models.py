@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from scipy.sparse import csc_matrix, coo_matrix
+from scipy.sparse import csr_matrix, coo_matrix
 from sklearn.decomposition import NMF
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.preprocessing import normalize
@@ -23,7 +23,7 @@ class Space:
         self.column_labels = column_labels
 
         if isinstance(data_ij, tuple):
-            self.matrix = csc_matrix(
+            self.matrix = csr_matrix(
                 data_ij,
                 shape=(len(row_labels), len(column_labels)),
             )
@@ -66,9 +66,34 @@ class Space:
         # TODO: it is incorrect to pass self.column_labels! There are not column labels.
         return Space(reduced_matrix, self.row_labels, self.column_labels)
 
+    def get_target_rows(self, *labels):
+        assert labels
+
+        vector_ids = list(self.row_labels.loc[list(labels)].id)
+        return self.matrix[vector_ids]
+
     def add(self, *targets):
         """Add vectors of the row labels (target words) element-wise."""
-        return np.add(*self.matrix[self.row_labels.loc[list(targets)].id])
+        if targets:
+            vectors = self.get_target_rows(*targets)
+            return csr_matrix(vectors.sum(axis=0))
+        else:
+            return csr_matrix((1, self.matrix.shape[1]))
+
+    def mult(self, *targets):
+        """Multiply vectors of the row labels element-wise."""
+        if targets:
+            vectors = self.get_target_rows(*targets)
+
+            result, *tail = vectors
+            for t in tail:
+                result = result.multiply(t)
+
+            assert np.isfinite(result.data).all()
+
+            return result
+        else:
+            return csr_matrix((1, self.matrix.shape[1]))
 
 
 def read_space_from_file(f_name):

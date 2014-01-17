@@ -84,6 +84,7 @@ def composition(
     templates_env,
     swda=('', './swda', 'The path to the Switchboard corpus.'),
     limit=('l', 0, 'Number of utterances.'),
+    word_compsition_operator=('', 'add', 'The operator to be used to compose word vectors to obtain utterance vectors.'),
 ):
     utterances = swda.iter_utterances(display_progress=False)
     if limit:
@@ -94,7 +95,12 @@ def composition(
 
     labels = [u.damsl_act_tag() for u in utterances]
 
-    composed = [space.add(*u.pos_words()) for u in utterances]
+    if word_compsition_operator == 'add':
+        compose = space.add
+    else:
+        compose = space.mult
+
+    composed = [compose(*u.pos_words()) for u in utterances]
     composed = vstack(composed, format='csr')
 
     logger.info('The vectors for utterances are composed.')
