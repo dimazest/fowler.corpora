@@ -1,5 +1,6 @@
 """Implementation of Latent Semantic Analysis for dialogue act classification."""
 import sys
+import logging
 from itertools import islice
 
 import pandas as pd
@@ -19,6 +20,9 @@ from fowler.switchboard.swda import CorpusReader
 
 from fowler.corpora import io, util, models
 from fowler.corpora.dispatcher import Dispatcher
+
+
+logger = logging.getLogger(__name__)
 
 
 def middleware_hook(kwargs, f_args):
@@ -86,8 +90,14 @@ def composition(
         utterances = islice(utterances, limit)
     utterances = list(utterances)
 
+    logging.info('Utterances are read.')
+
     labels = [u.damsl_act_tag() for u in utterances]
-    composed = vstack(space.add(*u.pos_words()) for u in utterances).tocsr()
+
+    composed = [space.add(*u.pos_words()) for u in utterances]
+    composed = vstack(composed, format='csr')
+
+    logger.info('The vectors for utterances are composed.')
 
     evaluate(composed, labels, templates_env, {}, n_folds, n_jobs)
 
@@ -101,12 +111,13 @@ def evaluate(cooccurrence_matrix, labels, templates_env, store_metadata, n_folds
     )
 
     tuned_parameters = {
-        'nn__n_neighbors': (1, ),
+        'svd__n_components': (50, ),
+        'nn__n_neighbors': (1, 5, 20, 40),
     }
 
     pipeline = Pipeline(
         [
-            ('svd', TruncatedSVD(n_components=50)),
+            ('svd', TruncatedSVD()),
             ('nn', KNeighborsClassifier()),
         ]
     )
