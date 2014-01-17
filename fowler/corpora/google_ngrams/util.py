@@ -42,7 +42,7 @@ def load_cooccurrence(args):
 
 
 def load_dictionary(file_name):
-    logger.info('Processing {}'.format(file_name))
+    logger.info('Processing %s', file_name)
 
     return pd.read_csv(
         str(file_name),
