@@ -67,33 +67,19 @@ class Space:
         return Space(reduced_matrix, self.row_labels, self.column_labels)
 
     def get_target_rows(self, *labels):
-        assert labels
+        valid_labels = list(filter(None, labels))
 
-        vector_ids = list(self.row_labels.loc[list(labels)].id)
-        return self.matrix[vector_ids]
+        if valid_labels:
+            vector_ids = list(filter(np.isfinite, self.row_labels.loc[valid_labels].id))
+            if vector_ids:
+                return self.matrix[vector_ids]
+
+        return csr_matrix((1, self.matrix.shape[1]))
 
     def add(self, *targets):
         """Add vectors of the row labels (target words) element-wise."""
-        if targets:
-            vectors = self.get_target_rows(*targets)
-            return csr_matrix(vectors.sum(axis=0))
-        else:
-            return csr_matrix((1, self.matrix.shape[1]))
-
-    def mult(self, *targets):
-        """Multiply vectors of the row labels element-wise."""
-        if targets:
-            vectors = self.get_target_rows(*targets)
-
-            result, *tail = vectors
-            for t in tail:
-                result = result.multiply(t)
-
-            assert np.isfinite(result.data).all()
-
-            return result
-        else:
-            return csr_matrix((1, self.matrix.shape[1]))
+        vectors = self.get_target_rows(*targets)
+        return csr_matrix(vectors.sum(axis=0))
 
 
 def read_space_from_file(f_name):
