@@ -13,24 +13,28 @@ dispatcher = Dispatcher(
     middleware_hook=middleware_hook,
     globaloptions=(
         ('m', 'matrix', 'matrix.h5', 'The co-occurrence matrix.'),
+        ('o', 'output', 'out_space.h5', 'The output matrix file.'),
     )
 )
 command = dispatcher.command
 
 
 @command()
-def line_normalize(
-    space,
-    output=('o', 'matrix_line_normalized.h5', 'The output matrix file.'),
-):
+def line_normalize(space, output):
     """Normalize the matrix, so the sum of values in a row is equal to 1."""
     space.line_normalize().write(output)
 
 
 @command()
+def log(space, output):
+    """Logarithms."""
+    space.log().write(output)
+
+
+@command()
 def tf_idf(
     space,
-    output=('o', 'matrix_tf-idf.h5', 'The output matrix file.'),
+    output,
     norm=('', '', 'One of ‘l1’, ‘l2’ or None. Norm used to normalize term vectors. None for no normalization.'),
     use_idf=('', True, 'Enable inverse-document-frequency reweighting.'),
     smooth_idf=('', False, 'Smooth idf weights by adding one to document frequencies, as if an extra document was seen containing every term in the collection exactly once. Prevents zero divisions.'),
@@ -48,7 +52,7 @@ def tf_idf(
 @command()
 def nmf(
     space,
-    output=('o', 'matrix_nmf.h5', 'The output matrix file.'),
+    output,
     n_components=('n', 100, 'Number of components.'),
     init=('', '', 'Method used to initialize the procedure. [nndsvd|nndsvda|nndsvdar|random]'),
     sparseness=('', '', 'Where to enforce sparsity in the model. [data|components]'),
