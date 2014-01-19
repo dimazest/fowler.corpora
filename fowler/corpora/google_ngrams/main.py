@@ -1,5 +1,4 @@
 """The Google Books Ngram Viewer dataset helper routines."""
-from multiprocessing import Pool
 import logging
 
 from py.path import local
@@ -16,12 +15,7 @@ from .util import load_cooccurrence, load_dictionary
 logger = logging.getLogger(__name__)
 
 
-def middleware_hook(kwargs, f_args):
-    if 'pool' in f_args:
-        kwargs['pool'] = Pool(kwargs['jobs_num'] or None)
-
-
-dispatcher = Dispatcher(middleware_hook=middleware_hook)
+dispatcher = Dispatcher()
 command = dispatcher.command
 
 

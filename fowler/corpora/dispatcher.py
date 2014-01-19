@@ -1,5 +1,6 @@
 import inspect
 import logging
+from multiprocessing import Pool
 
 import pandas as pd
 
@@ -60,6 +61,9 @@ class Dispatcher(opster.Dispatcher):
             if 'verbose' not in f_args:
                 del kwargs['verbose']
 
+            if 'pool' in f_args:
+                kwargs['pool'] = Pool(kwargs['jobs_num'] or None)
+
             if 'jobs_num' not in f_args:
                 del kwargs['jobs_num']
 
@@ -67,6 +71,8 @@ class Dispatcher(opster.Dispatcher):
                 kwargs['templates_env'] = Environment(
                     loader=PackageLoader(fowler.corpora.__name__, 'templates')
                 )
+
+            assert sorted(kwargs.keys()) == sorted(f_args)
 
             func(*args, **kwargs)
 
