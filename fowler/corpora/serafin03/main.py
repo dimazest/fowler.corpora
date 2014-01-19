@@ -149,9 +149,9 @@ def plain_lsa(
     evaluate(X_train, X_test, y_train, y_test, templates_env, {}, n_folds, n_jobs, 'Serafin et al. 2003', pool)
 
 
-def space_add(args):
-    u, space = args
-    return space.add(*utterance_tokens(u))
+def space_compose(args):
+    u, composer = args
+    return composer(*utterance_tokens(u))
 
 
 @command()
@@ -165,45 +165,51 @@ def composition(
     n_jobs,
     n_folds,
     templates_env,
+    word_composition_operator=('', 'add', 'What operator use for compositon. [add|mult]'),
 ):
+
+    if word_composition_operator == 'mult':
+        composer = space.multiply
+    else:
+        composer = space.add
+
     def extract_features(utterances):
-        X = pool.map(space_add, ((u, space) for u in utterances), chunksize=CHUNK_SIZE)
+        logger.info('Extracting features features.')
+        X = pool.map(space_compose, ((u, composer) for u in utterances), chunksize=CHUNK_SIZE)
         logger.debug('Stacking %d rows.', len(X))
         X = vstack(X, format='csr')
 
         return X
 
-    logger.info('Extracting training features.')
     X_train = extract_features(train_utterances)
-
-    logger.info('Extracting testing features.')
     X_test = extract_features(test_utterances)
 
     evaluate(X_train, X_test, y_train, y_test, templates_env, {}, n_folds, n_jobs, 'Comp sem.', pool)
 
 
 def evaluate(X_train, X_test, y_train, y_test, templates_env, store_metadata, n_folds, n_jobs, paper, pool):
-    tuned_parameters = {
-        'svd__n_components': (50, ),
-        'nn__n_neighbors': (1, 5),
-    }
+    # tuned_parameters = {
+    #     'svd__n_components': (50, ),
+    #     'nn__n_neighbors': (1, 5),
+    # }
 
     pipeline = Pipeline(
         [
-            ('svd', TruncatedSVD()),
+            ('svd', TruncatedSVD(n_components=50)),
             ('nn', KNeighborsClassifier()),
         ]
     )
 
-    clf = GridSearchCV(
-        pipeline,
-        tuned_parameters,
-        cv=n_folds,
-        scoring='accuracy',
-        n_jobs=n_jobs,
-    )
+    # clf = GridSearchCV(
+    #     pipeline,
+    #     tuned_parameters,
+    #     cv=n_folds,
+    #     scoring='accuracy',
+    #     n_jobs=n_jobs,
+    # )
+    clf = pipeline
 
-    logger.info('Estimating hyper parameters.')
+    logger.info('Training.')
     clf.fit(X_train, y_train)
 
     logger.info('Predicting %d labels.', X_test.shape[0])

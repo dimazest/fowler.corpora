@@ -1,3 +1,5 @@
+import logging
+
 import numpy as np
 import pandas as pd
 
@@ -7,6 +9,9 @@ from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.preprocessing import normalize
 
 from fowler.corpora.space.util import write_space
+
+
+logger = logging.getLogger(__name__)
 
 
 class Space:
@@ -80,6 +85,16 @@ class Space:
         """Add vectors of the row labels (target words) element-wise."""
         vectors = self.get_target_rows(*targets)
         return csr_matrix(vectors.sum(axis=0))
+
+    def multiply(self, *targets):
+        """Multiply vectors of the row labels (target words) element-wise."""
+        vectors = self.get_target_rows(*targets)
+
+        result = csr_matrix(np.prod(vectors.todense(), axis=0))
+
+        assert np.isfinite(result.data).all()
+
+        return result
 
 
 def read_space_from_file(f_name):

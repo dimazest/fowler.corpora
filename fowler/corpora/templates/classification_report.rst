@@ -8,12 +8,6 @@ Hyper parameter estimation
 {%- endfor %}
 :command: {{ argv }}
 
-Grid accuracy scores on development set::
-
-    {% for s in clf.grid_scores_ %}
-    {{ s.mean_validation_score|round(3) }} (+/-{{ (s.cv_validation_scores.std() / 2.0)|round(3) }}) for {{s.parameters}}
-    {%- endfor %}
-
 Evaluation results
 ------------------
 
@@ -21,7 +15,7 @@ Evaluation results
                 tag  precision     recall   f1-score    support
 ==================== ========== ========== ========== ==========
 {%- for t, p, r, f, s in tprfs %}
-{%- set t = t.replace('+', '\+').replace('_', '\_').rjust(19) %}
+{%- set t = t.replace('+', '\+').replace('_', '\_').rjust(20) %}
 {%- set p = '{:0.3f}'.format(p).rjust(10) %}
 {%- set r = '{:0.3f}'.format(r).rjust(10) %}
 {%- set f = '{:0.3f}'.format(f).rjust(10) %}
