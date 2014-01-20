@@ -7,10 +7,9 @@ from itertools import chain
 import pandas as pd
 import numpy as np
 
-from scipy.sparse import vstack, csr_matrix
+from scipy.sparse import vstack, hstack, csr_matrix
 
 from sklearn.decomposition import TruncatedSVD
-from sklearn.grid_search import GridSearchCV
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
@@ -166,6 +165,7 @@ def composition(
     n_folds,
     templates_env,
     word_composition_operator=('', 'add', 'What operator use for compositon. [add|mult]'),
+    concatinate_prev_utterace=('', False, 'Concatinate the vector of a current utterance wiht the vector of the precious utterance.'),
 ):
 
     if word_composition_operator == 'mult':
@@ -174,10 +174,31 @@ def composition(
         composer = space.add
 
     def extract_features(utterances):
-        logger.info('Extracting features features.')
+
+        logger.info('Extracting features.')
         X = pool.map(space_compose, ((u, composer) for u in utterances), chunksize=CHUNK_SIZE)
         logger.debug('Stacking %d rows.', len(X))
         X = vstack(X, format='csr')
+
+        if concatinate_prev_utterace:
+            logger.debug('Getting previous utterances.')
+            # It is basically the same X, just shifted one row up.
+            prev_X = vstack([csr_matrix((1, X.shape[1])), csr_matrix(X)[:-1]], format='csr')
+
+            # Reset prev. utterance vectors to 0 for the first utterance in a conversation.
+            prev_conversation_no = None
+            for row, u in enumerate(utterances):
+                conversation_no = u.conversation_no
+                if conversation_no != prev_conversation_no:
+                    prev_X.data[prev_X.indptr[row]:prev_X.indptr[row + 1]] = 0
+                prev_conversation_no = conversation_no
+
+            prev_X.eliminate_zeros()
+
+            assert (X[0] == prev_X[1]).todense().all()
+
+            logger.debug('Hstacking utterances with thier previous utterances.')
+            X = hstack([X, prev_X], format='csr')
 
         return X
 
