@@ -1,7 +1,8 @@
 """Implementation of Latent Semantic Analysis for dialogue act classification."""
-import sys
 import logging
-from collections import deque
+import re
+import sys
+from collections import Counter
 from itertools import chain
 
 import pandas as pd
@@ -15,6 +16,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.utils.multiclass import unique_labels
 
+from nltk import ngrams
 from nltk.tokenize import word_tokenize
 
 from fowler.switchboard.swda import CorpusReader
@@ -30,15 +32,71 @@ CHUNK_SIZE = 10000
 logger = logging.getLogger(__name__)
 
 
-def utterance_tokens(utterance, ngram_len=1):
-    ngram = deque(['<BEGIN>'], ngram_len)
+class U:
 
-    words = chain(word_tokenize(utterance.text), ['<END>'])
+    def __init__(self, utterance):
+        self.conversation_no = utterance.conversation_no
+        self._damsl_act_tag = utterance.damsl_act_tag()
 
-    for w in words:
-        ngram.append(w)
+        self.text = U.process_text(utterance.text)
 
-        yield '_'.join(ngram)
+        self.caller = utterance.caller
+
+        assert self.caller in ('A', 'B')
+
+    def damsl_act_tag(self):
+        return self._damsl_act_tag
+
+    def __str__(self):
+        return '{s.caller} {s._damsl_act_tag} {s.text}'.format(s=self)
+
+    def utterance_tokens(self, ngram_len=1):
+        for ngram in ngrams(
+            word_tokenize(self.text),
+            n=ngram_len,
+            pad_left=True,
+            pad_right=True,
+            pad_symbol='__',
+        ):
+            yield '_'.join(ngram)
+
+    def append_text(self, other):
+        self.text = ' '.join((self.text, other.text))
+
+    @staticmethod
+    def process_text(text):
+        result = ' '.join(re.sub(r"([+/\}\[\]]|\{\w)", "", text).strip().split())
+
+        result = ''.join(filter(lambda ch: ch not in set('-,'), result))
+
+        return result
+
+
+def reconnect_divided_utterances(swda):
+    """Get rid of the '+' tag and stick them to the first utterance."""
+    utterances = swda.iter_utterances(display_progress=False)
+
+    result = []
+
+    for utterance in utterances:
+        u = U(utterance)
+
+        if u.damsl_act_tag() == '+':
+            for p_utterance in reversed(result):
+                if u.conversation_no != p_utterance.conversation_no:
+                    logger.warning(
+                        'There is no utterance before an utterane tagged with + in conversation %d.',
+                        u.conversation_no,
+                    )
+                    break
+
+                if u.caller == p_utterance.caller:
+                    p_utterance.append_text(u)
+                    break
+        else:
+            result.append(u)
+
+    return result
 
 
 def middleware_hook(kwargs, f_args):
@@ -49,7 +107,7 @@ def middleware_hook(kwargs, f_args):
 
     logger.info('Reading the utterances.')
 
-    utterances = list(swda.iter_utterances(display_progress=False))
+    utterances = reconnect_divided_utterances(swda)
 
     train_split = get_conversation_ids(kwargs.pop('train_split'))
     test_split = get_conversation_ids(kwargs.pop('test_split'))
@@ -59,6 +117,7 @@ def middleware_hook(kwargs, f_args):
     if limit:
             train_utterances = [u for u in utterances if u.conversation_no in train_split][:limit]
     kwargs['train_utterances'] = train_utterances
+
     test_utterances = kwargs['test_utterances'] = [u for u in utterances if u.conversation_no in test_split]
 
     assert train_utterances and test_utterances
@@ -71,6 +130,12 @@ def middleware_hook(kwargs, f_args):
     kwargs['y_train'] = [u.damsl_act_tag() for u in train_utterances]
     kwargs['y_test'] = [u.damsl_act_tag() for u in test_utterances]
 
+    # TODO -j is already defined
+    if 'n_jobs' not in f_args:
+        del kwargs['n_jobs']
+
+    if 'n_folds' not in f_args:
+        del kwargs['n_folds']
 
 dispatcher = Dispatcher(
     middleware_hook=middleware_hook,
@@ -89,7 +154,7 @@ command = dispatcher.command
 
 def document_word(args):
     i, u, dictionary, ngram_len = args
-    js = dictionary.loc[utterance_tokens(u, ngram_len=ngram_len)].id
+    js = dictionary.loc[u.utterance_tokens(ngram_len=ngram_len)].id
 
     result = []
     for j in js:
@@ -103,21 +168,26 @@ def document_word(args):
 
 
 @command()
+def tokens(train_utterances):
+    words = chain.from_iterable(u.utterance_tokens(ngram_len=1) for u in train_utterances)
+
+    freq = Counter(words)
+
+    for w, f in freq.most_common():
+        print(w, '\t', f)
+
+
+@command()
 def plain_lsa(
     train_utterances,
     test_utterances,
-    y_train,
-    y_test,
-    n_jobs,
-    n_folds,
-    templates_env,
     pool,
     ngram_len=('', 1, 'Length of the tokens (bigrams, ngrams).'),
-
+    **kwargs
 ):
     """Perform the Plain LSA method."""
 
-    words = list(set(chain.from_iterable(utterance_tokens(u, ngram_len=ngram_len) for u in train_utterances)))
+    words = list(set(chain.from_iterable(u.utterance_tokens(ngram_len=ngram_len) for u in train_utterances)))
     dictionary = pd.DataFrame({'id': np.arange(len(words))}, index=words)
 
     def extract_features(utterances, shape):
@@ -145,12 +215,19 @@ def plain_lsa(
     logger.info('Extracting %d features from the testing set', len(test_utterances))
     X_test = extract_features(test_utterances, shape=(len(test_utterances), len(words)))
 
-    evaluate(X_train, X_test, y_train, y_test, templates_env, {}, n_folds, n_jobs, 'Serafin et al. 2003', pool)
+    evaluate(
+        X_train=X_train,
+        X_test=X_test,
+        store_metadata={},
+        paper='Serafin et al. 2003',
+        pool=pool,
+        **kwargs
+    )
 
 
 def space_compose(args):
     u, composer = args
-    return composer(*utterance_tokens(u))
+    return composer(*u.utterance_tokens())
 
 
 @command()
@@ -197,7 +274,7 @@ def composition(
 
             assert (X[0] == prev_X[1]).todense().all()
 
-            logger.debug('Hstacking utterances with thier previous utterances.')
+            logger.debug('Hstacking utterances with their previous utterances.')
             X = hstack([X, prev_X], format='csr')
 
         return X
@@ -208,7 +285,18 @@ def composition(
     evaluate(X_train, X_test, y_train, y_test, templates_env, {}, n_folds, n_jobs, 'Comp sem.', pool)
 
 
-def evaluate(X_train, X_test, y_train, y_test, templates_env, store_metadata, n_folds, n_jobs, paper, pool):
+def evaluate(
+    X_train,
+    X_test,
+    y_train,
+    y_test,
+    templates_env,
+    store_metadata,
+    n_folds,
+    n_jobs,
+    paper,
+    pool,
+):
     # tuned_parameters = {
     #     'svd__n_components': (50, ),
     #     'nn__n_neighbors': (1, 5),
@@ -252,3 +340,6 @@ def evaluate(X_train, X_test, y_train, y_test, templates_env, store_metadata, n_
             accuracy=accuracy_score(y_test, y_predicted),
         )
     )
+
+    pd.DataFrame(y_predicted).to_csv('out.csv')
+    pd.DataFrame(y_test).to_csv('y_test.csv')

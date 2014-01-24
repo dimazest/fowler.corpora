@@ -72,7 +72,10 @@ class Dispatcher(opster.Dispatcher):
                     loader=PackageLoader(fowler.corpora.__name__, 'templates')
                 )
 
-            assert sorted(kwargs.keys()) == sorted(f_args)
+            kwarg_keys = sorted(kwargs.keys())
+            sorted_fargs = sorted(f_args)
+            if kwarg_keys != sorted_fargs:
+                logger.debug('Key mismatch. kwargs: %s. fargs %s ', kwarg_keys, sorted_fargs)
 
             func(*args, **kwargs)
 
