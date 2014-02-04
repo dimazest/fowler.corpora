@@ -33,7 +33,8 @@ class Dispatcher(opster.Dispatcher):
             if func.__name__ == 'help_inner':
                 return func(*args, **kwargs)
 
-            f_args = inspect.getargspec(func)[0]
+            argspec = inspect.getfullargspec(func)
+            f_args = argspec.args
 
             display_max_rows = kwargs.pop('display_max_rows')
             if display_max_rows:
@@ -67,7 +68,7 @@ class Dispatcher(opster.Dispatcher):
             if 'jobs_num' not in f_args:
                 del kwargs['jobs_num']
 
-            if 'templates_env' in f_args:
+            if 'templates_env' in f_args or argspec.varkw:
                 kwargs['templates_env'] = Environment(
                     loader=PackageLoader(fowler.corpora.__name__, 'templates')
                 )

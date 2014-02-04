@@ -14,6 +14,7 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
 from sklearn.utils.multiclass import unique_labels
 
 from nltk import ngrams
@@ -130,12 +131,6 @@ def middleware_hook(kwargs, f_args):
     kwargs['y_train'] = [u.damsl_act_tag() for u in train_utterances]
     kwargs['y_test'] = [u.damsl_act_tag() for u in test_utterances]
 
-    # TODO -j is already defined
-    if 'n_jobs' not in f_args:
-        del kwargs['n_jobs']
-
-    if 'n_folds' not in f_args:
-        del kwargs['n_folds']
 
 dispatcher = Dispatcher(
     middleware_hook=middleware_hook,
@@ -146,7 +141,8 @@ dispatcher = Dispatcher(
         ('', 'train_split', 'downloads/switchboard/ws97-train-convs.list.txt', 'The training splits'),
         ('', 'test_split', 'downloads/switchboard/ws97-test-convs.list.txt', 'The testing splits'),
         ('', 'space', 'space.h5', 'The space file.'),
-        ('', 'limit', 0, 'Number of train utterances.')
+        ('', 'limit', 0, 'Number of train utterances.'),
+        ('', 'svm', False, 'Use support vector machine isntead of SVD and KNN'),
     ),
 )
 command = dispatcher.command
@@ -243,6 +239,7 @@ def composition(
     templates_env,
     word_composition_operator=('', 'add', 'What operator use for compositon. [add|mult]'),
     concatinate_prev_utterace=('', False, 'Concatinate the vector of a current utterance wiht the vector of the precious utterance.'),
+    **kwargs
 ):
 
     if word_composition_operator == 'mult':
@@ -282,7 +279,7 @@ def composition(
     X_train = extract_features(train_utterances)
     X_test = extract_features(test_utterances)
 
-    evaluate(X_train, X_test, y_train, y_test, templates_env, {}, n_folds, n_jobs, 'Comp sem.', pool)
+    evaluate(X_train, X_test, y_train, y_test, templates_env, {}, n_folds, n_jobs, 'Comp sem.', pool, **kwargs)
 
 
 def evaluate(
@@ -296,18 +293,27 @@ def evaluate(
     n_jobs,
     paper,
     pool,
+    svm,
 ):
-    # tuned_parameters = {
-    #     'svd__n_components': (50, ),
-    #     'nn__n_neighbors': (1, 5),
-    # }
 
-    pipeline = Pipeline(
-        [
-            ('svd', TruncatedSVD(n_components=50)),
-            ('nn', KNeighborsClassifier()),
-        ]
-    )
+    if svm:
+        pipeline = Pipeline(
+            [
+                ('svm', SVC()),
+            ]
+        )
+    else:
+        # tuned_parameters = {
+        #     'svd__n_components': (50, ),
+        #     'nn__n_neighbors': (1, 5),
+        # }
+
+        pipeline = Pipeline(
+            [
+                ('svd', TruncatedSVD(n_components=50)),
+                ('nn', KNeighborsClassifier()),
+            ]
+        )
 
     # clf = GridSearchCV(
     #     pipeline,
