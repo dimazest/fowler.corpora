@@ -1,21 +1,17 @@
-from fowler.corpora.dispatcher import Dispatcher
+from fowler.corpora import dispatcher
 from fowler.corpora.models import read_space_from_file
 
 
-def middleware_hook(kwargs, f_args):
-    kwargs['space'] = read_space_from_file(kwargs['matrix'])
+class Dispatcher(dispatcher.Dispatcher):
+    global__matrix = 'm', 'matrix.h5', 'The co-occurrence matrix.'
+    global__output = 'o', 'out_space.h5', 'The output matrix file.'
 
-    if 'matrix' not in f_args:
-        del kwargs['matrix']
+    @dispatcher.Resource
+    def space(self):
+        return read_space_from_file(self.matrix)
 
 
-dispatcher = Dispatcher(
-    middleware_hook=middleware_hook,
-    globaloptions=(
-        ('m', 'matrix', 'matrix.h5', 'The co-occurrence matrix.'),
-        ('o', 'output', 'out_space.h5', 'The output matrix file.'),
-    )
-)
+dispatcher = Dispatcher()
 command = dispatcher.command
 
 

@@ -26,7 +26,7 @@ test_google_ngrams_nmf = scenario(
 
 @when('I build a co-occurrence matrix')
 def build_cooccurrence_matrix(dispatcher, cooccurrence_dir_path, store_path, context_path, targets_path):
-    dispatcher.dispatch(
+    assert dispatcher.dispatch(
         'google-ngrams cooccurrence '
         '--context {context_path} '
         '--targets {targets_path} '
@@ -38,7 +38,7 @@ def build_cooccurrence_matrix(dispatcher, cooccurrence_dir_path, store_path, con
             output_path=store_path,
             targets_path=targets_path,
         ).split()
-    )
+    ) != -1
 
 
 @given('I select wordsim353 tokens as targets')
@@ -54,7 +54,7 @@ def i_should_see_evaluation_report():
 
 @when('I apply tf-idf weighting')
 def apply_tf_idf(dispatcher, store_path):
-    dispatcher.dispatch(
+    assert dispatcher.dispatch(
         'space tf-idf '
         '-m {input_path} '
         '-o {output_path} '
@@ -62,12 +62,12 @@ def apply_tf_idf(dispatcher, store_path):
             input_path=store_path,
             output_path=store_path,
         ).split()
-    )
+    ) != -1
 
 
 @when('I line-normalize the matrix')
 def line_normalize(dispatcher, store_path):
-    dispatcher.dispatch(
+    assert dispatcher.dispatch(
         'space line-normalize '
         '-m {input_path} '
         '-o {output_path} '
@@ -75,12 +75,12 @@ def line_normalize(dispatcher, store_path):
             input_path=store_path,
             output_path=store_path,
         ).split()
-    )
+    ) != -1
 
 
 @when('I apply NMF')
 def apply_nmf(dispatcher, store_path):
-    dispatcher.dispatch(
+    assert dispatcher.dispatch(
         'space nmf '
         '-m {input_path} '
         '-o {output_path} '
@@ -90,12 +90,13 @@ def apply_nmf(dispatcher, store_path):
             input_path=store_path,
             output_path=store_path,
         ).split()
-    )
+    ) != -1
 
 
 @when('I evaluate the space on the wordsim353 dataset')
 def evaluate_wordsim353(dispatcher, wordsim_353_path, store_path):
-    dispatcher.dispatch(
+    print(store_path)
+    assert dispatcher.dispatch(
         'wordsim353 evaluate '
         '-m {store_path} '
         '-g {wordsim_353_path} '
@@ -103,4 +104,4 @@ def evaluate_wordsim353(dispatcher, wordsim_353_path, store_path):
             store_path=store_path,
             wordsim_353_path=wordsim_353_path.join('combined.csv'),
         ).split()
-    )
+    ) != -1

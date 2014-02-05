@@ -6,24 +6,29 @@ import pandas as pd
 
 import opster
 from jinja2 import Environment, PackageLoader
+from zope.cachedescriptors.property import Lazy
 
 import fowler.corpora
 
 
-class Dispatcher(opster.Dispatcher):
-    def __init__(self, globaloptions=tuple(), middleware_hook=None):
-        globaloptions = (
-            tuple(globaloptions) +
-            (
-                ('v', 'verbose', False, 'Be verbose.'),
-                ('j', 'jobs_num', 0, 'Number of jobs for parallel tasks.'),
-                ('', 'display_max_rows', 0, 'Maximum number of rows to show in pandas.'),
-            )
-        )
+class Resource(Lazy):
+    """A resource."""
 
-        self.middleware_hook = middleware_hook
 
-        super(Dispatcher, self).__init__(
+class EagerResource(Resource):
+    """A resource that is evaluated even if it's not requested."""
+
+
+class BaseDispatcher(opster.Dispatcher):
+    """Base dispathcer with generic basic resources."""
+
+    def __init__(self):
+        global_option_prefix = 'global__'
+        global_names = [g for g in dir(self) if g.startswith(global_option_prefix)]
+        global_params = {g[len(global_option_prefix):]: getattr(self, g) for g in global_names}
+        globaloptions = [(short, name, default, help) for name, (short, default, help) in global_params.items()]
+
+        super().__init__(
             globaloptions=globaloptions,
             middleware=self._middleware,
         )
@@ -36,48 +41,63 @@ class Dispatcher(opster.Dispatcher):
             argspec = inspect.getfullargspec(func)
             f_args = argspec.args
 
-            display_max_rows = kwargs.pop('display_max_rows')
-            if display_max_rows:
-                pd.set_option('display.max_rows', display_max_rows)
+            # It's a dirty hack...
+            self.kwargs = kwargs
 
-            verbose = kwargs['verbose']
+            # Look for eager resources
+            t = type(self)
+            for eager_resource in [r for r in dir(t) if isinstance(getattr(t, r), EagerResource)]:
+                getattr(self, eager_resource)
 
-            logging.captureWarnings(True)
-            logger = logging.getLogger('fowler')
-            handler = logging.StreamHandler()
-            formatter = logging.Formatter('%(asctime)-6s: %(name)s - %(levelname)s - %(message)s')
+            f_kwargs = {f_arg: getattr(self, f_arg) for f_arg in f_args}
 
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
-
-            if verbose:
-                logger.setLevel(logging.DEBUG)
-            else:
-                logger.setLevel(logging.CRITICAL)
-
-            if self.middleware_hook:
-                self.middleware_hook(kwargs, f_args)
-
-            # Remove global options if we don't need them.
-            if 'verbose' not in f_args:
-                del kwargs['verbose']
-
-            if 'pool' in f_args:
-                kwargs['pool'] = Pool(kwargs['jobs_num'] or None)
-
-            if 'jobs_num' not in f_args:
-                del kwargs['jobs_num']
-
-            if 'templates_env' in f_args or argspec.varkw:
-                kwargs['templates_env'] = Environment(
-                    loader=PackageLoader(fowler.corpora.__name__, 'templates')
-                )
-
-            kwarg_keys = sorted(kwargs.keys())
-            sorted_fargs = sorted(f_args)
-            if kwarg_keys != sorted_fargs:
-                logger.debug('Key mismatch. kwargs: %s. fargs %s ', kwarg_keys, sorted_fargs)
-
-            func(*args, **kwargs)
+            return func(**f_kwargs)
 
         return wrapper
+
+    def __getattr__(self, name):
+        return self.kwargs[name]
+
+
+class Dispatcher(BaseDispatcher):
+    global__verbose = 'v', False, 'Be verbose.'
+    global__job_num = 'j', 0, 'Number of jobs for parallel tasks.'
+    global__display_max_rows = '', 0, 'Maximum number of rows to show in pandas.'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    @Resource
+    def pool(self):
+        return Pool(self.job_num or None)
+
+    @Resource
+    def templates_env(self):
+        return Environment(
+            loader=PackageLoader(fowler.corpora.__name__, 'templates')
+        )
+
+    @EagerResource
+    def logger(self):
+        logging.captureWarnings(True)
+        logger = logging.getLogger('fowler')
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter('%(asctime)-6s: %(name)s - %(levelname)s - %(message)s')
+
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+        if self.verbose:
+            logger.setLevel(logging.DEBUG)
+        else:
+            logger.setLevel(logging.CRITICAL)
+
+        return logger
+
+    @EagerResource
+    def display_max_rows(self):
+        display_max_rows = self.kwargs['display_max_rows']
+        if display_max_rows:
+            pd.set_option('display.max_rows', display_max_rows)
+
+        return display_max_rows

@@ -1,26 +1,19 @@
 """Dictionary helpers."""
 import pandas as pd
 
-from fowler.corpora.dispatcher import Dispatcher
+from fowler.corpora import dispatcher
 
 
-def middleware_hook(kwargs, f_args):
-    if 'dictionary' in f_args:
-        kwargs['dictionary'] = pd.read_hdf(
-            kwargs['dictionary'],
-            key=kwargs['input_key'],
-        )
+class Dispatcher(dispatcher.Dispatcher):
+    global__dictionary = 'd', 'dictionary.h5', 'The input dictionary.'
+    input_key = '', 'dictionary', 'An identifier for the group in the store.'
 
-    if 'input_key' not in f_args:
-        del kwargs['input_key']
+    @dispatcher.Resource
+    def dictionary(self):
+        return pd.read_hdf(self.kwargs['dictionary'], key=self.input_key)
 
-dispatcher = Dispatcher(
-    middleware_hook=middleware_hook,
-    globaloptions=(
-        ('d', 'dictionary', 'dictionary.h5', 'The input dictionary.'),
-        ('', 'input_key', 'dictionary', 'An identifier for the group in the store.')
-    ),
-)
+
+dispatcher = Dispatcher()
 command = dispatcher.command
 
 

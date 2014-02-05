@@ -51,6 +51,7 @@ setup(
         'scipy',
         'setuptools',
         'tables',
+        'zope.cachedescriptors',
     ],
     entry_points={
         'console_scripts': [

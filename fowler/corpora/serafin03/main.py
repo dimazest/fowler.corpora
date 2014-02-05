@@ -23,8 +23,7 @@ from nltk.tokenize import word_tokenize
 from fowler.switchboard.swda import CorpusReader
 from fowler.switchboard.util import get_conversation_ids
 
-from fowler.corpora import util, models
-from fowler.corpora.dispatcher import Dispatcher
+from fowler.corpora import util, models, dispatcher
 
 
 CHUNK_SIZE = 10000
@@ -100,51 +99,65 @@ def reconnect_divided_utterances(swda):
     return result
 
 
-def middleware_hook(kwargs, f_args):
+class Dispatcher(dispatcher.Dispatcher):
+    n_jobs = 'j', -1, 'The number of CPUs to use to do computations. -1 means all CPUs.'
+    global__n_folds = 'f', 3, 'The number of folds used for cross validation.'
+    global__swda = '', './swda', 'The path to the Switchboard corpus.'
+    global__train_split = '', 'downloads/switchboard/ws97-train-convs.list.txt', 'The training splits'
+    global__test_split = '', 'downloads/switchboard/ws97-test-convs.list.txt', 'The testing splits'
+    global__space = '', 'space.h5', 'The space file.'
+    global__limit = '', 0, 'Number of train utterances.'
+    global__svm = '', False, 'Use support vector machine isntead of SVD and KNN'
 
-    swda = kwargs['swda'] = CorpusReader(kwargs['swda'])
-    if 'swda' not in f_args:
-        del kwargs['swda']
+    @dispatcher.Resource
+    def swda(self):
+        return CorpusReader(self.kwargs['swda'])
 
-    logger.info('Reading the utterances.')
+    @dispatcher.Resource
+    def utterances(self):
+        logger.info('Reading the utterances.')
 
-    utterances = reconnect_divided_utterances(swda)
+        return reconnect_divided_utterances(self.swda)
 
-    train_split = get_conversation_ids(kwargs.pop('train_split'))
-    test_split = get_conversation_ids(kwargs.pop('test_split'))
+    @dispatcher.Resource
+    def train_split(self):
+        return get_conversation_ids(self.kwargs['train_split'])
 
-    train_utterances = [u for u in utterances if u.conversation_no in train_split]
-    limit = kwargs.pop('limit')
-    if limit:
-            train_utterances = [u for u in utterances if u.conversation_no in train_split][:limit]
-    kwargs['train_utterances'] = train_utterances
+    @dispatcher.Resource
+    def test_split(self):
+        return get_conversation_ids(self.kwargs['test_split'])
 
-    test_utterances = kwargs['test_utterances'] = [u for u in utterances if u.conversation_no in test_split]
+    @dispatcher.Resource
+    def train_utterances(self):
+        train_utterances = [u for u in self.utterances if u.conversation_no in self.train_split]
 
-    assert train_utterances and test_utterances
+        if self.limit:
+            train_utterances = [u for u in self.utterances if u.conversation_no in self.train_split][:self.limit]
 
-    if 'space' in f_args:
-        kwargs['space'] = models.read_space_from_file(kwargs['space'])
-    else:
-        del kwargs['space']
+        assert train_utterances
+        return train_utterances
 
-    kwargs['y_train'] = [u.damsl_act_tag() for u in train_utterances]
-    kwargs['y_test'] = [u.damsl_act_tag() for u in test_utterances]
+    @dispatcher.Resource
+    def test_utterances(self):
+        test_utterances = [u for u in self.utterances if u.conversation_no in self.test_split]
+
+        assert test_utterances
+        return test_utterances
+
+    @dispatcher.Resource
+    def space(self):
+        return models.read_space_from_file(self.kwargs['space'])
+
+    @dispatcher.Resource
+    def y_train(self):
+        return [u.damsl_act_tag() for u in self.train_utterances]
+
+    @dispatcher.Resource
+    def y_test(self):
+        return [u.damsl_act_tag() for u in self.test_utterances]
 
 
-dispatcher = Dispatcher(
-    middleware_hook=middleware_hook,
-    globaloptions=(
-        ('j', 'n_jobs', -1, 'The number of CPUs to use to do computations. -1 means all CPUs.'),
-        ('f', 'n_folds', 3, 'The number of folds used for cross validation.'),
-        ('', 'swda', './swda', 'The path to the Switchboard corpus.'),
-        ('', 'train_split', 'downloads/switchboard/ws97-train-convs.list.txt', 'The training splits'),
-        ('', 'test_split', 'downloads/switchboard/ws97-test-convs.list.txt', 'The testing splits'),
-        ('', 'space', 'space.h5', 'The space file.'),
-        ('', 'limit', 0, 'Number of train utterances.'),
-        ('', 'svm', False, 'Use support vector machine isntead of SVD and KNN'),
-    ),
-)
+dispatcher = Dispatcher()
 command = dispatcher.command
 
 
@@ -178,8 +191,13 @@ def plain_lsa(
     train_utterances,
     test_utterances,
     pool,
+    y_train,
+    y_test,
+    templates_env,
+    n_folds,
+    n_jobs,
+    svm,
     ngram_len=('', 1, 'Length of the tokens (bigrams, ngrams).'),
-    **kwargs
 ):
     """Perform the Plain LSA method."""
 
@@ -214,10 +232,15 @@ def plain_lsa(
     evaluate(
         X_train=X_train,
         X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        n_folds=n_folds,
+        n_jobs=n_jobs,
+        templates_env=templates_env,
         store_metadata={},
         paper='Serafin et al. 2003',
         pool=pool,
-        **kwargs
+        svm=svm,
     )
 
 
@@ -239,7 +262,6 @@ def composition(
     templates_env,
     word_composition_operator=('', 'add', 'What operator use for compositon. [add|mult]'),
     concatinate_prev_utterace=('', False, 'Concatinate the vector of a current utterance wiht the vector of the precious utterance.'),
-    **kwargs
 ):
 
     if word_composition_operator == 'mult':
@@ -279,7 +301,19 @@ def composition(
     X_train = extract_features(train_utterances)
     X_test = extract_features(test_utterances)
 
-    evaluate(X_train, X_test, y_train, y_test, templates_env, {}, n_folds, n_jobs, 'Comp sem.', pool, **kwargs)
+    evaluate(
+        X_train=X_train,
+        X_test=X_test,
+        y_train=y_train,
+        y_test=y_test,
+        n_folds=n_folds,
+        n_jobs=n_jobs,
+        templates_env=templates_env,
+        store_metadata={},
+        paper='Comp sem.',
+        pool=pool,
+        svm=svm,
+    )
 
 
 def evaluate(
