@@ -51,6 +51,7 @@ setup(
         'scipy',
         'setuptools',
         'tables',
+        'xlwt-future',
         'zope.cachedescriptors',
     ],
     entry_points={
