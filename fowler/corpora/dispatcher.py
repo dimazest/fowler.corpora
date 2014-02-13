@@ -11,6 +11,7 @@ from zope.cachedescriptors.property import Lazy
 
 import fowler.corpora
 from fowler.corpora.space.util import read_tokens
+from fowler.corpora.models import read_space_from_file
 
 
 class Resource(Lazy):
@@ -124,3 +125,12 @@ class SpaceCreationMixin(object):
         targets['id'] = pd.Series(np.arange(len(targets)), index=targets.index)
 
         return targets
+
+
+class SpaceMixin(object):
+    """A mixin that provides access to the space object."""
+    global__space = 's', 'space.h5', 'The vector space.'
+
+    @Resource
+    def space(self):
+        return read_space_from_file(self.kwords['space'])

@@ -8,6 +8,8 @@ class Dispatcher(dispatcher.Dispatcher):
 
     @dispatcher.Resource
     def space(self):
+        # TODO: this is depricated, SpaceMixin should be used, and
+        # global__matrix should be renamed to global__space.
         return read_space_from_file(self.matrix)
 
 
