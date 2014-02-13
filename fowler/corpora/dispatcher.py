@@ -2,6 +2,7 @@ import inspect
 import logging
 from multiprocessing import Pool
 
+import numpy as np
 import pandas as pd
 
 import opster
@@ -9,6 +10,7 @@ from jinja2 import Environment, PackageLoader
 from zope.cachedescriptors.property import Lazy
 
 import fowler.corpora
+from fowler.corpora.space.util import read_tokens
 
 
 class Resource(Lazy):
@@ -101,3 +103,24 @@ class Dispatcher(BaseDispatcher):
             pd.set_option('display.max_rows', display_max_rows)
 
         return display_max_rows
+
+
+class SpaceCreationMixin(object):
+    """A mixin that defines common arguments for space creation commands."""
+
+    global__context = 'c', 'context.csv', 'The file with context words.'
+    global__targets = 't', 'targets.csv', 'The file with target words.'
+
+    @Resource
+    def targets(self):
+        context = read_tokens(self.kwargs['context'])
+        context['id'] = pd.Series(np.arange(len(context)), index=context.index)
+
+        return context
+
+    @Resource
+    def context(self):
+        targets = read_tokens(self.kwargs['targets'])
+        targets['id'] = pd.Series(np.arange(len(targets)), index=targets.index)
+
+        return targets

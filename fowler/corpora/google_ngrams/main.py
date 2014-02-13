@@ -3,16 +3,20 @@ import logging
 
 from py.path import local
 
-import numpy as np
 import pandas as pd
 
-from fowler.corpora.dispatcher import Dispatcher
-from fowler.corpora.space.util import read_tokens, write_space
+from fowler.corpora import dispatcher
+
+from fowler.corpora.space.util import write_space
 
 from .util import load_cooccurrence, load_dictionary
 
 
 logger = logging.getLogger(__name__)
+
+
+class Dispatcher(dispatcher.Dispatcher, dispatcher.SpaceCreationMixin):
+    """A concrete dispatcher."""
 
 
 dispatcher = Dispatcher()
@@ -66,13 +70,7 @@ def cooccurrence(
     ),
     output=('o', 'matrix.h5', 'The output matrix file.'),
 ):
-    """Build the cooccurrence matrix."""
-    context = read_tokens(context)
-    context['id'] = pd.Series(np.arange(len(context)), index=context.index)
-
-    targets = read_tokens(targets)
-    targets['id'] = pd.Series(np.arange(len(targets)), index=targets.index)
-
+    """Build the co-occurrence matrix."""
     file_names = input_dir.listdir(sort=True)
     pieces = pool.map(load_cooccurrence, ((f, targets, context) for f in file_names))
 
