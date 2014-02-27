@@ -1,3 +1,4 @@
+import warnings
 from imp import reload
 
 from IPython.core.magic import Magics, magics_class, line_magic
@@ -15,7 +16,10 @@ class CorporaMagics(Magics):
                 reload(sys.modules[module])
 
         from fowler.corpora import main
-        main.dispatch(parameter_s.split())
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            return main.dispatch(parameter_s.split())
 
 
 def load_ipython_extension(ip):

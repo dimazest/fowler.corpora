@@ -9,12 +9,14 @@ import sys
 from itertools import islice
 
 from IPython.terminal.ipapp import launch_new_instance
+from IPython.parallel.apps import ipclusterapp
 
 import fowler.corpora.dictionary.main as dictionary_main
 import fowler.corpora.google_ngrams.main as google_ngrams_main
 import fowler.corpora.serafin03.main as serafin03_main
 import fowler.corpora.space.main as space_main
 import fowler.corpora.wordsim353.main as wordsim353_main
+import fowler.corpora.wsd.main as wsd_main
 
 
 from fowler.corpora.io import readline_folder as io_readline_folder
@@ -59,6 +61,12 @@ dispatcher.nest(
     space_main.__doc__,
 )
 
+dispatcher.nest(
+    'wsd',
+    wsd_main.dispatcher,
+    wsd_main.__doc__,
+)
+
 
 @command()
 def readline_folder(
@@ -79,6 +87,26 @@ def readline_folder(
             print(line.strip())
 
 
+@command()
 def ipython():
+    """Start IPython."""
     os.environ['PYTHONPATH'] = ':'.join(sys.path)
-    sys.exit(launch_new_instance())
+    sys.exit(launch_new_instance(argv=[]))
+
+
+@command()
+def notebook():
+    """Start IPython notebook."""
+    os.environ['PYTHONPATH'] = ':'.join(sys.path)
+    sys.exit(launch_new_instance(argv=['notebook']))
+
+
+@command()
+def ipcluster():
+    """Start IPYthon cluster."""
+    import logging
+    logger = logging.getLogger()
+    logger.info('Hellow from ipcluster')
+
+    os.environ['PYTHONPATH'] = ':'.join(sys.path)
+    ipclusterapp.launch_new_instance(argv='start -n 10'.split())
