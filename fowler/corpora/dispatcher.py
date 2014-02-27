@@ -1,13 +1,22 @@
 import inspect
 import logging
+import os
+from logging.handlers import RotatingFileHandler
 from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
 
+import raven
+from raven.conf import setup_logging
+from raven.handlers.logging import SentryHandler
+
 import opster
+
 from jinja2 import Environment, PackageLoader
 from zope.cachedescriptors.property import Lazy
+
+from IPython import parallel
 
 import fowler.corpora
 from fowler.corpora.space.util import read_tokens
@@ -49,7 +58,7 @@ class BaseDispatcher(opster.Dispatcher):
 
             # Look for eager resources
             t = type(self)
-            for eager_resource in [r for r in dir(t) if isinstance(getattr(t, r), EagerResource)]:
+            for eager_resource in (r for r in dir(t) if isinstance(getattr(t, r), EagerResource)):
                 getattr(self, eager_resource)
 
             f_kwargs = {f_arg: getattr(self, f_arg) for f_arg in f_args}
@@ -64,6 +73,8 @@ class BaseDispatcher(opster.Dispatcher):
 
 class Dispatcher(BaseDispatcher):
     global__verbose = 'v', False, 'Be verbose.'
+    global__logger_filename = '', '/tmp/fowler.log', 'File to log.'
+    global__logger_backup_count = '', 1000, 'The number of log messages to keep.'
     global__job_num = 'j', 0, 'Number of jobs for parallel tasks.'
     global__display_max_rows = '', 0, 'Maximum number of rows to show in pandas.'
 
@@ -83,12 +94,17 @@ class Dispatcher(BaseDispatcher):
     @EagerResource
     def logger(self):
         logging.captureWarnings(True)
-        logger = logging.getLogger('fowler')
-        handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(asctime)-6s: %(name)s - %(levelname)s - %(message)s')
-
+        logger = logging.getLogger()
+        handler = RotatingFileHandler(
+            filename=self.logger_filename,
+            backupCount=self.logger_backup_count,
+        )
+        formatter = logging.Formatter('%(asctime)-6s: %(name)s - %(levelname)s - %(process)d - %(message)s')
         handler.setFormatter(formatter)
         logger.addHandler(handler)
+
+        if self.sentry_handler:
+            logger.addHandler(self.sentry_handler)
 
         if self.verbose:
             logger.setLevel(logging.DEBUG)
@@ -104,6 +120,30 @@ class Dispatcher(BaseDispatcher):
             pd.set_option('display.max_rows', display_max_rows)
 
         return display_max_rows
+
+    @Resource
+    def ip_client(self):
+        """IPython parallel infrastructure client."""
+        return parallel.Client()
+
+    @Resource
+    def ip_view(self):
+        """IPython's parallel cluster view object."""
+        return self.ip_client[:]
+
+    @Resource
+    def sentry_client(self):
+        """Setntry client."""
+        if 'SENTRY_DSN' in os.environ:
+            return raven.Client()
+
+    @Resource
+    def sentry_handler(self):
+        """Sentry log handler."""
+        if self.sentry_client:
+            handler = SentryHandler(self.sentry_client)
+            setup_logging(handler)
+            return handler
 
 
 class SpaceCreationMixin(object):
@@ -133,4 +173,4 @@ class SpaceMixin(object):
 
     @Resource
     def space(self):
-        return read_space_from_file(self.kwords['space'])
+        return read_space_from_file(self.kwargs['space'])
