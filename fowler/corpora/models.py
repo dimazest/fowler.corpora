@@ -1,4 +1,5 @@
 import logging
+from collections.abc import Mapping
 
 import numpy as np
 import pandas as pd
@@ -14,7 +15,7 @@ from fowler.corpora.space.util import write_space
 logger = logging.getLogger(__name__)
 
 
-class Space:
+class Space(Mapping):
     """A vector space.
 
     :param data:
@@ -34,6 +35,21 @@ class Space:
             )
         else:
             self.matrix = data_ij
+
+    def __getitem__(self, key):
+        """Retrive the vector for the key from the space.
+
+        :param str key: the row label.
+        :returns: a sparse matrix with one row.
+
+        """
+        return self.get_target_rows(key, strict=True)
+
+    def __iter__(self):
+        return iter(self.row_labels.index)
+
+    def __len__(self):
+        return self.matrix.shape[0]
 
     def write(self, file_name):
         """Write the store to a file."""
@@ -71,13 +87,22 @@ class Space:
         # TODO: it is incorrect to pass self.column_labels! There are not column labels.
         return Space(reduced_matrix, self.row_labels, self.column_labels)
 
-    def get_target_rows(self, *labels):
+    def get_target_rows(self, *labels, strict=False):
+        """Return vectors for the labels.
+
+        :param labels: row labels.
+        :param bool strict: if `True` and a label can't be found, the KeyError exception will be risen.
+
+        """
         valid_labels = list(filter(None, labels))
 
         if valid_labels:
             vector_ids = list(filter(np.isfinite, self.row_labels.loc[valid_labels].id))
             if vector_ids:
                 return self.matrix[vector_ids]
+
+        if strict:
+            raise KeyError
 
         return csr_matrix((1, self.matrix.shape[1]))
 
