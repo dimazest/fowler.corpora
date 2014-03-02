@@ -1,5 +1,4 @@
-Hyper parameter estimation
-==========================
+Evaluation results
 
 :paper: {{ paper }}
 :accuracy: {{ accuracy.round(3) }}
@@ -7,9 +6,6 @@ Hyper parameter estimation
 :{{  key }}: {{ value }}
 {%- endfor %}
 :command: {{ argv }}
-
-.. Evaluation results
-.. ------------------
 
 .. ==================== ========== ========== ========== ==========
 ..                 tag  precision     recall   f1-score    support

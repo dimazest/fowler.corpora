@@ -107,7 +107,6 @@ class Dispatcher(dispatcher.Dispatcher):
     global__test_split = '', 'downloads/switchboard/ws97-test-convs.list.txt', 'The testing splits'
     global__space = '', 'space.h5', 'The space file.'
     global__limit = '', 0, 'Number of train utterances.'
-    global__svm = '', False, 'Use support vector machine isntead of SVD and KNN'
 
     @dispatcher.Resource
     def swda(self):
@@ -196,7 +195,6 @@ def plain_lsa(
     templates_env,
     n_folds,
     n_jobs,
-    svm,
     ngram_len=('', 1, 'Length of the tokens (bigrams, ngrams).'),
 ):
     """Perform the Plain LSA method."""
@@ -240,14 +238,12 @@ def plain_lsa(
         store_metadata={},
         paper='Serafin et al. 2003',
         pool=pool,
-        svm=svm,
     )
 
 
 def space_compose(args):
     u, composer = args
     return composer(*u.utterance_tokens())
-
 
 @command()
 def composition(
@@ -312,7 +308,6 @@ def composition(
         store_metadata={},
         paper='Comp sem.',
         pool=pool,
-        svm=svm,
     )
 
 
@@ -327,50 +322,27 @@ def evaluate(
     n_jobs,
     paper,
     pool,
-    svm,
 ):
 
-    if svm:
-        pipeline = Pipeline(
-            [
-                ('svm', SVC()),
-            ]
-        )
-    else:
-        # tuned_parameters = {
-        #     'svd__n_components': (50, ),
-        #     'nn__n_neighbors': (1, 5),
-        # }
-
-        pipeline = Pipeline(
-            [
-                ('svd', TruncatedSVD(n_components=50)),
-                ('nn', KNeighborsClassifier()),
-            ]
-        )
-
-    # clf = GridSearchCV(
-    #     pipeline,
-    #     tuned_parameters,
-    #     cv=n_folds,
-    #     scoring='accuracy',
-    #     n_jobs=n_jobs,
-    # )
-    clf = pipeline
+    pipeline = Pipeline(
+        [
+            ('svd', TruncatedSVD(n_components=50)),
+            ('nn', KNeighborsClassifier()),
+        ]
+    )
 
     logger.info('Training.')
-    clf.fit(X_train, y_train)
+    pipeline.fit(X_train, y_train)
 
     logger.info('Predicting %d labels.', X_test.shape[0])
-    y_predicted = clf.predict(X_test)
+    y_predicted = pipeline.predict(X_test)
 
     prfs = precision_recall_fscore_support(y_test, y_predicted)
-
     util.display(
         templates_env.get_template('classification_report.rst').render(
             argv=' '.join(sys.argv) if not util.inside_ipython() else 'ipython',
             paper=paper,
-            clf=clf,
+            clf=pipeline,
             tprfs=zip(unique_labels(y_test, y_predicted), *prfs),
             p_avg=np.average(prfs[0], weights=prfs[3]),
             r_avg=np.average(prfs[1], weights=prfs[3]),
