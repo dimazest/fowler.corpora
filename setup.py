@@ -46,9 +46,12 @@ setup(
         'numpy',
         'opster',
         'pandas',
+        'progress',
         'py',
+        'raven',
         'scikit-learn',
         'scipy',
+        'seaborn',
         'setuptools',
         'tables',
         'xlwt-future',
@@ -57,7 +60,6 @@ setup(
     entry_points={
         'console_scripts': [
             'corpora = fowler.corpora.main:dispatch',
-            'corpora-ipython = fowler.corpora.main:ipython',
         ],
     },
     tests_require=['pytest>=2.4.2', 'pytest-bdd'],
