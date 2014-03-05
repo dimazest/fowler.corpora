@@ -1,4 +1,4 @@
-"""An IPython extension that adds the %corpora magick.
+"""An IPython extension that adds the %corpora magic.
 
 To load the extension, run::
 
