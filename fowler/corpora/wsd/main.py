@@ -83,7 +83,7 @@ def gs11(
     gs11_data=('', 'downloads/compdistmeaning/GS2011data.txt', 'The GS2011 dataset.'),
     gs11_limit=('', 0, 'Limit number of items in the data set.'),
 ):
-    """Categorical compositional distributional model.
+    """Categorical compositional distributional model for transitive verb disambiguation.
 
     Implements method described in [1]. The data is available at [2].
 
@@ -117,5 +117,3 @@ def gs11(
         gs11_data['Cosine similarity'],
         corr_func=stats.spearmanr,
     )
-
-    return result
