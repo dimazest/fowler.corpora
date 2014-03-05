@@ -11,6 +11,7 @@ from itertools import islice
 from IPython.terminal.ipapp import launch_new_instance
 from IPython.parallel.apps import ipclusterapp
 
+import fowler.corpora.bnc.main as bnc_main
 import fowler.corpora.dictionary.main as dictionary_main
 import fowler.corpora.google_ngrams.main as google_ngrams_main
 import fowler.corpora.serafin03.main as serafin03_main
@@ -65,6 +66,12 @@ dispatcher.nest(
     'wsd',
     wsd_main.dispatcher,
     wsd_main.__doc__,
+)
+
+dispatcher.nest(
+    'bnc',
+    bnc_main.dispatcher,
+    bnc_main.__doc__,
 )
 
 
