@@ -16,6 +16,7 @@ import opster
 from jinja2 import Environment, PackageLoader
 from zope.cachedescriptors.property import Lazy
 
+import joblib
 from IPython import parallel
 
 import fowler.corpora
@@ -130,6 +131,11 @@ class Dispatcher(BaseDispatcher):
     def ip_view(self):
         """IPython's parallel cluster view object."""
         return self.ip_client[:]
+
+    @Resource
+    def parallel(self):
+        """Joblib parallel pool."""
+        return joblib.Parallel(n_jobs=self.job_num)
 
     @Resource
     def sentry_client(self):

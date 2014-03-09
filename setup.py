@@ -41,6 +41,7 @@ setup(
         'google-ngram-downloader',
         'ipython[notebook,parallel,nbconvert]',
         'jinja2',
+        'joblib',
         'matplotlib',
         'nltk',
         'numpy',
