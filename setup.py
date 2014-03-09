@@ -43,6 +43,7 @@ setup(
         'jinja2',
         'joblib',
         'matplotlib',
+        'more-itertools',
         'nltk',
         'numpy',
         'opster',
