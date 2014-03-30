@@ -152,7 +152,7 @@ class Dispatcher(BaseDispatcher):
             return handler
 
 
-class SpaceCreationMixin(object):
+class SpaceCreationMixin:
     """A mixin that defines common arguments for space creation commands."""
 
     global__context = 'c', 'context.csv', 'The file with context words.'
@@ -173,10 +173,69 @@ class SpaceCreationMixin(object):
         return targets
 
 
-class SpaceMixin(object):
+class NewSpaceCreationMixin:
+    """A mixin that defines common arguments for space creation commands.
+
+    A token file have to have a header and may have several columns. The only
+    obligatory is ``ngram``.
+
+    """
+
+    global__context = 'c', 'context.csv', 'The file with context words.'
+    global__targets = 't', 'targets.csv', 'The file with target words.'
+
+    def read_file(self, f_name):
+        frame = pd.read_csv(f_name, encoding='utf8')
+
+        frame.set_index(frame.columns.tolist(), inplace=True)
+        frame['id'] = pd.Series(np.arange(len(frame)), index=frame.index)
+
+        return frame
+
+    @Resource
+    def targets(self):
+        return self.read_file(self.kwargs['targets'])
+
+    @Resource
+    def context(self):
+        return self.read_file(self.kwargs['context'])
+
+
+class SpaceMixin:
     """A mixin that provides access to the space object."""
     global__space = 's', 'space.h5', 'The vector space.'
 
     @Resource
     def space(self):
         return read_space_from_file(self.kwargs['space'])
+
+
+class DictionaryMixin:
+    """"A mixin to read a dictionary.
+
+    Dictionary is stored in Pandas Data frame inside of an .h5 file available at
+    the key specified by the ``dictionary_key`` option.
+
+    """
+    global__dictionary = 'd', 'dictionary.h5', 'The input dictionary.'
+    global__dictionary_key = '', 'dictionary', 'An identifier for the group in the store.'
+
+    @Resource
+    def dictionary(self):
+        """ A dictionary.
+
+        A dictionary is a DataFrame with the following columns:
+
+        ngram
+            the ngram (or the word)
+
+        count
+            the frequency of the ngrma
+
+        It might also have these columns:
+
+        tag
+            the POS tag of ngram
+
+        """
+        return pd.read_hdf(self.kwargs['dictionary'], key=self.dictionary_key)

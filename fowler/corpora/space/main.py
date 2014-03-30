@@ -1,19 +1,21 @@
-from fowler.corpora import dispatcher
-from fowler.corpora.models import read_space_from_file
+import numpy as np
+
+from fowler.corpora.dispatcher import Dispatcher, DictionaryMixin, Resource
+from fowler.corpora.models import read_space_from_file, Space
 
 
-class Dispatcher(dispatcher.Dispatcher):
-    global__matrix = 'm', 'matrix.h5', 'The co-occurrence matrix.'
-    global__output = 'o', 'out_space.h5', 'The output matrix file.'
+class SpaceDispatcher(Dispatcher, DictionaryMixin):
+    global__matrix = 'm', 'space.h5', 'Vector space.'
+    global__output = 'o', 'out_space.h5', 'Output vector space file.'
 
-    @dispatcher.Resource
+    @Resource
     def space(self):
         # TODO: this is depricated, SpaceMixin should be used, and
         # global__matrix should be renamed to global__space.
         return read_space_from_file(self.matrix)
 
 
-dispatcher = Dispatcher()
+dispatcher = SpaceDispatcher()
 command = dispatcher.command
 
 
@@ -91,3 +93,48 @@ def nmf(
         nls_max_iter=nls_max_iter,
         random_state=random_state or None,
     ).write(output)
+
+
+@command()
+def x(
+    space,
+    output,
+    dictionary,
+):
+    """
+    Weight elements as P(c|t) / P(c).
+
+    This is the weighting scheme used in [1] and [2].
+
+    [1] Mitchell, Jeff, and Mirella Lapata. "Vector-based Models of Semantic
+    Composition." ACL. 2008.
+
+    [2] Grefenstette, Edward, and Mehrnoosh Sadrzadeh. "Experimental support for
+    a categorical compositional distributional model of meaning." Proceedings
+    of the Conference on Empirical Methods in Natural Language Processing.
+    Association for Computational Linguistics, 2011.
+
+    """
+    dictionary.set_index(
+        [c for c in dictionary.columns if c != 'count'],
+        inplace=True,
+    )
+
+    # This are target frequncy counts in the whole Corpora N(t)
+    row_totals = dictionary.loc[space.row_labels.index]['count'].values[:, np.newaxis]
+
+    # This is the total number of words in the corpora
+    N = dictionary['count'].sum()
+    # This are context probabilities in the whole Corpora P(c)
+    column_totals = dictionary.loc[space.column_labels.index].values.flatten() / N
+
+    # Elements in the matrix are N(c, t): the co-occurrence counts
+    matrix = space.matrix.astype(float).todense()
+
+    # The elements in the matrix are P(c|t)
+    matrix /= row_totals
+
+    # The elements in the matrix are P(c|t) / P(c)
+    matrix /= column_totals
+
+    Space(matrix, space.row_labels, space.column_labels).write(output)

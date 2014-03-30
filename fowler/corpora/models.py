@@ -19,8 +19,11 @@ class Space(Mapping):
     """A vector space.
 
     :param data:
-    :param row_lables: the row labels
-    :param column_labels: the column labels
+    :param pandas.DataFrame row_lables: the row labels
+    :param pandas.DataFrame column_labels: the column labels
+
+    ``row_labels`` and ``column_labels`` contain of at least two columns:
+    ````ngram`` and id``.
 
     """
     def __init__(self, data_ij, row_labels, column_labels):
@@ -52,7 +55,7 @@ class Space(Mapping):
         return self.matrix.shape[0]
 
     def write(self, file_name):
-        """Write the store to a file."""
+        """Write the vector space to a file."""
 
         coo = coo_matrix(self.matrix)
 

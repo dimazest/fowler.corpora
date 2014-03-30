@@ -1,33 +1,25 @@
 """Dictionary helpers."""
-import pandas as pd
-
-from fowler.corpora import dispatcher
+from fowler.corpora.dispatcher import Dispatcher, DictionaryMixin
 
 
-class Dispatcher(dispatcher.Dispatcher):
-    global__dictionary = 'd', 'dictionary.h5', 'The input dictionary.'
-    input_key = '', 'dictionary', 'An identifier for the group in the store.'
+class DictionaryDispatcher(Dispatcher, DictionaryMixin):
+    """Dictionary dispatcher."""
 
-    @dispatcher.Resource
-    def dictionary(self):
-        return pd.read_hdf(self.kwargs['dictionary'], key=self.input_key)
-
-
-dispatcher = Dispatcher()
+dispatcher = DictionaryDispatcher()
 command = dispatcher.command
 
 
 @command()
 def limit(
     dictionary,
+    dictionary_key,
     limit=('l', 30000, 'Number of rows to leave in the index.'),
     output=('o', 'dicitionary_limited.h5', 'The output file.'),
-    output_key=('', 'dictionary', 'An identifier for the group in the store.'),
 ):
     dictionary = dictionary.head(limit)
     dictionary.to_hdf(
         output,
-        output_key,
+        dictionary_key,
         mode='w',
         complevel=9,
         complib='zlib',

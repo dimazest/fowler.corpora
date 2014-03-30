@@ -98,7 +98,12 @@ def gs11(
     result = pool.imap(
         gs11_compose,
         (
-            ((v, space[v]), (s, space[s]), (o, space[o]), (l, space[l]))
+            (
+                (v, space[(v, 'VERB')]),
+                (s, space[(s, 'SUBST')]),
+                (o, space[(o, 'SUBST')]),
+                (l, space[(l, 'VERB')]),
+            )
             for v, s, o, l in gs11_data[['verb', 'subject', 'object', 'landmark']].values
         ),
     )
