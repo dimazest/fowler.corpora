@@ -95,6 +95,8 @@ def gs11(
     [2] http://www.cs.ox.ac.uk/activities/compdistmeaning/GS2011data.txt
 
     """
+    gs11_data = gs11_data[gs11_data['object'] != 'papers']
+
     result = pool.imap(
         gs11_compose,
         (
