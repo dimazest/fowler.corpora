@@ -55,6 +55,7 @@ setup(
         'scipy',
         'seaborn',
         'setuptools',
+        'six',
         'tables',
         'xlwt-future',
         'zope.cachedescriptors',
