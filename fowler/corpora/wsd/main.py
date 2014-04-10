@@ -119,8 +119,11 @@ def gs11(
     gs11_data['Cosine similarity'] = list(bar.iter(result))
 
     display(gs11_data.groupby('hilo').mean())
-    sns.regplot(
+    sns.jointplot(
         gs11_data['input'],
         gs11_data['Cosine similarity'],
-        corr_func=stats.spearmanr,
+        kind='reg',
+        stat_func=stats.spearmanr,
+        xlim=(1, 7),
+        ylim=(0, 1),
     )
