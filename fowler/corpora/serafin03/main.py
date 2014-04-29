@@ -14,7 +14,6 @@ from sklearn.decomposition import TruncatedSVD
 from sklearn.metrics import precision_recall_fscore_support, accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.svm import SVC
 from sklearn.utils.multiclass import unique_labels
 
 from nltk import ngrams
@@ -244,6 +243,7 @@ def plain_lsa(
 def space_compose(args):
     u, composer = args
     return composer(*u.utterance_tokens())
+
 
 @command()
 def composition(
