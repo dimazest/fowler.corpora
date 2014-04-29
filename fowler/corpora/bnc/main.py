@@ -40,14 +40,27 @@ command = dispatcher.command
 
 def bnc_cooccurrence(args):
     """Count word couccurrence in a BNC file."""
-    root, fileids, window_size, stem = args
+    root, fileids, window_size, stem, targets, context = args
 
     logger.debug('Processing %s', fileids)
 
-    return count_cooccurrence(
+    cooccurences = count_cooccurrence(
         BNCCorpusReader(root=root, fileids=fileids).tagged_words(stem=stem),
         window_size=window_size,
     )
+
+    if not isinstance(targets.index[0], tuple):
+        cooccurences = ((t[0], c, n)for t, c, n in cooccurences)
+
+    counts = Counter(
+        dict(
+            ((targets.loc[t].id, context.loc[c].id), n)
+            for t, c, n in cooccurences
+            if (t in targets.index) and (c in context.index)
+        )
+    )
+
+    return counts
 
 
 def do_sum_counters(args):
@@ -86,22 +99,12 @@ def cooccurrence(
 
     for fileids_chunk in chunked(bnc.fileids(), 100):
 
-        imap_result = pool.imap_unordered(
+        counters = pool.imap_unordered(
             bnc_cooccurrence,
-            ((bnc.root, fileids, window_size, stem) for fileids in fileids_chunk)
-        )
-
-        counters = chain(
             (
-                Counter(
-                    dict(
-                        ((targets.loc[t].id, context.loc[c].id), n)
-                        for t, c, n in r
-                        if (t in targets.index) and (c in context.index)
-                    )
-                )
-            )
-            for r in imap_result
+                (bnc.root, fileids, window_size, stem, targets, context)
+                for fileids in fileids_chunk
+            ),
         )
 
         records += sum_counters(counters, pool=pool, chunk_size=chunk_size)
@@ -118,11 +121,15 @@ def cooccurrence(
 
 
 def bnc_words(args):
-    root, fileids, c5, stem = args
+    root, fileids, c5, stem, omit_tags = args
     logger.debug('Processing %s', fileids)
+    bnc = BNCCorpusReader(root=root, fileids=fileids)
 
     try:
-        return Counter(BNCCorpusReader(root=root, fileids=fileids).tagged_words(stem=stem, c5=c5))
+        if not omit_tags:
+            return Counter(bnc.tagged_words(stem=stem, c5=c5))
+        else:
+            return Counter(bnc.words(stem=stem))
     except:
         logger.error('Could not process %s', fileids)
         raise
@@ -135,23 +142,29 @@ def dictionary(
     dictionary_key,
     output=('o', 'dicitionary.h5', 'The output file.'),
     c5=('', False, 'Use more detailed c5 tags.'),
-    stem=('', False, 'Use word stems instead of word strings.')
+    stem=('', False, 'Use word stems instead of word strings.'),
+    omit_tags=('', False, 'Do not use POS tags.'),
 ):
     """Extract word frequencies from the corpus."""
-    tagged_words = sum_counters(
+    words = sum_counters(
         pool.imap_unordered(
             bnc_words,
-            ((bnc.root, fid, c5) for fid in bnc.fileids()),
+            ((bnc.root, fid, c5, stem, omit_tags) for fid in bnc.fileids()),
         ),
         pool=pool,
     )
 
-    logger.debug('The final counter contains %d items.', len(tagged_words))
+    logger.debug('The final counter contains %d items.', len(words))
 
-    tagged_words = ([w, t, c] for (w, t), c in tagged_words.items())
+    if not omit_tags:
+        words = ([w, t, c] for (w, t), c in words.items())
+        columns = 'ngram', 'tag', 'count'
+    else:
+        words = ([w, c] for w, c in words.items())
+        columns = 'ngram', 'count'
 
     (
-        pd.DataFrame(tagged_words, columns=('ngram', 'tag', 'count'))
+        pd.DataFrame(words, columns=columns)
         .sort('count', ascending=False)
         .to_hdf(
             output,
