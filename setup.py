@@ -45,6 +45,7 @@ setup(
         'matplotlib',
         'more-itertools',
         'nltk',
+        'numexpr',
         'numpy',
         'opster',
         'pandas',
