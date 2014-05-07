@@ -96,15 +96,17 @@ def nmf(
 
 
 @command()
-def x(
+def pmi(
     space,
     output,
     dictionary,
+    no_log=('', False, 'Do not take logarithm of the probability ratio.'),
 ):
     """
-    Weight elements as P(c|t) / P(c).
+    Weight elements using the positive PMI measure [3].  log(P(c|t) / P(c)).
 
-    This is the weighting scheme used in [1] and [2].
+    [1] and [2] a measure similar to PMI, but without log, so it's just
+    P(c|t) / P(c).
 
     [1] Mitchell, Jeff, and Mirella Lapata. "Vector-based Models of Semantic
     Composition." ACL. 2008.
@@ -114,13 +116,14 @@ def x(
     of the Conference on Empirical Methods in Natural Language Processing.
     Association for Computational Linguistics, 2011.
 
+    [3] http://en.wikipedia.org/wiki/Pointwise_mutual_information
+
     """
     dictionary.set_index(
         [c for c in dictionary.columns if c != 'count'],
         inplace=True,
     )
-
-    # This are target frequncy counts in the whole Corpora N(t)
+    # This are target frequency counts in the whole Corpora N(t)
     row_totals = dictionary.loc[space.row_labels.index]['count'].values[:, np.newaxis]
 
     # This is the total number of words in the corpora
@@ -134,7 +137,12 @@ def x(
     # The elements in the matrix are P(c|t)
     matrix /= row_totals
 
-    # The elements in the matrix are P(c|t) / P(c)
-    matrix /= column_totals
+    if not no_log:
+        # The elements in the matrix are log(P(c|t) / P(c))
+        new_matrix = np.log(matrix) - np.log(column_totals)
+        new_matrix[new_matrix < 0] = 0.0
+    else:
+        # The elements in the matrix are P(c|t) / P(c)
+        new_matrix = matrix / column_totals
 
-    Space(matrix, space.row_labels, space.column_labels).write(output)
+    Space(new_matrix, space.row_labels, space.column_labels).write(output)
