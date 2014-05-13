@@ -22,7 +22,7 @@ class Space(Mapping):
     :param pandas.DataFrame row_lables: the row labels
     :param pandas.DataFrame column_labels: the column labels
 
-    ``row_labels`` and ``column_labels`` contain of at least two columns:
+    ``row_labels`` and ``column_labels`` contain at least two columns:
     ````ngram`` and id``.
 
     """
@@ -32,6 +32,8 @@ class Space(Mapping):
         self.column_labels = column_labels
 
         if isinstance(data_ij, tuple):
+            assert np.isfinite(data_ij[0]).all()
+
             self.matrix = csr_matrix(
                 data_ij,
                 shape=(len(row_labels), len(column_labels)),
@@ -105,7 +107,7 @@ class Space(Mapping):
                 return self.matrix[vector_ids]
 
         if strict:
-            raise KeyError
+            raise KeyError(labels)
 
         return csr_matrix((1, self.matrix.shape[1]))
 
@@ -126,11 +128,16 @@ class Space(Mapping):
 
 
 def read_space_from_file(f_name):
-    """Read the space form the file."""
+    """Read a space form a file.
+
+    So far, this is the preffered way to read a space.
+
+    """
     with pd.get_store(f_name, mode='r') as store:
 
         matrix = store['matrix'].reset_index()
         data = matrix['count'].values
+
         ij = matrix[['id_target', 'id_context']].values.T
 
         return Space(
