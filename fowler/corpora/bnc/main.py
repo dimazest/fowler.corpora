@@ -13,6 +13,8 @@ from more_itertools import chunked
 import pandas as pd
 from nltk.corpus.reader.bnc import BNCCorpusReader
 
+from progress.bar import Bar
+
 from fowler.corpora.dispatcher import Dispatcher, Resource, NewSpaceCreationMixin, DictionaryMixin
 from fowler.corpora.space.util import write_space
 from .util import count_cooccurrence
@@ -49,18 +51,33 @@ def bnc_cooccurrence(args):
         window_size=window_size,
     )
 
+    # It might be that case that targets are just words, not (word, POS) pairs.
+    # In case this is the case, disregard the POS tags for targets.
     if not isinstance(targets.index[0], tuple):
         cooccurences = ((t[0], c, n)for t, c, n in cooccurences)
 
-    counts = Counter(
-        dict(
-            ((targets.loc[t].id, context.loc[c].id), n)
-            for t, c, n in cooccurences
-            if (t in targets.index) and (c in context.index)
-        )
-    )
+    counts = [
+        (targets.loc[t].id, context.loc[c].id, n)
+        for t, c, n in cooccurences
+        if (t in targets.index) and (c in context.index)
+    ]
 
-    return counts
+    if not counts:
+        return Counter()
+
+    counts = pd.DataFrame(
+        counts,
+        columns=('target', 'context', 'count'),
+    ).groupby(
+        ('target', 'context'),
+    ).sum()
+
+    # TODO: it would be nice to return a DataFrame.
+    #
+    # Later, do_sum_counters could sum up data frames, instead of dicts.
+    # Probably, it's not even needed to sum up counters across multiple processes.
+    # Though, this needs benchmarking, for example on the SWDA targes.
+    return Counter(dict(zip(counts.index, counts['count'])))
 
 
 def do_sum_counters(args):
@@ -97,7 +114,13 @@ def cooccurrence(
     """Build the co-occurrence matrix."""
     records = Counter()
 
-    for fileids_chunk in chunked(bnc.fileids(), 100):
+    all_fileids = Bar(
+        'Reading BNC',
+        max=len(bnc.fileids()),
+        suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
+    ).iter(bnc.fileids())
+
+    for fileids_chunk in chunked(all_fileids, 100):
 
         counters = pool.imap_unordered(
             bnc_cooccurrence,
