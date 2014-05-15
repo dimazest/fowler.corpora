@@ -32,7 +32,6 @@ class Space(Mapping):
         self.column_labels = column_labels
 
         if isinstance(data_ij, tuple):
-            assert np.isfinite(data_ij[0]).all()
 
             self.matrix = csr_matrix(
                 data_ij,
@@ -41,14 +40,7 @@ class Space(Mapping):
         else:
             self.matrix = data_ij
 
-    def __getitem__(self, key):
-        """Retrive the vector for the key from the space.
-
-        :param str key: the row label.
-        :returns: a sparse matrix with one row.
-
-        """
-        return self.get_target_rows(key, strict=True)
+        assert np.isfinite(self.matrix.data).all()
 
     def __iter__(self):
         return iter(self.row_labels.index)
@@ -92,6 +84,15 @@ class Space(Mapping):
         # TODO: it is incorrect to pass self.column_labels! There are not column labels.
         return Space(reduced_matrix, self.row_labels, self.column_labels)
 
+    def __getitem__(self, key):
+        """Retrive the vector for the key from the space.
+
+        :param str key: the row label.
+        :returns: a sparse matrix with one row.
+
+        """
+        return self.get_target_rows(key, strict=True)
+
     def get_target_rows(self, *labels, strict=False):
         """Return vectors for the labels.
 
@@ -103,6 +104,13 @@ class Space(Mapping):
 
         if valid_labels:
             vector_ids = list(filter(np.isfinite, self.row_labels.loc[valid_labels].id))
+
+            # Check that we don't return *more* vectors than asked.
+            # It might be the case, that rows are POS tagged, but we query only
+            # by token. It this case, two rows for `run` may be retrieved, one
+            # as a verb, another as a noun.
+            assert len(vector_ids) <= len(valid_labels)
+
             if vector_ids:
                 return self.matrix[vector_ids]
 
