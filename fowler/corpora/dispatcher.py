@@ -190,6 +190,8 @@ class NewSpaceCreationMixin:
         frame.set_index(frame.columns.tolist(), inplace=True)
         frame['id'] = pd.Series(np.arange(len(frame)), index=frame.index)
 
+        assert frame.index.is_unique
+
         return frame
 
     @Resource
