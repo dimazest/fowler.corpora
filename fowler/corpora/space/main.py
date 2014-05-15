@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from fowler.corpora.dispatcher import Dispatcher, DictionaryMixin, Resource
 from fowler.corpora.models import read_space_from_file, Space
@@ -100,13 +101,18 @@ def pmi(
     space,
     output,
     dictionary,
+    column_dictionary=('', '', 'The frequencies of column labels.'),
+    column_dictionary_key=('', 'dictionary', 'An identifier for the group in the store.'),
     no_log=('', False, 'Do not take logarithm of the probability ratio.'),
 ):
     """
-    Weight elements using the positive PMI measure [3].  log(P(c|t) / P(c)).
+    Weight elements using the positive PMI measure [3]. max(0, log(P(c|t) / P(c)))
 
-    [1] and [2] a measure similar to PMI, but without log, so it's just
+    [1] and [2] use a measure similar to PMI, but without log, so it's just
     P(c|t) / P(c).
+
+    `--dictionary` provides word frequencies for rows. In case columns are
+    labelled differently, provide `--column-dictionary`.
 
     [1] Mitchell, Jeff, and Mirella Lapata. "Vector-based Models of Semantic
     Composition." ACL. 2008.
@@ -119,17 +125,29 @@ def pmi(
     [3] http://en.wikipedia.org/wiki/Pointwise_mutual_information
 
     """
-    dictionary.set_index(
-        [c for c in dictionary.columns if c != 'count'],
-        inplace=True,
-    )
+    def set_index(dictionary):
+        dictionary.set_index(
+            [c for c in dictionary.columns if c != 'count'],
+            inplace=True,
+        )
+
+    set_index(dictionary)
+
+    if column_dictionary:
+        column_dictionary = pd.read_hdf(column_dictionary, key=column_dictionary_key)
+        set_index(column_dictionary)
+    else:
+        column_dictionary = dictionary
+
     # This are target frequency counts in the whole Corpora N(t)
-    row_totals = dictionary.loc[space.row_labels.index]['count'].values[:, np.newaxis]
+    row_totals = dictionary.loc[space.row_labels.index]['count']
+    assert np.isfinite(row_totals.values).all()
+    row_totals = row_totals.values[:, np.newaxis]
 
     # This is the total number of words in the corpora
     N = dictionary['count'].sum()
     # This are context probabilities in the whole Corpora P(c)
-    column_totals = dictionary.loc[space.column_labels.index].values.flatten() / N
+    column_totals = column_dictionary.loc[space.column_labels.index].values.flatten() / N
 
     # Elements in the matrix are N(c, t): the co-occurrence counts
     matrix = space.matrix.astype(float).todense()

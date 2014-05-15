@@ -43,35 +43,17 @@ dispatcher = WSDDispatcher()
 command = dispatcher.command
 
 
-class Composer():
-    cache = {}
-
-    def __init__(self, vector, other_vector):
-        self.vector = vector
-        self.other_vector = other_vector
-
-    @method.cachedIn('cache')
-    def compose(self, word, other_word):
-        logger.debug('Verb matrix for %s and %s', word, other_word)
-        return sparse.kron(self.vector, self.other_vector)
+def compose(a, b):
+    return sparse.kron(a, b, format='bsr')
 
 
-def gs11_compose(args):
-    verb, subject, object_, landmark = args
+def gs11_similarity(args):
+    (v, verb), (s, subject), (o, object_), (l, landmark) = args
 
-    def compute_tensor_dot(this, other=None):
-        word, vector = this
+    subject_object = compose(subject, object_)
 
-        if other is None:
-            other = this
-        other_word, other_vector = other
-
-        return Composer(vector, other_vector).compose(word, other_word)
-
-    subject_object = compute_tensor_dot(subject, object_)
-
-    sentence_verb = compute_tensor_dot(verb).multiply(subject_object)
-    sentence_landmark = compute_tensor_dot(landmark).multiply(subject_object)
+    sentence_verb = verb.multiply(subject_object)
+    sentence_landmark = landmark.multiply(subject_object)
 
     return pairwise.cosine_similarity(sentence_verb, sentence_landmark)[0][0]
 
@@ -96,27 +78,49 @@ def gs11(
 
     """
     gs11_data = gs11_data[gs11_data['object'] != 'papers']
+    gs11_data = gs11_data[gs11_data['object'] != 'behaviour']
+    gs11_data = gs11_data[gs11_data['object'] != 'favour']
+    gs11_data = gs11_data[gs11_data['object'] != 'offence']
 
-    result = pool.imap(
-        gs11_compose,
+    def T(w, tag):
+        if space.row_labels.index.nlevels == 2:
+            return w, tag
+
+        return w
+
+    V = lambda v: T(v, 'VERB')
+    S = lambda s: T(s, 'SUBST')
+
+    verbs = pd.concat([gs11_data['verb'], gs11_data['landmark']]).unique()
+    verb_vectors = Bar(
+        'Verb vectors',
+        max=len(verbs),
+        suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
+    ).iter(
+        zip(verbs, (pool.starmap(compose, ((space[V(v)], space[V(v)]) for v in verbs))))
+    )
+    verb_vectors = dict(verb_vectors)
+
+    similarities = pool.imap(
+        gs11_similarity,
         (
             (
-                (v, space[(v, 'VERB')]),
-                (s, space[(s, 'SUBST')]),
-                (o, space[(o, 'SUBST')]),
-                (l, space[(l, 'VERB')]),
+                (v, verb_vectors[v]),
+                (s, space[S(s)]),
+                (o, space[S(o)]),
+                (l, verb_vectors[l]),
             )
             for v, s, o, l in gs11_data[['verb', 'subject', 'object', 'landmark']].values
         ),
     )
 
-    bar = Bar(
-        'Cosine similarity',
-        max=(len(gs11_data)),
-        suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
+    gs11_data['Cosine similarity'] = list(
+        Bar(
+            'Cosine similarity',
+            max=(len(gs11_data)),
+            suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
+        ).iter(similarities)
     )
-
-    gs11_data['Cosine similarity'] = list(bar.iter(result))
 
     display(gs11_data.groupby('hilo').mean())
     sns.jointplot(
@@ -126,4 +130,9 @@ def gs11(
         stat_func=stats.spearmanr,
         xlim=(1, 7),
         ylim=(0, 1),
+    )
+
+    print(
+        'Spearman correlation: rho={0:.2f}, p={1:.2f}'
+        .format(*stats.spearmanr(gs11_data[['input', 'Cosine similarity']]))
     )

@@ -1,5 +1,6 @@
 import csv
 
+import numpy as np
 import pandas as pd
 
 
@@ -30,8 +31,12 @@ def write_space(f_name, context, targets, matrix):
         ``id_target`` and ``id_context`` is frame's index.
 
     """
+
+    assert np.isfinite(matrix['count']).all()
+
     with pd.get_store(f_name, mode='w', complevel=9, complib='zlib') as store:
-        store['context'] = context
+        if context is not None:
+            store['context'] = context
         store['targets'] = targets
         store['matrix'] = matrix
 
