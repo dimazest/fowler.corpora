@@ -73,11 +73,12 @@ class BaseDispatcher(opster.Dispatcher):
 
 
 class Dispatcher(BaseDispatcher):
-    global__verbose = 'v', False, 'Be verbose.'
-    global__logger_filename = '', '/tmp/fowler.log', 'File to log.'
-    global__logger_backup_count = '', 1000, 'The number of log messages to keep.'
-    global__job_num = 'j', 0, 'Number of jobs for parallel tasks.'
     global__display_max_rows = '', 0, 'Maximum number of rows to show in pandas.'
+    global__job_num = 'j', 0, 'Number of jobs for parallel tasks.'
+    global__limit = '', 0, 'Number of elements to limit.'
+    global__logger_backup_count = '', 1000, 'The number of log messages to keep.'
+    global__logger_filename = '', '/tmp/fowler.log', 'File to log.'
+    global__verbose = 'v', False, 'Be verbose.'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

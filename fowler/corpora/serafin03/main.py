@@ -105,7 +105,6 @@ class Dispatcher(dispatcher.Dispatcher):
     global__train_split = '', 'downloads/switchboard/ws97-train-convs.list.txt', 'The training splits'
     global__test_split = '', 'downloads/switchboard/ws97-test-convs.list.txt', 'The testing splits'
     global__space = '', 'space.h5', 'The space file.'
-    global__limit = '', 0, 'Number of train utterances.'
 
     @dispatcher.Resource
     def swda(self):
