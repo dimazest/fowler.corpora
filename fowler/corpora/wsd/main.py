@@ -7,7 +7,6 @@ import seaborn as sns
 from scipy import sparse, stats
 from sklearn.metrics import pairwise
 
-from zope.cachedescriptors import method
 from progress.bar import Bar
 
 from fowler.corpora.dispatcher import Dispatcher, Resource, SpaceMixin
@@ -33,8 +32,8 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
             as_index=False,
         ).mean()
 
-        if self.gs11_limit:
-            grouped = grouped.head(self.gs11_limit)
+        if self.limit:
+            grouped = grouped.head(self.limit)
 
         return grouped
 
@@ -63,7 +62,6 @@ def gs11(
     pool,
     space,
     gs11_data=('', 'downloads/compdistmeaning/GS2011data.txt', 'The GS2011 dataset.'),
-    gs11_limit=('', 0, 'Limit number of items in the data set.'),
 ):
     """Categorical compositional distributional model for transitive verb disambiguation.
 
@@ -77,10 +75,6 @@ def gs11(
     [2] http://www.cs.ox.ac.uk/activities/compdistmeaning/GS2011data.txt
 
     """
-    gs11_data = gs11_data[gs11_data['object'] != 'papers']
-    gs11_data = gs11_data[gs11_data['object'] != 'behaviour']
-    gs11_data = gs11_data[gs11_data['object'] != 'favour']
-    gs11_data = gs11_data[gs11_data['object'] != 'offence']
 
     def T(w, tag):
         if space.row_labels.index.nlevels == 2:
