@@ -39,7 +39,7 @@ setup(
     install_requires=[
         'fowler.switchboard',
         'google-ngram-downloader',
-        'ipython[notebook,parallel,nbconvert]',
+        'ipython',
         'jinja2',
         'joblib',
         'matplotlib',
