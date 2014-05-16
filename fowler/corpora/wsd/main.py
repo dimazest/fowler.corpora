@@ -19,6 +19,8 @@ logger = logging.getLogger(__name__)
 class WSDDispatcher(Dispatcher, SpaceMixin):
     """WSD task dispatcher."""
 
+    global__compositon_operator = '', 'kron', 'Composition operator [kron|sum|mult].'
+
     @Resource
     def gs11_data(self):
         """The data set grouped by verb, subject, object and landmark.
@@ -74,12 +76,19 @@ def compose(a, b):
 
 
 def gs11_similarity(args):
-    (v, verb), (s, subject), (o, object_), (l, landmark) = args
+    (v, verb), (s, subject), (o, object_), (l, landmark), compositon_operator = args
 
-    subject_object = compose(subject, object_)
+    if compositon_operator == 'kron':
+        subject_object = compose(subject, object_)
 
-    sentence_verb = verb.multiply(subject_object)
-    sentence_landmark = landmark.multiply(subject_object)
+        sentence_verb = verb.multiply(subject_object)
+        sentence_landmark = landmark.multiply(subject_object)
+    elif compositon_operator == 'mult':
+        sentence_verb = verb.multiply(subject).multiply(object_)
+        sentence_landmark = landmark.multiply(subject).multiply(object_)
+    elif compositon_operator == 'add':
+        sentence_verb = verb + subject + object_
+        sentence_landmark = landmark + subject + object_
 
     return pairwise.cosine_similarity(sentence_verb, sentence_landmark)[0][0]
 
@@ -88,6 +97,7 @@ def gs11_similarity(args):
 def gs11(
     pool,
     space,
+    compositon_operator,
     gs11_data=('', 'downloads/compdistmeaning/GS2011data.txt', 'The GS2011 dataset.'),
 ):
     """Categorical compositional distributional model for transitive verb disambiguation.
@@ -113,11 +123,13 @@ def gs11(
                 (s, space[S(s)]),
                 (o, space[S(o)]),
                 (l, verb_vectors[l]),
+                compositon_operator,
             )
             for v, s, o, l in gs11_data[['verb', 'subject', 'object', 'landmark']].values
         ),
         similarity_function=gs11_similarity,
-        input_column='input'
+        input_column='input',
+        compositon_operator=compositon_operator,
     )
 
     display(gs11_data.groupby('hilo').mean())
@@ -146,7 +158,8 @@ def paraphrasing(
             for s1, v1, o1, s2, v2, o2 in ks13_data[['subject1', 'verb1', 'object1', 'subject2', 'verb2', 'object2']].values
         ),
         similarity_function=paraphrasing_similarity,
-        input_column='score'
+        input_column='score',
+        compositon_operator='kron',
     )
 
 
@@ -162,7 +175,7 @@ def paraphrasing_similarity(args):
     return pairwise.cosine_similarity(s1, s2)[0][0]
 
 
-def similarity_experiment(space, pool, data, verb_columns, similarity_input, similarity_function, input_column):
+def similarity_experiment(space, pool, data, verb_columns, similarity_input, similarity_function, input_column, compositon_operator):
     def T(w, tag):
         if space.row_labels.index.nlevels == 2:
             return w, tag
@@ -173,14 +186,18 @@ def similarity_experiment(space, pool, data, verb_columns, similarity_input, sim
     S = lambda s: T(s, 'SUBST')
 
     verbs = pd.concat([data[vc] for vc in verb_columns]).unique()
-    verb_vectors = Bar(
-        'Verb vectors',
-        max=len(verbs),
-        suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
-    ).iter(
-        zip(verbs, (pool.starmap(compose, ((space[V(v)], space[V(v)]) for v in verbs))))
-    )
-    verb_vectors = dict(verb_vectors)
+
+    if compositon_operator == 'kron':
+        verb_vectors = Bar(
+            'Verb vectors',
+            max=len(verbs),
+            suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
+        ).iter(
+            zip(verbs, (pool.starmap(compose, ((space[V(v)], space[V(v)]) for v in verbs))))
+        )
+        verb_vectors = dict(verb_vectors)
+    else:
+        verb_vectors = {v: space[V(v)] for v in verbs}
 
     similarities = pool.imap(
         similarity_function,
