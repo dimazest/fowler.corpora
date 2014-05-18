@@ -99,6 +99,7 @@ def gs11(
     space,
     compositon_operator,
     gs11_data=('', 'downloads/compdistmeaning/GS2011data.txt', 'The GS2011 dataset.'),
+    google_vectors=('', False, 'Get rid of certain words in the input data that are not in Google vectors.'),
 ):
     """Categorical compositional distributional model for transitive verb disambiguation.
 
@@ -112,6 +113,13 @@ def gs11(
     [2] http://www.cs.ox.ac.uk/activities/compdistmeaning/GS2011data.txt
 
     """
+    if google_vectors:
+        gs11_data = gs11_data[gs11_data['landmark'] != 'mope']
+        gs11_data = gs11_data[gs11_data['object'] != 'behaviour']
+        gs11_data = gs11_data[gs11_data['object'] != 'favour']
+        gs11_data = gs11_data[gs11_data['object'] != 'offence']
+        gs11_data = gs11_data[gs11_data['object'] != 'paper']
+
     similarity_experiment(
         space,
         pool,
@@ -141,7 +149,14 @@ def paraphrasing(
     space,
     compositon_operator,
     ks13_data=('', 'downloads/compdistmeaning/emnlp2013_turk.txt', 'The KS2013 dataset.'),
+    google_vectors=('', False, 'Get rid of certain words in the input data that are not in Google vectors.'),
 ):
+
+    if google_vectors:
+        ks13_data = ks13_data[ks13_data['verb2'] != 'emphasise']
+        ks13_data = ks13_data[ks13_data['subject1'] != 'programme']
+        ks13_data = ks13_data[ks13_data['subject2'] != 'programme']
+
     similarity_experiment(
         space,
         pool,
