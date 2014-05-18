@@ -139,6 +139,7 @@ def gs11(
 def paraphrasing(
     pool,
     space,
+    compositon_operator,
     ks13_data=('', 'downloads/compdistmeaning/emnlp2013_turk.txt', 'The KS2013 dataset.'),
 ):
     similarity_experiment(
@@ -154,20 +155,24 @@ def paraphrasing(
                 (s2, space[S(s2)]),
                 (v2, verb_vectors[v2]),
                 (o2, space[S(o2)]),
+                compositon_operator,
             )
             for s1, v1, o1, s2, v2, o2 in ks13_data[['subject1', 'verb1', 'object1', 'subject2', 'verb2', 'object2']].values
         ),
         similarity_function=paraphrasing_similarity,
         input_column='score',
-        compositon_operator='kron',
+        compositon_operator=compositon_operator,
     )
 
 
 def paraphrasing_similarity(args):
-    (s1, subject1), (v1, verb1), (o1, object1), (s2, subject2), (v2, verb2), (o2, object2) = args
+    (s1, subject1), (v1, verb1), (o1, object1), (s2, subject2), (v2, verb2), (o2, object2), compositon_operator = args
 
-    def Sentence(subject, verb, object_):
-        return verb.multiply(compose(subject, object_))
+    Sentence = {
+        'kron': lambda subject, verb, object_: verb.multiply(compose(subject, object_)),
+        'add': lambda subject, verb, object_: verb + subject + object_,
+        'mult': lambda subject, verb, object_: verb.multiply(subject).multiply(object_),
+    }[compositon_operator]
 
     s1 = Sentence(subject1, verb1, object1)
     s2 = Sentence(subject2, verb2, object2)
