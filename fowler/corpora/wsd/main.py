@@ -146,11 +146,11 @@ def gs11(
         pool,
         gs11_data,
         verb_columns=('verb', 'landmark'),
-        similarity_input=lambda verb_vectors, S, A: (
+        similarity_input=lambda verb_vectors, t: (
             (
                 (v, verb_vectors[v]),
-                (s, space[S(s)]),
-                (o, space[S(o)]),
+                (s, space[t.S(s)]),
+                (o, space[t.S(o)]),
                 (l, verb_vectors[l]),
                 compositon_operator,
             )
@@ -183,14 +183,14 @@ def paraphrasing(
         pool,
         ks13_data,
         verb_columns=('verb1', 'verb2'),
-        similarity_input=lambda verb_vectors, S, A: (
+        similarity_input=lambda verb_vectors, t: (
             (
-                (s1, space[S(s1)]),
+                (s1, space[t.S(s1)]),
                 (v1, verb_vectors[v1]),
-                (o1, space[S(o1)]),
-                (s2, space[S(s2)]),
+                (o1, space[t.S(o1)]),
+                (s2, space[t.S(s2)]),
                 (v2, verb_vectors[v2]),
-                (o2, space[S(o2)]),
+                (o2, space[t.S(o2)]),
                 compositon_operator,
             )
             for s1, v1, o1, s2, v2, o2 in ks13_data[['subject1', 'verb1', 'object1', 'subject2', 'verb2', 'object2']].values
@@ -241,14 +241,14 @@ def gs12(
         pool,
         gs12_data,
         verb_columns=('verb', 'landmark'),
-        similarity_input=lambda verb_vectors, S, A: (
+        similarity_input=lambda verb_vectors, t: (
             (
-                (as_, space[A(as_)]),
-                (s, space[S(s)]),
+                (as_, space[t.A(as_)]),
+                (s, space[t.S(s)]),
                 (v, verb_vectors[v]),
                 (l, verb_vectors[l]),
-                (ao, space[A(ao)]),
-                (o, space[S(o)]),
+                (ao, space[t.A(ao)]),
+                (o, space[t.S(o)]),
                 compositon_operator,
                 np_composition,
             )
@@ -276,15 +276,9 @@ def paraphrasing_similarity(args):
 
 
 def similarity_experiment(space, pool, data, verb_columns, similarity_input, similarity_function, input_column, compositon_operator):
-    def T(w, tag):
-        if space.row_labels.index.nlevels == 2:
-            return w, tag
 
-        return w
-
-    V = lambda v: T(v, 'VERB')
-    S = lambda s: T(s, 'SUBST')
-    A = lambda a: T(a, 'ADJ')
+    tagger = Tagger(space)
+    V = tagger.V
 
     verbs = pd.concat([data[vc] for vc in verb_columns]).unique()
 
@@ -302,7 +296,7 @@ def similarity_experiment(space, pool, data, verb_columns, similarity_input, sim
 
     similarities = pool.imap(
         similarity_function,
-        similarity_input(verb_vectors, S, A)
+        similarity_input(verb_vectors, tagger)
     )
 
     data['Cosine similarity'] = list(
@@ -328,3 +322,27 @@ def similarity_experiment(space, pool, data, verb_columns, similarity_input, sim
     )
 
     return data
+
+
+class Tagger:
+
+    def __init__(self, space):
+        self.with_tags = space.row_labels.index.nlevels == 2
+
+    def tag(self, w, tag):
+        if self.with_tags:
+            return w, tag
+
+        return w
+
+    def V(self, v):
+        """Verb."""
+        return self.tag(v, 'VERB')
+
+    def S(self, v):
+        """Substantive (noun)."""
+        return self.tag(v, 'SUBST')
+
+    def A(self, v):
+        """Adjective."""
+        return self.tag(v, 'ADJ')
