@@ -66,6 +66,27 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
 
         return grouped
 
+    @Resource
+    def gs12_data(self):
+        """The data set grouped by 'adj_subj', 'subj', 'verb', 'landmark', 'adj_obj', 'obj'.
+
+        The mean of the input values per group is calculated.
+
+        """
+        index_cols = 'adj_subj', 'subj', 'verb', 'landmark', 'adj_obj', 'obj'
+
+        data = pd.read_csv(
+            self.kwargs['gs12_data'],
+            sep=' ',
+            usecols=index_cols + ('annotator_score', ),
+        )
+        grouped = data.groupby(index_cols, as_index=False).mean()
+
+        if self.limit:
+            grouped = grouped.head(self.limit)
+
+        return grouped
+
 
 dispatcher = WSDDispatcher()
 command = dispatcher.command
@@ -125,7 +146,7 @@ def gs11(
         pool,
         gs11_data,
         verb_columns=('verb', 'landmark'),
-        similarity_input=lambda verb_vectors, S: (
+        similarity_input=lambda verb_vectors, S, A: (
             (
                 (v, verb_vectors[v]),
                 (s, space[S(s)]),
@@ -162,7 +183,7 @@ def paraphrasing(
         pool,
         ks13_data,
         verb_columns=('verb1', 'verb2'),
-        similarity_input=lambda verb_vectors, S: (
+        similarity_input=lambda verb_vectors, S, A: (
             (
                 (s1, space[S(s1)]),
                 (v1, verb_vectors[v1]),
@@ -176,6 +197,65 @@ def paraphrasing(
         ),
         similarity_function=paraphrasing_similarity,
         input_column='score',
+        compositon_operator=compositon_operator,
+    )
+
+
+def gs12_similarity(args):
+    (
+        (as_, adj_subj),
+        (s, subj),
+        (v, verb),
+        (l, landmark),
+        (ao, adj_obj),
+        (o, obj),
+        compositon_operator,
+        np_composition,
+    ) = args
+
+    def compose(a, n):
+        return {
+            'add': lambda: a + n,
+            'mult': lambda: a.multiply(n),
+
+        }[np_composition]()
+
+    return gs11_similarity(
+        (
+            (v, verb), (s, compose(adj_subj, subj)), (o, compose(adj_obj, obj)), (l, landmark), compositon_operator,
+        )
+    )
+
+
+@command()
+def gs12(
+    pool,
+    space,
+    compositon_operator,
+    np_composition=('', 'mult', 'Operation used to compose adjective with noun. [add|mult]'),
+    gs12_data=('', 'downloads/compdistmeaning/GS2012data.txt', 'The GS2012 dataset.'),
+    google_vectors=('', False, 'Get rid of certain words in the input data that are not in Google vectors.'),
+):
+    similarity_experiment(
+        space,
+        pool,
+        gs12_data,
+        verb_columns=('verb', 'landmark'),
+        similarity_input=lambda verb_vectors, S, A: (
+            (
+                (as_, space[A(as_)]),
+                (s, space[S(s)]),
+                (v, verb_vectors[v]),
+                (l, verb_vectors[l]),
+                (ao, space[A(ao)]),
+                (o, space[S(o)]),
+                compositon_operator,
+                np_composition,
+            )
+            for as_, s, v, l, ao, o in gs12_data[['adj_subj', 'subj', 'verb', 'landmark', 'adj_obj', 'obj']].values
+        ),
+        similarity_function=gs12_similarity,
+        input_column='annotator_score',
         compositon_operator=compositon_operator,
     )
 
@@ -204,6 +284,7 @@ def similarity_experiment(space, pool, data, verb_columns, similarity_input, sim
 
     V = lambda v: T(v, 'VERB')
     S = lambda s: T(s, 'SUBST')
+    A = lambda a: T(a, 'ADJ')
 
     verbs = pd.concat([data[vc] for vc in verb_columns]).unique()
 
@@ -221,7 +302,7 @@ def similarity_experiment(space, pool, data, verb_columns, similarity_input, sim
 
     similarities = pool.imap(
         similarity_function,
-        similarity_input(verb_vectors, S)
+        similarity_input(verb_vectors, S, A)
     )
 
     data['Cosine similarity'] = list(
@@ -232,6 +313,11 @@ def similarity_experiment(space, pool, data, verb_columns, similarity_input, sim
         ).iter(similarities)
     )
 
+    print(
+        'Spearman correlation: rho={0:.2f}, p={1:.2f}'
+        .format(*stats.spearmanr(data[[input_column, 'Cosine similarity']]))
+    )
+
     sns.jointplot(
         data[input_column],
         data['Cosine similarity'],
@@ -239,11 +325,6 @@ def similarity_experiment(space, pool, data, verb_columns, similarity_input, sim
         stat_func=stats.spearmanr,
         xlim=(1, 7),
         ylim=(0, 1),
-    )
-
-    print(
-        'Spearman correlation: rho={0:.2f}, p={1:.2f}'
-        .format(*stats.spearmanr(data[[input_column, 'Cosine similarity']]))
     )
 
     return data
