@@ -20,6 +20,7 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
     """WSD task dispatcher."""
 
     global__compositon_operator = '', 'kron', 'Composition operator [kron|sum|mult].'
+    global__google_vectors = '', False, 'Get rid of certain words in the input data that are not in Google vectors.'
 
     @Resource
     def gs11_data(self):
@@ -33,6 +34,13 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
             ('verb', 'subject', 'object', 'landmark', 'hilo'),
             as_index=False,
         ).mean()
+
+        if self.google_vectors:
+            grouped = grouped[grouped['landmark'] != 'mope']
+            grouped = grouped[grouped['object'] != 'behaviour']
+            grouped = grouped[grouped['object'] != 'favour']
+            grouped = grouped[grouped['object'] != 'offence']
+            grouped = grouped[grouped['object'] != 'paper']
 
         if self.limit:
             grouped = grouped.head(self.limit)
@@ -61,6 +69,11 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
 
         grouped = data.groupby(index_cols, as_index=False).mean()
 
+        if self.google_vectors:
+            grouped = grouped[grouped['verb2'] != 'emphasise']
+            grouped = grouped[grouped['subject1'] != 'programme']
+            grouped = grouped[grouped['subject2'] != 'programme']
+
         if self.limit:
             grouped = grouped.head(self.limit)
 
@@ -81,6 +94,10 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
             usecols=index_cols + ('annotator_score', ),
         )
         grouped = data.groupby(index_cols, as_index=False).mean()
+
+        if self.google_vectors:
+            grouped = grouped[grouped['obj'] != 'offence']
+            grouped = grouped[grouped['obj'] != 'favour']
 
         if self.limit:
             grouped = grouped.head(self.limit)
@@ -120,7 +137,6 @@ def gs11(
     space,
     compositon_operator,
     gs11_data=('', 'downloads/compdistmeaning/GS2011data.txt', 'The GS2011 dataset.'),
-    google_vectors=('', False, 'Get rid of certain words in the input data that are not in Google vectors.'),
 ):
     """Categorical compositional distributional model for transitive verb disambiguation.
 
@@ -134,13 +150,6 @@ def gs11(
     [2] http://www.cs.ox.ac.uk/activities/compdistmeaning/GS2011data.txt
 
     """
-    if google_vectors:
-        gs11_data = gs11_data[gs11_data['landmark'] != 'mope']
-        gs11_data = gs11_data[gs11_data['object'] != 'behaviour']
-        gs11_data = gs11_data[gs11_data['object'] != 'favour']
-        gs11_data = gs11_data[gs11_data['object'] != 'offence']
-        gs11_data = gs11_data[gs11_data['object'] != 'paper']
-
     similarity_experiment(
         space,
         pool,
@@ -170,14 +179,7 @@ def paraphrasing(
     space,
     compositon_operator,
     ks13_data=('', 'downloads/compdistmeaning/emnlp2013_turk.txt', 'The KS2013 dataset.'),
-    google_vectors=('', False, 'Get rid of certain words in the input data that are not in Google vectors.'),
 ):
-
-    if google_vectors:
-        ks13_data = ks13_data[ks13_data['verb2'] != 'emphasise']
-        ks13_data = ks13_data[ks13_data['subject1'] != 'programme']
-        ks13_data = ks13_data[ks13_data['subject2'] != 'programme']
-
     similarity_experiment(
         space,
         pool,
@@ -234,7 +236,6 @@ def gs12(
     compositon_operator,
     np_composition=('', 'mult', 'Operation used to compose adjective with noun. [add|mult]'),
     gs12_data=('', 'downloads/compdistmeaning/GS2012data.txt', 'The GS2012 dataset.'),
-    google_vectors=('', False, 'Get rid of certain words in the input data that are not in Google vectors.'),
 ):
     similarity_experiment(
         space,
