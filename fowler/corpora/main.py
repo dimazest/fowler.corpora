@@ -14,6 +14,7 @@ from IPython.parallel.apps import ipclusterapp
 import fowler.corpora.bnc.main as bnc_main
 import fowler.corpora.dictionary.main as dictionary_main
 import fowler.corpora.google_ngrams.main as google_ngrams_main
+import fowler.corpora.ms_paraphrase.main as ms_paraphrase_main
 import fowler.corpora.serafin03.main as serafin03_main
 import fowler.corpora.space.main as space_main
 import fowler.corpora.wordsim353.main as wordsim353_main
@@ -72,6 +73,12 @@ dispatcher.nest(
     'bnc',
     bnc_main.dispatcher,
     bnc_main.__doc__,
+)
+
+dispatcher.nest(
+    'ms-paraphrase',
+    ms_paraphrase_main.dispatcher,
+    ms_paraphrase_main.__doc__,
 )
 
 
