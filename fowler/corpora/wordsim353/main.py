@@ -21,6 +21,9 @@ def get_space_targets(gold_standard, store_file):
     :return: the space and it's targets
 
     """
+    # TODO: all this should be refactored and viciously removed!!!
+    # models provide a fency Space class and read_space_from_file()
+
     with pd.get_store(store_file, mode='r') as store:
         targets = store['targets']
         matrix = store['matrix'].reset_index()
@@ -47,11 +50,12 @@ def evaluate(
     templates_env,
     matrix=('m', 'matrix.h5', 'The cooccurrence matrix.'),
     gold_standard=('g', 'downloads/wordsim353/combined.csv', 'Word similarities'),
-    show_details=('d', False, 'Show more details.')
+    show_details=('d', False, 'Show more details.'),
 ):
     """Evaluate a distributional semantic vector space."""
     gold_standard = pd.read_csv(gold_standard)
-    space, targets = get_space_targets(gold_standard, matrix)
+    # space is just a csr_matrix here, not a Space instance.
+    space, targets = get_space_targets(gold_standard, matrix, ngrams_only=ngrams_only)
 
     result = (
         gold_standard

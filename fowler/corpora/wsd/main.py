@@ -326,6 +326,7 @@ def similarity_experiment(space, pool, data, verb_columns, similarity_input, sim
 
 
 class Tagger:
+    # TODO: it would be cool to move it somewhere
 
     def __init__(self, space):
         self.with_tags = space.row_labels.index.nlevels == 2
