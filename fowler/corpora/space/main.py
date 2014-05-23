@@ -104,6 +104,7 @@ def pmi(
     column_dictionary=('', '', 'The frequencies of column labels.'),
     column_dictionary_key=('', 'dictionary', 'An identifier for the group in the store.'),
     no_log=('', False, 'Do not take logarithm of the probability ratio.'),
+    remove_missing=('', False, 'Remove items that are not in the dictionary.')
 ):
     """
     Weight elements using the positive PMI measure [3]. max(0, log(P(c|t) / P(c)))
@@ -141,7 +142,14 @@ def pmi(
 
     # This are target frequency counts in the whole Corpora N(t)
     row_totals = dictionary.loc[space.row_labels.index]['count']
-    assert np.isfinite(row_totals.values).all()
+
+    missing_rows = ~np.isfinite(row_totals)
+    if missing_rows.any():
+        if not remove_missing:
+            raise ValueError('These rows are not finite!', row_totals[missing_rows])
+        else:
+            row_totals = row_totals[~missing_rows]
+
     row_totals = row_totals.values[:, np.newaxis]
 
     # This is the total number of words in the corpora
@@ -151,6 +159,9 @@ def pmi(
 
     # Elements in the matrix are N(c, t): the co-occurrence counts
     matrix = space.matrix.astype(float).todense()
+
+    if remove_missing:
+        matrix = matrix[~missing_rows.values]
 
     # The elements in the matrix are P(c|t)
     matrix /= row_totals
