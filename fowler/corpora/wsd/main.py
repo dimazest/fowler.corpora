@@ -95,6 +95,8 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
         )
         grouped = data.groupby(index_cols, as_index=False).mean()
 
+        grouped['obj'][grouped['obj'] == 'papers'] = 'paper'
+
         if self.google_vectors:
             grouped = grouped[grouped['obj'] != 'offence']
             grouped = grouped[grouped['obj'] != 'favour']
@@ -332,6 +334,12 @@ class Tagger:
         self.with_tags = space.row_labels.index.nlevels == 2
 
     def tag(self, w, tag):
+
+        if (w, tag) == ('parish', 'ADJ'):
+            tag = 'SUBST'
+        if (w, tag) == ('raffle', 'ADJ'):
+            tag = 'SUBST'
+
         if self.with_tags:
             return w, tag
 
