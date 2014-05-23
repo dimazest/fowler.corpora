@@ -267,6 +267,7 @@ def composition(
     def extract_features(utterances):
 
         logger.info('Extracting features.')
+        # This might be inefficient, because the space object is passed to the pool.
         X = pool.map(space_compose, ((u, composer) for u in utterances), chunksize=CHUNK_SIZE)
         logger.debug('Stacking %d rows.', len(X))
         X = vstack(X, format='csr')
