@@ -309,7 +309,7 @@ def similarity_experiment(space, pool, data, verb_columns, similarity_input, sim
     )
 
     print(
-        'Spearman correlation: rho={0:.2f}, p={1:.2f}'
+        'Spearman correlation: rho={0:.3f}, p={1:.2f}'
         .format(*stats.spearmanr(data[[input_column, 'Cosine similarity']]))
     )
 
