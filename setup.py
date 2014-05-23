@@ -58,6 +58,7 @@ setup(
         'setuptools',
         'six',
         'tables',
+        'tornado',
         'xlwt-future',
         'zope.cachedescriptors',
     ],
