@@ -36,8 +36,10 @@ def readline_folder(input_dir=None):
     Uncompresses the files on the fly if needed.
 
     """
-    file_names = local(input_dir).listdir() if input_dir else []
-    file_names = map(str, file_names)
+    if input_dir:
+        file_names = [str(n) for n in local(input_dir).visit() if n.check(file=True, exists=True)]
+    else:
+        file_names = []
 
     with contextlib.closing(
         fileinput.FileInput(
