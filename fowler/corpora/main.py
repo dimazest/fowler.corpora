@@ -12,6 +12,7 @@ from IPython.terminal.ipapp import launch_new_instance
 from IPython.parallel.apps import ipclusterapp
 
 import fowler.corpora.bnc.main as bnc_main
+import fowler.corpora.categorical.main as categorical_main
 import fowler.corpora.dictionary.main as dictionary_main
 import fowler.corpora.google_ngrams.main as google_ngrams_main
 import fowler.corpora.ms_paraphrase.main as ms_paraphrase_main
@@ -79,6 +80,13 @@ dispatcher.nest(
     'ms-paraphrase',
     ms_paraphrase_main.dispatcher,
     ms_paraphrase_main.__doc__,
+)
+
+
+dispatcher.nest(
+    'categorical',
+    categorical_main.dispatcher,
+    categorical_main.__doc__,
 )
 
 
