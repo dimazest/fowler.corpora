@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
-    """BNC dispathcer."""
+    """BNC dispatcher."""
 
     global__bnc = '', 'corpora/BNC/Texts', 'Path to the BNC corpus.'
     global__fileids = '', r'[A-K]/\w*/\w*\.xml', 'Files to be read in the corpus.'
@@ -41,7 +41,7 @@ command = dispatcher.command
 
 
 def bnc_cooccurrence(args):
-    """Count word couccurrence in a BNC file."""
+    """Count word co-occurrence in a BNC file."""
     root, fileids, window_size, stem, targets, context = args
 
     logger.debug('Processing %s', fileids)
