@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 class WSDDispatcher(Dispatcher, SpaceMixin):
     """WSD task dispatcher."""
 
-    global__compositon_operator = '', 'kron', 'Composition operator [kron|sum|mult].'
+    global__compositon_operator = '', 'kron', 'Composition operator [kron|sum|mult|verb].'
     global__google_vectors = '', False, 'Get rid of certain words in the input data that are not in Google vectors.'
 
     @Resource
@@ -129,6 +129,9 @@ def gs11_similarity(args):
     elif compositon_operator == 'add':
         sentence_verb = verb + subject + object_
         sentence_landmark = landmark + subject + object_
+    elif compositon_operator == 'verb':
+        sentence_verb = verb
+        sentence_landmark = landmark
 
     return pairwise.cosine_similarity(sentence_verb, sentence_landmark)[0][0]
 
@@ -221,7 +224,6 @@ def gs12_similarity(args):
         return {
             'add': lambda: a + n,
             'mult': lambda: a.multiply(n),
-
         }[np_composition]()
 
     return gs11_similarity(
@@ -270,6 +272,7 @@ def paraphrasing_similarity(args):
         'kron': lambda subject, verb, object_: verb.multiply(compose(subject, object_)),
         'add': lambda subject, verb, object_: verb + subject + object_,
         'mult': lambda subject, verb, object_: verb.multiply(subject).multiply(object_),
+        'verb': lambda subject, verb, object_: verb,
     }[compositon_operator]
 
     s1 = Sentence(subject1, verb1, object1)
