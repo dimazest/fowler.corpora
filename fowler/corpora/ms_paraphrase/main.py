@@ -24,6 +24,7 @@ Translation for Paraphrase Generation. In EMNLP (pp. 142-149).
 import csv
 
 import pandas as pd
+from nltk import wordpunct_tokenize
 
 from fowler.corpora.dispatcher import Dispatcher, Resource, SpaceMixin
 
@@ -39,7 +40,9 @@ class MSParaphraseDispatcher(Dispatcher, SpaceMixin):
 
     @Resource
     def ms_paraphrase_train(self):
-        self.read_data(self.kwargs['ms_paraphrase_train'])
+        data = self.read_data(self.kwargs['ms_paraphrase_train'])
+
+        import ipdb; ipdb.set_trace()
 
 
 dispatcher = MSParaphraseDispatcher()
@@ -47,5 +50,5 @@ command = dispatcher.command
 
 
 @command()
-def distributional(ms_paraphrase_train):
+def targets(ms_paraphrase_train):
     print(ms_paraphrase_train)
