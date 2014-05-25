@@ -79,7 +79,7 @@ def parse_tokens(c):
         'AS': '__AS__',  # as
         'CC': 'CONJ',  # and
         'CD': 'ADJ',  # three
-        'DT': 'ART',  # the
+        'DT': 'ART',  # the, this BNC: the_ART, this_ADJ C&C: the_DT, this_DT :)
         'EX': 'PRON',  # there
         'FW': 'SUBJ',  # nightingale
         'IN': 'PREP',  # of
@@ -123,6 +123,8 @@ def parse_tokens(c):
 
     for position, token in enumerate(c.split()):
         word, stem, tag, *_ = token.split('|')
+
+        assert stem.islower()
 
         yield position, (word, stem, c5tags[tag])
 
