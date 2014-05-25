@@ -91,7 +91,9 @@ class Space(Mapping):
         :returns: a sparse matrix with one row.
 
         """
-        return self.get_target_rows(key, strict=True)
+        vector_id, = self.row_labels.loc[key].values
+
+        return self.matrix[vector_id]
 
     def get_target_rows(self, *labels, strict=False):
         """Return vectors for the labels.
