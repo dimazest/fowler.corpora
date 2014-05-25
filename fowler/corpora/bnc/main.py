@@ -81,11 +81,10 @@ def bnc_cooccurrence(args):
 
 
 def do_sum_counters(args):
-    if len(args) == 1:
-        return args[0]
-
     logger.debug('Summing up %d counters.', len(args))
-    return sum(args, Counter())
+
+    first_counter, *rest = args
+    return sum(rest, first_counter)
 
 
 def sum_counters(counters, pool, chunk_size=7):
@@ -130,7 +129,7 @@ def cooccurrence(
             ),
         )
 
-        records += sum_counters(counters, pool=pool, chunk_size=chunk_size)
+        records = sum_counters(chain([records], counters), pool=pool, chunk_size=chunk_size)
 
         logger.debug('There are %d co-occurrence records so far.', len(records))
 
@@ -188,6 +187,47 @@ def dictionary(
 
     (
         pd.DataFrame(words, columns=columns)
+        .sort('count', ascending=False)
+        .to_hdf(
+            output,
+            dictionary_key,
+            mode='w',
+            complevel=9,
+            complib='zlib',
+        )
+    )
+
+
+@command()
+def transitive_verbs(
+    pool,
+    dictionary_key,
+    ccg_bnc=('', 'corpora/CCG_BNC_v1', 'Path to the CCG parsed BNC.'),
+    output=('o', 'transitive_verbs.h5', 'The output verb space file.'),
+):
+    """Count occurrence of transitive verbs together with their subjects and objects."""
+    file_names = [str(n) for n in local(ccg_bnc).visit() if n.check(file=True, exists=True)]
+
+    file_names = Bar(
+        'Reading CCG parsed BNC',
+        max=len(file_names),
+        suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
+    ).iter(file_names)
+
+    vso = sum_counters(
+        pool.imap_unordered(
+            collect_verb_subject_object,
+            file_names,
+        ),
+        pool=pool,
+    )
+
+    columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag', 'count'
+    (
+        pd.DataFrame(
+            (list(chain(chain.from_iterable(k), [c])) for k, c in vso.items()),
+            columns=columns,
+        )
         .sort('count', ascending=False)
         .to_hdf(
             output,
