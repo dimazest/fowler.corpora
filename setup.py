@@ -47,6 +47,7 @@ setup(
         'nltk',
         'numexpr',
         'numpy',
+        'openpyxl<1.9999',  # Pandas requires vresion < 2.0
         'opster',
         'pandas',
         'progress',
