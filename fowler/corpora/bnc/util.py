@@ -62,14 +62,69 @@ def parse_dependencies(dependencies):
 
 
 def parse_tokens(c):
-    """Parse and retrieve token position, word, stem and tag from a C&C parse."""
+    """Parse and retrieve token position, word, stem and tag from a C&C parse.
+
+    Replaces C&C tags with the BNC pos tags.
+
+    """
     assert c[:4] == '<c> '
     c = c[4:]
+
+    c5tags = {
+        '$': '__$__',  # c
+        ',': 'PUN',  # ,
+        '.': 'PUN',  # .
+        ':': 'PUN',  # :
+        ';': 'PUN',  # ;
+        'AS': '__AS__',  # as
+        'CC': 'CONJ',  # and
+        'CD': 'ADJ',  # three
+        'DT': 'ART',  # the
+        'EX': 'PRON',  # there
+        'FW': 'SUBJ',  # nightingale
+        'IN': 'PREP',  # of
+        'JJ': 'ADJ',  # delayed
+        'JJR': 'ADJ',  # greater
+        'JJS': 'ADJ',  # biggest
+        'LQU': '__LQU__',  # ``
+        'LRB': 'PUN',  # (
+        'LS': '__LS__',  # b
+        'MD': 'VERB',  # could
+        'NN': 'SUBST',  # tax
+        'NNP': 'SUBST',  # London
+        'NNPS': 'SUBST',  # allowances
+        'NNS': 'SUBST',  # payment
+        'NP': 'SUBST',  # neither
+        'PDT': 'ADJ',  # all
+        'POS': 'UNC',  # 's
+        'PRP$': 'PRON',  # its, their
+        'PRP': 'PRON',  # it
+        'RB': 'ADV',  # n't, soon
+        'RBR': 'ADV',  # more
+        'RBS': 'ADV',  # most
+        'RP': 'ADV',  # up
+        'RQU': '__RQU__',  # ''
+        'RRB': 'PUN',  # )
+        'SO': 'CONJ',  # so
+        'SYM': '__SYM__',
+        'TO': '__TO__',  # to
+        'UH': '__UH__',  # oh
+        'VB': 'VERB',  # pay
+        'VBD': 'VERB',  # commend
+        'VBG': 'VERB',  # operate
+        'VBN': 'VERB',  # be
+        'VBP': 'VERB',  # mount
+        'VBZ': 'VERB',  # have
+        'WDT': 'PRON',  # which
+        'WP$': 'PRON',  # whose
+        'WP': 'PRON',  # who
+        'WRB': 'ADV',  # where
+    }
 
     for position, token in enumerate(c.split()):
         word, stem, tag, *_ = token.split('|')
 
-        yield position, (word, stem, tag)
+        yield position, (word, stem, c5tags[tag])
 
 
 def collect_verb_subject_object(f_name):
