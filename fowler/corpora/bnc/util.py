@@ -87,80 +87,41 @@ def parse_tokens(c):
     assert c[:4] == '<c> '
     c = c[4:]
 
-    c5tags = {
-        '$': '__$__',  # c
-        ',': 'PUN',  # ,
-        '.': 'PUN',  # .
-        ':': 'PUN',  # :
-        ';': 'PUN',  # ;
-        'AS': '__AS__',  # as
-        'CC': 'CONJ',  # and
-        'CD': 'ADJ',  # three
-        'DT': 'ART',  # the, this BNC: the_ART, this_ADJ C&C: the_DT, this_DT :)
-        'EX': 'PRON',  # there
-        'FW': 'SUBJ',  # nightingale
-        'IN': 'PREP',  # of
-        'JJ': 'ADJ',  # delayed
-        'JJR': 'ADJ',  # greater
-        'JJS': 'ADJ',  # biggest
-        'LQU': '__LQU__',  # ``
-        'LRB': 'PUN',  # (
-        'LS': '__LS__',  # b
-        'MD': 'VERB',  # could
-        'NN': 'SUBST',  # tax
-        'NNP': 'SUBST',  # London
-        'NNPS': 'SUBST',  # allowances
-        'NNS': 'SUBST',  # payment
-        'NP': 'SUBST',  # neither
-        'PDT': 'ADJ',  # all
-        'POS': 'UNC',  # 's
-        'PRP$': 'PRON',  # its, their
-        'PRP': 'PRON',  # it
-        'RB': 'ADV',  # n't, soon
-        'RBR': 'ADV',  # more
-        'RBS': 'ADV',  # most
-        'RP': 'ADV',  # up
-        'RQU': '__RQU__',  # ''
-        'RRB': 'PUN',  # )
-        'SO': 'CONJ',  # so
-        'SYM': '__SYM__',
-        'TO': '__TO__',  # to
-        'UH': '__UH__',  # oh
-        'VB': 'VERB',  # pay
-        'VBD': 'VERB',  # commend
-        'VBG': 'VERB',  # operate
-        'VBN': 'VERB',  # be
-        'VBP': 'VERB',  # mount
-        'VBZ': 'VERB',  # have
-        'WDT': 'PRON',  # which
-        'WP$': 'PRON',  # whose
-        'WP': 'PRON',  # who
-        'WRB': 'ADV',  # where
-    }
-
     for position, token in enumerate(c.split()):
         word, stem, tag, *_ = token.split('|')
 
-        assert stem.islower()
-
-        yield position, (word, stem, c5tags[tag])
+        yield position, (word, stem, tag)
 
 
 def collect_verb_subject_object(f_name):
-    """Retrive verb together with it's subject and object from a C&C parsed file.
+    """Retrieve verb together with it's subject and object from a C&C parsed file.
 
     File format description [1].
 
     [1] http://svn.ask.it.usyd.edu.au/trac/candc/wiki/MarkedUp
     """
-    return Counter(_collect_verb_subject_object(f_name))
+
+    logger.debug('Processing %s', f_name)
+
+    columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'
+
+    result = list(_collect_verb_subject_object(f_name))
+
+    if result:
+        result = pd.DataFrame(
+            result,
+            columns=columns,
+        )
+        result['count'] = 1
+
+        return result.groupby(columns, as_index=False).sum()
 
 
 def _collect_verb_subject_object(f_name):
     logger.debug('Processing %s', f_name)
 
     with open(f_name, 'rt', encoding='utf8') as f:
-        # Get rid of trailing whitespaces.
+        # Get rid of trailing whitespace.
         lines = (l.strip() for l in f)
 
         while True:
@@ -194,6 +155,6 @@ def _collect_verb_subject_object(f_name):
                     if obj == 'dobj'and subj == 'ncsubj':
 
                         try:
-                            yield tokens[head_id], tokens[subj_id], tokens[obj_id]
+                            yield tuple(chain(tokens[head_id], tokens[subj_id], tokens[obj_id]))
                         except KeyError:
                             logger.debug('Invalid group %s', group)

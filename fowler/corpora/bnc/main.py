@@ -195,24 +195,22 @@ def transitive_verbs(
 
     file_names = Bar(
         'Reading CCG parsed BNC',
-        max=len(file_names),
         suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
     ).iter(file_names)
 
     columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag', 'count'
-    vso = sum_counters(
-        pool.imap_unordered(
-            collect_verb_subject_object,
-            file_names,
-        ),
-        pool=pool,
+    vsos = pool.imap_unordered(
+        collect_verb_subject_object,
+        file_names,
     )
 
     (
-        pd.DataFrame(
-            (list(chain(chain.from_iterable(k), [c])) for k, c in vso.most_common()),
-            columns=columns,
+        pd.concat(f for f in vsos if f is not None)
+        .groupby(
+            ('verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'),
+            as_index=False,
         )
+        .sum()
         .sort('count', ascending=False)
         .to_hdf(
             output,
