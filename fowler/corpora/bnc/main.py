@@ -5,6 +5,7 @@ http://www.ota.ox.ac.uk/desc/2554
 
 """
 import logging
+
 from collections import Counter
 from itertools import chain
 
@@ -48,46 +49,37 @@ def bnc_cooccurrence(args):
 
     logger.debug('Processing %s', fileids)
 
-    cooccurences = count_cooccurrence(
+    counts = count_cooccurrence(
         BNCCorpusReader(root=root, fileids=fileids).tagged_words(stem=stem),
         window_size=window_size,
     )
 
-    # It might be that case that targets are just words, not (word, POS) pairs.
-    # In case this is the case, disregard the POS tags for targets.
-    if not isinstance(targets.index[0], tuple):
-        cooccurences = ((t[0], c, n)for t, c, n in cooccurences)
+    # Targets might be just words, not (word, POS) pairs.
+    if isinstance(targets.index[0], tuple):
+        target_join_columns = 'target', 'target_tag'
+    else:
+        target_join_columns = 'target',
 
-    counts = [
-        (targets.loc[t].id, context.loc[c].id, n)
-        for t, c, n in cooccurences
-        if (t in targets.index) and (c in context.index)
-    ]
+    counts = (
+        counts
+        .merge(targets, left_on=target_join_columns, right_index=True, how='inner')
+        .merge(
+            context,
+            left_on=('context', 'context_tag'),
+            right_index=True,
+            how='inner',
+            suffixes=('_target', '_context'),
+        )[['id_target', 'id_context', 'count']]
+    )
 
-    if not counts:
-        return Counter()
-
-    counts = pd.DataFrame(
-        counts,
-        columns=('target', 'context', 'count'),
-    ).groupby(
-        ('target', 'context'),
-    ).sum()
-
-    # TODO: it would be nice to return a DataFrame.
-    #
-    # Later, do_sum_counters could sum up data frames, instead of dicts.
-    # Probably, it's not even needed to sum up counters across multiple processes.
-    # Though, this needs benchmarking, for example on the SWDA targes.
-    return Counter(dict(zip(counts.index, counts['count'])))
+    return counts
 
 
 def do_sum_counters(args):
-    if len(args) == 1:
-        return args[0]
-
     logger.debug('Summing up %d counters.', len(args))
-    return sum(args, Counter())
+
+    first_counter, *rest = args
+    return sum(rest, first_counter)
 
 
 def sum_counters(counters, pool, chunk_size=7):
@@ -114,33 +106,23 @@ def cooccurrence(
     output=('o', 'matrix.h5', 'The output matrix file.'),
 ):
     """Build the co-occurrence matrix."""
-    records = Counter()
 
+    all_fileids = bnc.fileids()
     all_fileids = Bar(
         'Reading BNC',
-        max=len(bnc.fileids()),
         suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
-    ).iter(bnc.fileids())
+    ).iter(all_fileids)
 
-    for fileids_chunk in chunked(all_fileids, 100):
-
-        counters = pool.imap_unordered(
+    matrices = (
+        pool.imap_unordered(
             bnc_cooccurrence,
-            (
-                (bnc.root, fileids, window_size, stem, targets, context)
-                for fileids in fileids_chunk
-            ),
+            ((bnc.root, fileids, window_size, stem, targets, context) for fileids in all_fileids),
         )
-
-        records += sum_counters(counters, pool=pool, chunk_size=chunk_size)
-
-        logger.debug('There are %d co-occurrence records so far.', len(records))
-
-    matrix = pd.DataFrame(
-        ([t, c, n] for (t, c), n in records.items()),
-        columns=('id_target', 'id_context', 'count'),
     )
-    matrix.set_index(['id_target', 'id_context'], inplace=True)
+
+    matrix = pd.concat(
+        (m for m in matrices),
+    ).groupby(['id_target', 'id_context']).sum()
 
     write_space(output, context, targets, matrix)
 
