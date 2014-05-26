@@ -1,6 +1,7 @@
 import inspect
 import logging
 import os
+
 from logging.handlers import RotatingFileHandler
 from multiprocessing import Pool
 
@@ -72,12 +73,19 @@ class BaseDispatcher(opster.Dispatcher):
         return self.kwargs[name]
 
 
+class DummyPool:
+
+    def imap_unordered(self, func, iterable, chunksize=None):
+        return list(map(func, iterable))
+
+
 class Dispatcher(BaseDispatcher):
     global__display_max_rows = '', 0, 'Maximum number of rows to show in pandas.'
     global__job_num = 'j', 0, 'Number of jobs for parallel tasks.'
     global__limit = '', 0, 'Number of elements to limit.'
     global__logger_backup_count = '', 1000, 'The number of log messages to keep.'
     global__logger_filename = '', '/tmp/fowler.log', 'File to log.'
+    global__no_p11n = '', False, "Don't parrallelize the code across several "
     global__verbose = 'v', False, 'Be verbose.'
 
     def __init__(self, *args, **kwargs):
@@ -85,6 +93,9 @@ class Dispatcher(BaseDispatcher):
 
     @Resource
     def pool(self):
+        if self.no_p11n:
+            return DummyPool()
+
         return Pool(self.job_num or None)
 
     @Resource
