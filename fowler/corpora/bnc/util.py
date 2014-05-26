@@ -54,6 +54,8 @@ def count_cooccurrence(words, window_size=5):
     )
     counts['count'] = 1
 
+    return counts.groupby(columns, as_index=False).sum()
+
 
 def parse_dependencies(dependencies):
     """Parse and filter out verb subject/object dependencies from a C&C parse."""
