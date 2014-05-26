@@ -47,16 +47,13 @@ def bnc_cooccurrence(args):
 
     logger.debug('Processing %s', fileids)
 
-    # It might be that case that targets are just words, not (word, POS) pairs.
-    # Then the POS tags are disregarded.
-    target_pos_tag = isinstance(targets.index[0], tuple)
-
     counts = count_cooccurrence(
         BNCCorpusReader(root=root, fileids=fileids).tagged_words(stem=stem),
         window_size=window_size,
     )
 
-    if target_pos_tag:
+    # Targets might be just words, not (word, POS) pairs.
+    if isinstance(targets.index[0], tuple):
         target_join_columns = 'target', 'target_tag'
     else:
         target_join_columns = 'target',
