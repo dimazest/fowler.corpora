@@ -20,7 +20,7 @@ from py.path import local
 from fowler.corpora.dispatcher import Dispatcher, Resource, NewSpaceCreationMixin, DictionaryMixin
 from fowler.corpora.space.util import write_space
 
-from .util import count_cooccurrence, collect_verb_subject_object
+from .util import count_cooccurrence, collect_verb_subject_object, ccg_words
 
 
 logger = logging.getLogger(__name__)
@@ -30,6 +30,7 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
     """BNC dispatcher."""
 
     global__bnc = '', 'corpora/BNC/Texts', 'Path to the BNC corpus.'
+    global__ccg_bnc = '', 'corpora/CCG_BNC_v1', 'Path to the CCG parsed BNC.'
     global__fileids = '', r'[A-K]/\w*/\w*\.xml', 'Files to be read in the corpus.'
 
     @Resource
@@ -37,6 +38,21 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
         """BNC corpus reader."""
         root = self.kwargs['bnc']
         return BNCCorpusReader(root=root, fileids=self.fileids)
+
+    @property
+    def ccg_bnc(self):
+        files = [str(n) for n in local(self.kwargs['ccg_bnc']).visit() if n.check(file=True, exists=True)]
+
+        if self.limit:
+            files = files[:self.limit]
+
+        if not self.no_p11n:
+            files = Bar(
+                'Reading CCG parsed BNC',
+                suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
+            ).iter(files)
+
+        return files
 
 
 dispatcher = BNCDispatcher()
@@ -184,24 +200,55 @@ def dictionary(
 
 
 @command()
+def ccg_dictionary(
+    pool,
+    ccg_bnc,
+    dictionary_key,
+    stem=('', False, 'Use word stems instead of word strings.'),
+    omit_tags=('', False, 'Do not use POS tags.'),
+    output=('o', 'dicitionary.h5', 'The output file.'),
+    tag_first_letter=('', False, 'Extract only the first letter of the POS tags.'),
+):
+    all_words = pool.imap_unordered(
+        ccg_words,
+        ((f, tag_first_letter) for f in ccg_bnc),
+    )
+
+    frame = pd.concat(f for f in all_words if f is not None)
+
+    if stem:
+        groupby_columns = 'ngram', 'tag'
+    else:
+        groupby_columns = 'ngram', 'stem', 'tag'
+
+    (
+        frame
+        .groupby(groupby_columns)
+        .sum()
+        .sort('count', ascending=False)
+        .reset_index()
+        .to_hdf(
+            output,
+            dictionary_key,
+            mode='w',
+            complevel=9,
+            complib='zlib',
+        )
+    )
+
+
+@command()
 def transitive_verbs(
     pool,
     dictionary_key,
-    ccg_bnc=('', 'corpora/CCG_BNC_v1', 'Path to the CCG parsed BNC.'),
+    ccg_bnc,
     output=('o', 'transitive_verbs.h5', 'The output verb space file.'),
 ):
     """Count occurrence of transitive verbs together with their subjects and objects."""
-    file_names = [str(n) for n in local(ccg_bnc).visit() if n.check(file=True, exists=True)]
-
-    file_names = Bar(
-        'Reading CCG parsed BNC',
-        suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
-    ).iter(file_names)
-
     columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag', 'count'
     vsos = pool.imap_unordered(
         collect_verb_subject_object,
-        file_names,
+        ccg_bnc,
     )
 
     (

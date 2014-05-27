@@ -57,42 +57,6 @@ def count_cooccurrence(words, window_size=5):
     return counts.groupby(columns, as_index=False).sum()
 
 
-def parse_dependencies(dependencies):
-    """Parse and filter out verb subject/object dependencies from a C&C parse."""
-    for dependency in dependencies:
-        assert dependency[0] == '('
-        assert dependency[-1] == ')'
-        dependency = dependency[1:-1]
-
-        try:
-            relation, head, dependant, *_  = dependency.split()
-        except ValueError:
-            logger.debug('Invalid dependency: %s', dependency)
-            break
-
-        if relation in set(['ncsubj', 'dobj']):
-            yield (
-                int(head.split('_')[1]),
-                relation,
-                int(dependant.split('_')[1]),
-            )
-
-
-def parse_tokens(c):
-    """Parse and retrieve token position, word, stem and tag from a C&C parse.
-
-    Replaces C&C tags with the BNC pos tags.
-
-    """
-    assert c[:4] == '<c> '
-    c = c[4:]
-
-    for position, token in enumerate(c.split()):
-        word, stem, tag, *_ = token.split('|')
-
-        yield position, (word, stem, tag)
-
-
 def collect_verb_subject_object(f_name):
     """Retrieve verb together with it's subject and object from a C&C parsed file.
 
@@ -100,12 +64,9 @@ def collect_verb_subject_object(f_name):
 
     [1] http://svn.ask.it.usyd.edu.au/trac/candc/wiki/MarkedUp
     """
-
-    logger.debug('Processing %s', f_name)
-
     columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'
 
-    result = list(_collect_verb_subject_object(f_name))
+    result = list(ccg_bnc_iter(f_name, _collect_verb_subject_object))
 
     if result:
         result = pd.DataFrame(
@@ -117,7 +78,45 @@ def collect_verb_subject_object(f_name):
         return result.groupby(columns, as_index=False).sum()
 
 
-def _collect_verb_subject_object(f_name):
+def _collect_verb_subject_object(dependencies, tokens):
+    dependencies = sorted(parse_dependencies(dependencies))
+
+    for head_id, group in groupby(dependencies, lambda r: r[0]):
+        group = list(group)
+
+        try:
+            (_, obj, obj_id), (_, subj, subj_id) = sorted(g for g in group if g[1] in ('dobj', 'ncsubj'))
+        except ValueError:
+            pass
+        else:
+            if obj == 'dobj'and subj == 'ncsubj':
+
+                try:
+                    yield tuple(chain(tokens[head_id], tokens[subj_id], tokens[obj_id]))
+                except KeyError:
+                    logger.debug('Invalid group %s', group)
+
+
+def ccg_words(args):
+    f_name, tag_first_letter = args
+    result = list(ccg_bnc_iter(f_name, _ccg_words, tag_first_letter=True))
+
+    columns = 'ngram', 'stem', 'tag'
+    if result:
+        result = pd.DataFrame(
+            result,
+            columns=columns,
+        )
+        result['count'] = 1
+
+        return result.groupby(columns, as_index=False).sum()
+
+
+def _ccg_words(dependencies, tokens):
+    yield from tokens.values()
+
+
+def ccg_bnc_iter(f_name, postprocessor, tag_first_letter=False):
     logger.debug('Processing %s', f_name)
 
     with open(f_name, 'rt', encoding='utf8') as f:
@@ -140,21 +139,45 @@ def _collect_verb_subject_object(f_name):
                 continue
 
             *dependencies, c = sentence
+            tokens = dict(parse_tokens(c, tag_first_letter=tag_first_letter))
 
-            dependencies = sorted(parse_dependencies(dependencies))
-            tokens = dict(parse_tokens(c))
+            yield from postprocessor(dependencies, tokens)
 
-            for head_id, group in groupby(dependencies, lambda r: r[0]):
-                group = list(group)
 
-                try:
-                    (_, obj, obj_id), (_, subj, subj_id) = sorted(g for g in group if g[1] in ('dobj', 'ncsubj'))
-                except ValueError:
-                    pass
-                else:
-                    if obj == 'dobj'and subj == 'ncsubj':
+def parse_dependencies(dependencies):
+    """Parse and filter out verb subject/object dependencies from a C&C parse."""
+    for dependency in dependencies:
+        assert dependency[0] == '('
+        assert dependency[-1] == ')'
+        dependency = dependency[1:-1]
 
-                        try:
-                            yield tuple(chain(tokens[head_id], tokens[subj_id], tokens[obj_id]))
-                        except KeyError:
-                            logger.debug('Invalid group %s', group)
+        try:
+            relation, head, dependant, *_  = dependency.split()
+        except ValueError:
+            logger.debug('Invalid dependency: %s', dependency)
+            break
+
+        if relation in set(['ncsubj', 'dobj']):
+            yield (
+                int(head.split('_')[1]),
+                relation,
+                int(dependant.split('_')[1]),
+            )
+
+
+def parse_tokens(c, tag_first_letter=False):
+    """Parse and retrieve token position, word, stem and tag from a C&C parse.
+
+    Replaces C&C tags with the BNC pos tags.
+
+    """
+    assert c[:4] == '<c> '
+    c = c[4:]
+
+    for position, token in enumerate(c.split()):
+        word, stem, tag, *_ = token.split('|')
+
+        if tag_first_letter:
+            tag = tag[0]
+
+        yield position, (word, stem, tag)
