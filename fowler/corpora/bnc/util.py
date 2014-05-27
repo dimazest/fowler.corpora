@@ -57,16 +57,17 @@ def count_cooccurrence(words, window_size=5):
     return counts.groupby(columns, as_index=False).sum()
 
 
-def collect_verb_subject_object(f_name):
+def collect_verb_subject_object(args):
     """Retrieve verb together with it's subject and object from a C&C parsed file.
 
     File format description [1].
 
     [1] http://svn.ask.it.usyd.edu.au/trac/candc/wiki/MarkedUp
     """
+    f_name, tag_first_letter = args
     columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'
 
-    result = list(ccg_bnc_iter(f_name, _collect_verb_subject_object))
+    result = list(ccg_bnc_iter(f_name, _collect_verb_subject_object, tag_first_letter=tag_first_letter))
 
     if result:
         result = pd.DataFrame(

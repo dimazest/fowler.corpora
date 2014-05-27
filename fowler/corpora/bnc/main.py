@@ -32,6 +32,7 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
     global__bnc = '', 'corpora/BNC/Texts', 'Path to the BNC corpus.'
     global__ccg_bnc = '', 'corpora/CCG_BNC_v1', 'Path to the CCG parsed BNC.'
     global__fileids = '', r'[A-K]/\w*/\w*\.xml', 'Files to be read in the corpus.'
+    global__tag_first_letter = '', False, 'Extract only the first letter of the POS tags.'
 
     @Resource
     def bnc(self):
@@ -204,10 +205,10 @@ def ccg_dictionary(
     pool,
     ccg_bnc,
     dictionary_key,
+    tag_first_letter,
     stem=('', False, 'Use word stems instead of word strings.'),
     omit_tags=('', False, 'Do not use POS tags.'),
     output=('o', 'dicitionary.h5', 'The output file.'),
-    tag_first_letter=('', False, 'Extract only the first letter of the POS tags.'),
 ):
     all_words = pool.imap_unordered(
         ccg_words,
@@ -242,13 +243,14 @@ def transitive_verbs(
     pool,
     dictionary_key,
     ccg_bnc,
+    tag_first_letter,
     output=('o', 'transitive_verbs.h5', 'The output verb space file.'),
 ):
     """Count occurrence of transitive verbs together with their subjects and objects."""
     columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag', 'count'
     vsos = pool.imap_unordered(
         collect_verb_subject_object,
-        ccg_bnc,
+        ((f, tag_first_letter) for f in ccg_bnc),
     )
 
     (
