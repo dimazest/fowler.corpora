@@ -33,13 +33,62 @@ logger = logging.getLogger(__name__)
 
 class U:
 
-    def __init__(self, utterance):
-        self.conversation_no = utterance.conversation_no
+    def __init__(self, utterance, *, lemmatize, pos):
         self._damsl_act_tag = utterance.damsl_act_tag()
-
-        self.text = U.process_text(utterance.text)
-
         self.caller = utterance.caller
+        self.conversation_no = utterance.conversation_no
+
+        tags = {
+            ',': 'PUN',  # ,
+            '.': 'PUN',  # .
+            ':': 'POS',  # --: -- {F oh, } I guess we usually enjoy ]  a good seafood restaurant.  /
+            'a': 'ADJ',  # intriguing
+            'bes': 'VERB',  # 's
+            'cc': 'CONJ',  # and
+            'dt': 'ART',  # a
+            'hvs': 'VERB',  # 's: we find something we  like,  {F uh, } like  cashew shrimp or  something that's got a good, {F uh, } at a  particular restaurant  /
+            'in': 'PREP',  # with
+            'md': 'VERB',  # will: {C And } the other is with my whole  family whom we, {F uh, } go somewhere that the kids will enjoy <breathing>.  /
+            'n': 'SUBST',  # food
+            'pos': 'UNC',  # 's: {F Uh, } recently we have been hitting Pancho's up.  /
+            'prp$': 'PRON',  # my: {C And } the other is with my whole  family whom we, {F uh, } go somewhere that the kids will enjoy <breathing>.  /
+            'prp': 'PRON',  # you, it
+            'r': 'ADV',  # very
+            'rp': 'ADV',  # up: {F Uh, } recently we have been hitting Pancho's up.  /
+            'to': 'PREP',  # to: [ we use to + ] go up there [ on, +
+            'uh': '__uh__',  # So, um
+            'v': 'VERB',  # be, talk
+            'wdt': 'CONJ',  # that: we find something we  like,  {F uh, } like  cashew shrimp or  something that's got a good, {F uh, } at a  particular restaurant  /
+            'wdt': 'CONJ',  # that: {C but } I'll just make one comment that, {F uh, } I just  retired from Penn State,  /
+            'wp': 'CONJ',  # What: What about you? /
+            'wp': 'PRON',  # what: {D Well, } that's what I worked on. /
+            'wrb': 'CONJ',  # when: I used to go there when I was in college. /
+            'xx': '__xx__',  # MUMBLEx: ((   ))  because they have
+
+
+            '^jj': '__^jj__',  # mill: I guess one of the things we've, {F uh, }  started avoiding is the, {F uh, } run of the mill chop suey and things like that. /
+            'cd': 'ADJ',  # One: One of [ [ th-, +  th-, ] +  this ]  book I have is called CHINESE COOKING MADE EASY.  /
+            'gw': 'ART',  # the: I guess one of the things we've, {F uh, }  started avoiding is the, {F uh, } run of the mill chop suey and things like that. /
+
+
+            'ex': 'PRON',  # there: <Breathing> {D Well, } there is two kinds.
+            '^vbn': 'ADJ',  # crowded: it was over crowded
+
+
+            '^nn': 'ADV',  # up: at first we were going to get a pick up truck,  with a camper on the back [ of it, +
+            'pdt': 'ADJ',  # All: All these people were, - /
+
+        }
+
+        def T(t, w):
+            try:
+                return tags[t]
+            except KeyError:
+                print("            '{}': '',  # {}: {u.text}".format(t, w, u=utterance))
+
+        self.words = tuple((w, T(t, w))for w, t in utterance.pos_lemmas(wn_lemmatize=lemmatize))
+        if not pos:
+            self.words = tuple(w for w, t in self.words)
 
         assert self.caller in ('A', 'B')
 
@@ -50,41 +99,27 @@ class U:
         return '{s.caller} {s._damsl_act_tag} {s.text}'.format(s=self)
 
     def utterance_tokens(self, ngram_len=1):
-        for ngram in ngrams(
-            word_tokenize(self.text),
-            n=ngram_len,
-            pad_left=True,
-            pad_right=True,
-            pad_symbol='__',
-        ):
-            yield '_'.join(ngram)
+        assert ngram_len == 1
+        return self.words
 
     def append_text(self, other):
-        self.text = ' '.join((self.text, other.text))
-
-    @staticmethod
-    def process_text(text):
-        result = ' '.join(re.sub(r"([+/\}\[\]]|\{\w)", "", text).strip().split())
-
-        result = ''.join(filter(lambda ch: ch not in set('-,'), result))
-
-        return result
+        self.words = self.words + other.words
 
 
-def reconnect_divided_utterances(swda):
+def reconnect_divided_utterances(swda, *, lemmatize, pos):
     """Get rid of the '+' tag and stick them to the first utterance."""
     utterances = swda.iter_utterances(display_progress=False)
 
     result = []
 
     for utterance in utterances:
-        u = U(utterance)
+        u = U(utterance, lemmatize=lemmatize, pos=pos)
 
         if u.damsl_act_tag() == '+':
             for p_utterance in reversed(result):
                 if u.conversation_no != p_utterance.conversation_no:
                     logger.warning(
-                        'There is no utterance before an utterane tagged with + in conversation %d.',
+                        'There is no utterance before an utterance tagged with + in conversation %d.',
                         u.conversation_no,
                     )
                     break
@@ -99,12 +134,13 @@ def reconnect_divided_utterances(swda):
 
 
 class Dispatcher(dispatcher.Dispatcher):
-    n_jobs = 'j', -1, 'The number of CPUs to use to do computations. -1 means all CPUs.'
+    global__lemmatize = '', False, 'Lemmatize the utterance words before retrieving their vectors.'
     global__n_folds = 'f', 3, 'The number of folds used for cross validation.'
-    global__swda = '', './swda', 'The path to the Switchboard corpus.'
-    global__train_split = '', 'downloads/switchboard/ws97-train-convs.list.txt', 'The training splits'
-    global__test_split = '', 'downloads/switchboard/ws97-test-convs.list.txt', 'The testing splits'
     global__space = '', 'space.h5', 'The space file.'
+    global__swda = '', './swda', 'The path to the Switchboard corpus.'
+    global__test_split = '', 'downloads/switchboard/ws97-test-convs.list.txt', 'The testing splits'
+    global__train_split = '', 'downloads/switchboard/ws97-train-convs.list.txt', 'The training splits'
+    global__pos = '', False, 'Use word, POS pairs.'
 
     @dispatcher.Resource
     def swda(self):
@@ -114,7 +150,7 @@ class Dispatcher(dispatcher.Dispatcher):
     def utterances(self):
         logger.info('Reading the utterances.')
 
-        return reconnect_divided_utterances(self.swda)
+        return reconnect_divided_utterances(self.swda, lemmatize=self.lemmatize, pos=self.pos)
 
     @dispatcher.Resource
     def train_split(self):
@@ -174,12 +210,17 @@ def document_word(args):
 
 
 @command()
-def tokens(train_utterances):
+def tokens(
+    train_utterances,
+    pos,
+):
     words = chain.from_iterable(u.utterance_tokens(ngram_len=1) for u in train_utterances)
 
     freq = Counter(words)
 
     for w, f in freq.most_common():
+        if pos:
+            w = ','.join(w)
         print(w, '\t', f)
 
 
