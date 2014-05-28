@@ -255,8 +255,8 @@ def composition(
     n_jobs,
     n_folds,
     templates_env,
-    word_composition_operator=('', 'add', 'What operator use for compositon. [add|mult]'),
-    concatinate_prev_utterace=('', False, 'Concatinate the vector of a current utterance wiht the vector of the precious utterance.'),
+    word_composition_operator=('', 'add', 'What operator use for composition. [add|mult]'),
+    concatinate_prev_utterace=('', False, 'Concatenate the vector of a current utterance with the vector of the precious utterance.'),
 ):
 
     if word_composition_operator == 'mult':
