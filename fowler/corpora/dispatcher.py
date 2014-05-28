@@ -76,6 +76,9 @@ class BaseDispatcher(opster.Dispatcher):
 class DummyPool:
 
     def imap_unordered(self, func, iterable, chunksize=None):
+        return self.map(func, iterable)
+
+    def map(self, func, iterable, chunksize=None):
         return list(map(func, iterable))
 
 
