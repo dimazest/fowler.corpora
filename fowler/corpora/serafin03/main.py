@@ -44,17 +44,23 @@ class U:
             '.': 'PUN',  # .
             ':': 'POS',  # --: -- {F oh, } I guess we usually enjoy ]  a good seafood restaurant.  /
             '^cc': '__^cc__',  # an: {C an } you can't, - /
+            '^dt': '',  # know: {C and } know matter where you build it,  somebody else is going to scream,  {D well, } you didn't build one over here. /
+            '^in': '',  # instead: -- {C and } anything instead [ that beltway, +    the highway, ] the real estate's forty thousand dollars more expensive. /
             '^jj': '__^jj__',  # mill: I guess one of the things we've, {F uh, }  started avoiding is the, {F uh, } run of the mill chop suey and things like that. /
             '^md': 'VERB',  # my: [ That, +  that ] my give you a clue. /
             '^nn': 'ADV',  # up: at first we were going to get a pick up truck,  with a camper on the back [ of it, +
             '^nns': 'NOUN',  # type: I shouldn't make stereo types,  /
             '^nns': 'SUBST',  # affect: Or, {F uh, } [ any, +  any ]  after affects carrying over into the workday  /
+            '^nns^pos': '',  # teacher: {C and } of course they've, {F uh, } been cuttin
+            '^pdt': '',  # quiet: I've traveled quiet   a bit,  /
+            '^prp$': '',  # ha: {D Well, } did you have has name all over them? /
             '^rb': '__^rb__',  # day: In quality, especially now days,  {F uh, } that's almost everything that comes across [ [ the, + the, ] +
             '^vb': 'VERB',  # run: At least you got a chance to out run them that way. /
             '^vbd': 'VERB',  # use: [ {C and, } + {C and } we ] always use to go out and hunt all the time,  {D you know }  /
             '^vbg': 'VERB',  # hunting: He goes deer hunting.  /
             '^vbn': 'ADJ',  # crowded: it was over crowded
             '^vbp': 'VERB',  # live: it seems like the women [ out +  just out ] live their husbands, but, very reluctantly,  /
+            '^wp': '',  # not: {C and } they just loved him and what not  /
             '^wrb': 'CONJ',  # where: the weather's been terribly unusual every where I've been. /
             '``': 'PUN',  # ``: {C and } when we came back they said "Oh, there's a parking  space real close," and I parked way out in the boonies, /
             'a': 'ADJ',  # intriguing
@@ -77,26 +83,29 @@ class U:
             'rp': 'ADV',  # up: {F Uh, } recently we have been hitting Pancho's up.  /
             'sym': '__SYM__',  # L: By a [ man, +  man ] named Doctor Bittel,  B I T T E L <<spells it out>>  /
             'to': 'PREP',  # to: [ we use to + ] go up there [ on, +
-            'uh': '__uh__',  # So, um
+            'uh': 'ADJ',  # So, um
             'v': 'VERB',  # be, talk
             'wdt': 'CONJ',  # that: we find something we  like,  {F uh, } like  cashew shrimp or  something that's got a good, {F uh, } at a  particular restaurant  /
             'wp$': 'CONJ',  # whose: I had a friend whose brother  did steroids  /
             'wp': 'CONJ',  # What: What about you? /
             'wrb': 'CONJ',  # when: I used to go there when I was in college. /
             'xx': '__xx__',  # MUMBLEx: ((   ))  because they have
+        }
 
-            '^dt': '',  # know: {C and } know matter where you build it,  somebody else is going to scream,  {D well, } you didn't build one over here. /
-            '^in': '',  # instead: -- {C and } anything instead [ that beltway, +    the highway, ] the real estate's forty thousand dollars more expensive. /
-            '^nns^pos': '',  # teacher: {C and } of course they've, {F uh, } been cuttin
-            '^pdt': '',  # quiet: I've traveled quiet   a bit,  /
-            '^prp$': '',  # ha: {D Well, } did you have has name all over them? /
-            '^wp': '',  # not: {C and } they just loved him and what not  /
+        bnc_to_ukwac = {
+            'SUBST': 'NN',
+            'VERB': 'VB',
+            'ADJ': 'JJ',
+            'ADV': 'RB',
         }
 
         def T(t, w):
-            return tags.get(t, t)
+            result = tags.get(t, t)
+            # result = bnc_to_ukwac.get(result, result)
 
-        self.words = tuple((w, T(t, w))for w, t in utterance.pos_lemmas(wn_lemmatize=lemmatize))
+            return result
+
+        self.words = tuple((w, T(t, w)) for w, t in utterance.pos_lemmas(wn_lemmatize=lemmatize))
         if not pos:
             self.words = tuple(w for w, t in self.words)
 
