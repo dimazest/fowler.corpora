@@ -1,4 +1,4 @@
-Fowler.Corpora
+fowler.corpora
 ==============
 
 .. image:: https://travis-ci.org/dimazest/fowler.corpora.png?branch=master
@@ -7,32 +7,22 @@ Fowler.Corpora
 .. image:: https://coveralls.io/repos/dimazest/fowler.corpora/badge.png?branch=master
   :target: https://coveralls.io/r/dimazest/fowler.corpora?branch=master
 
+``fowler.corpora`` is software to create vector space models for Distributional
+Semantics experiments.
 
-Development
------------
+It is possible to instantiate a vector space from
 
-To run the tests execute::
+* British National Corpus
+* Google Books N-gram corpus
 
-    python setup.py test
+The weighting schemes include:
 
-To run the tests on all supperoted Python versions and implementations run::
+* TF-IDF
+* NMF
+* PMI
 
-   tox
+The implemented experiments are:
 
-To install the package in an isolated environment for development run::
-
-    virtualenv .
-    source bin/activate
-
-    pip install -e .
-    pip install pytest>=2.4.2  # And any other tools you find useful.
-
-Now you are ready to develop and test your changes::
-
-    py.test test
-
-If you want to execute some of the tests run (for example, IO related)::
-
-   py.test test -k io
-
-Read py.test documentation and have fun coding!
+* Word similarity (wordsim353)
+* Dialog act tagging, using the Switchboard corpus http://www.eecs.qmul.ac.uk/~dm303/cvsc14.html
+* Number of categorical composition experiments

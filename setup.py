@@ -1,10 +1,8 @@
+import os.path
 import sys
 
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
-
-
-version = '0.1'
 
 
 class PyTest(TestCommand):
@@ -20,13 +18,33 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
+dirname = os.path.dirname(__file__)
+long_description = (
+    open(os.path.join(dirname, 'README.rst')).read()
+)
+
+
 setup(
     name='fowler.corpora',
-    version=version,
+    version='0.1',
     description='',
-    long_description='''''',
+    long_description=long_description,
     # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
-    classifiers=[],
+    classifiers=[
+        'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: POSIX',
+        'Operating System :: Microsoft :: Windows',
+        'Operating System :: MacOS :: MacOS X',
+        'Topic :: Utilities',
+        'Topic :: Text Processing :: Linguistic',
+        'Topic :: Scientific/Engineering :: Artificial Intelligence',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: Implementation :: CPython',
+    ],
     keywords='',
     author='Dmitrijs Milajevs',
     author_email='dimazest@gmail.com',
