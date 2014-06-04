@@ -1,5 +1,5 @@
-Quick start: Measuring word similarity
-======================================
+Quick start: Word similarity
+============================
 
 This tutorial will go trough the main steps involved in distributional
 semantics experiments.
