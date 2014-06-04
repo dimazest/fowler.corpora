@@ -32,7 +32,7 @@ Method
 ------
 
 We are going to exploit Zellig Harris's intuition, that semantically similar
-words tend to appear in similar contexts [harris54] in the following manner.
+words tend to appear in similar contexts [harris54]_, in the following manner.
 Given a large piece of text, for every word we count its co-occurrence with
 other words in a symmetric window of 5 (5 words before the word and 5 words
 after). The word in the middle of a window is referred as the **target** word,
