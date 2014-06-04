@@ -8,12 +8,12 @@ fowler.corpora
   :target: https://coveralls.io/r/dimazest/fowler.corpora?branch=master
 
 ``fowler.corpora`` is software to create vector space models for Distributional
-Semantics experiments.
+semantics.
 
 It is possible to instantiate a vector space from
 
 * British National Corpus
-* Google Books N-gram corpus
+* Google Books N-gram Corpus
 
 The weighting schemes include:
 
