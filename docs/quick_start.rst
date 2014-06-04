@@ -72,6 +72,9 @@ dimensional vector space, where dimensions are optionally labeled by the
 context words, we can use the similarity of a word pair with the distance
 between the corresponding vectors.
 
+To see how good our similarity predictions are, we will use the Spearman
+:math:`\rho` correlation.
+
 .. [wordsim353] Lev Finkelstein, Evgeniy Gabrilovich, Yossi Matias, Ehud
     Rivlin, Zach Solan, Gadi Wolfman, and Eytan Ruppin. 2002. `Placing search
     in context`__: the concept revisited. ACM Transactions on Information
