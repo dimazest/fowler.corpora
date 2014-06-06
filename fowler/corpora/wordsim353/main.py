@@ -55,7 +55,7 @@ def evaluate(
     """Evaluate a distributional semantic vector space."""
     gold_standard = pd.read_csv(gold_standard)
     # space is just a csr_matrix here, not a Space instance.
-    space, targets = get_space_targets(gold_standard, matrix, ngrams_only=ngrams_only)
+    space, targets = get_space_targets(gold_standard, matrix)
 
     result = (
         gold_standard
