@@ -134,7 +134,7 @@ First we need to extract word frequencies:
 
 .. code-block:: bash
 
-    bin/corpora bnc dictionary --bnc corpora/BNC/Texts/ -o data/dictionary_bnc_pos.h5
+    bin/corpora bnc dictionary --bnc corpora/BNC/Texts/ -o data/dictionary_bnc_pos.h5 --stem
 
 ``data/dictionary_bnc_pos.h5`` is a `Pandas`_ `DataFrame`_ with the following columns:
 
@@ -163,13 +163,12 @@ and executing the following code:
 
 
     >>> dictionary = pd.read_hdf('data/dictionary_bnc_pos.h5', key='dictionary')
-    >>> dictionary.head()
            ngram   tag    count
-    704634   the   ART  5404881
-    218802     ,   PUN  5017057
-    460429     .   PUN  4715135
-    684133    of  PREP  3019667
-    568331    to  PREP  2561947
+    306889   the   ART  6042959
+    45280      ,   PUN  5017057
+    95027      .   PUN  4715135
+    522342    be  VERB  4121594
+    540719    of  PREP  3041681
 
     [5 rows x 3 columns]
 
@@ -191,7 +190,7 @@ get the first semantic space:
 .. code-block:: bash
 
     bin/corpora bnc cooc -t data/targets_wordsim353.csv -c data/contexts_bnc_pos_101-2101.csv \
-    --bnc corpora/BNC/Texts/ -o data/space_bnc_wordsim_101-2101.h5
+    --bnc corpora/BNC/Texts/ -o data/space_bnc_wordsim_101-2101.h5 --stem
 
 Experiments
 -----------
@@ -204,13 +203,16 @@ Now we are ready to run the first experiment:
     ==================== ============== ===========
                 Measure   Spearman rho     p-value
     ==================== ============== ===========
-                 Cosine         0.305    4.704e-09
-          Inner product        -0.034    5.280e-01
+                 Cosine         0.277    1.172e-07
+          Inner product        -0.042    4.266e-01
     ==================== ============== ===========
-
 As you can see two similarity measures are used: one based on cosine distance
-and other is Inner product. The score of 0.305 is not the state-of-the-art, but
+and other is Inner product. The score of 0.277 is not the state-of-the-art, but
 for the raw co-occurrence counts it's pretty good.
+
+
+References
+----------
 
 .. [wordsim353] Lev Finkelstein, Evgeniy Gabrilovich, Yossi Matias, Ehud
     Rivlin, Zach Solan, Gadi Wolfman, and Eytan Ruppin. 2002. `Placing search
