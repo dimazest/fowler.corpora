@@ -193,7 +193,7 @@ get the first semantic space:
     bin/corpora bnc cooc -t data/targets_wordsim353.csv -c data/contexts_bnc_pos_101-2101.csv \
     --bnc corpora/BNC/Texts/ -o data/space_bnc_wordsim_101-2101.h5
 
-Experimants
+Experiments
 -----------
 
 Now we are ready to run the first experiment:
