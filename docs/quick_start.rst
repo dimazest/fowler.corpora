@@ -28,7 +28,7 @@ __ http://www.eecs.qmul.ac.uk/~dm303/static/data/wordsim353/combined.csv
 Our task is to predict the human judgment given a pair of words from the
 dataset. Refer, for example, to [Agirre09]_ for one way of solving it.
 
-Method
+Idea
 ------
 
 We are going to exploit Zellig Harris's intuition, that semantically similar
@@ -38,7 +38,8 @@ other words in a symmetric window of 5 (5 words before the word and 5 words
 after). The word in the middle of a window is referred as the **target** word,
 the words before and after as **context** words.
 
-If we do this over the `British National Corpus`_, set the target words to:
+If we do this over the `British National Corpus`_ (BNC), set the target words
+to:
 
 .. _`British National Corpus`: http://www.natcorp.ox.ac.uk/
 
@@ -74,6 +75,142 @@ between the corresponding vectors.
 
 To see how good our similarity predictions are, we will use the Spearman
 :math:`\rho` correlation.
+
+Extracting the data
+-------------------
+
+.. note::
+
+    To avoid the mess, the data is organized to the following folders:
+
+    * ``corpora`` is the folder for different corpus distributions, for example
+      ``corpora/BNC``.
+    * ``downloads`` is for other resources, such as wordsim 353 dataset.
+    * ``data`` is the folder for the experiment data.
+
+    If you use https://github.com/dimazest/fc deployment configuration, you
+    should already have wordsim 353, otherwise you can get it from
+    http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/wordsim353.zip
+
+.. warning::
+
+    It takes a while to process the BNC and needs a powerful machine. If you
+    are curious and want to go trough the tutorial quickly on your laptop, tell
+    corpora to process only part of the BNC files by adding the following
+    option::
+
+        --fileids='A\w*/\w*\.xm'
+
+    Use the ``-v`` flag to write the ``/tmp/fowler.log`` file.
+
+We will use the BNC to extract the co-occurrence counts.
+
+Targets
+~~~~~~~
+
+The words in the wordsim 353 dataset are the target words. Here is an ugly way
+to get them:
+
+.. code-block:: bash
+
+    # Get the first colum
+    cut downloads/wordsim353/combined.csv -d, -f 1 >> t
+    # Append the second column
+    cut downloads/wordsim353/combined.csv -d, -f 2 >> t
+    # The header
+    echo ngram > data/targets_wordsim353.csv
+    # Get rid of duplicates and "Word 1", "Word 2"
+    cat t | sort | uniq | grep -v Word >> data/targets_wordsim353.csv
+    rm t
+
+Contexts
+~~~~~~~~
+
+Context selection is more art than science, but a rather popular approach is to
+select the 2000 most frequent nouns, verbs, adjectives and adverbs, excluding
+the 100 most frequent.
+
+First we need to extract word frequencies:
+
+.. code-block:: bash
+
+    bin/corpora bnc dictionary --bnc corpora/BNC/Texts/ -o data/dictionary_bnc_pos.h5
+
+``data/dictionary_bnc_pos.h5`` is a `Pandas`_ `DataFrame`_ with the following columns:
+
+.. _Pandas: http://pandas.pydata.org/
+.. _DataFrame: http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.html
+
+ngram
+    a word.
+
+tag
+    its part of speech tag. In the BNC, nous are tagged as ``SUBST``, verbs
+    as ``VERB``, adjectives as ``ADV`` and adverbs as ``ADV``.
+
+count
+    the frequency of the word.
+
+We can access it the and extract the context words the following way by using IPython::
+
+    bin/corpora ipython
+
+and executing the following code:
+
+.. code-block:: python
+
+    >>> import pandas as pd
+
+
+    >>> dictionary = pd.read_hdf('data/dictionary_bnc_pos.h5', key='dictionary')
+    >>> dictionary.head()
+           ngram   tag    count
+    704634   the   ART  5404881
+    218802     ,   PUN  5017057
+    460429     .   PUN  4715135
+    684133    of  PREP  3019667
+    568331    to  PREP  2561947
+
+    [5 rows x 3 columns]
+
+    >>> #  We are interested only in 2000 most frequent (excluding the first 100)
+    >>> #  nouns, verbs, adjectives and adverbs!
+    >>> tags = dictionary['tag']
+    >>> contexts = dictionary[(tags == 'SUBST') | (tags == 'VERB') | (tags == 'ADJ') | (tags == 'ADV')][101:2101]
+
+    >>> contexts[['ngram', 'tag']].to_csv('data/contexts_bnc_pos_101-2101.csv', index=False)
+
+    >>> quit()
+
+The space
+~~~~~~~~~
+
+Now we are ready to extract the target-context co-occurrence frequencies and
+get the first semantic space:
+
+.. code-block:: bash
+
+    bin/corpora bnc cooc -t data/targets_wordsim353.csv -c data/contexts_bnc_pos_101-2101.csv \
+    --bnc corpora/BNC/Texts/ -o data/space_bnc_wordsim_101-2101.h5
+
+Experimants
+-----------
+
+Now we are ready to run the first experiment:
+
+.. code-block:: bash
+
+    bin/corpora wordsim353 evaluate -m data/space_bnc_wordsim_101-2101.h5
+    ==================== ============== ===========
+                Measure   Spearman rho     p-value
+    ==================== ============== ===========
+                 Cosine         0.305    4.704e-09
+          Inner product        -0.034    5.280e-01
+    ==================== ============== ===========
+
+As you can see two similarity measures are used: one based on cosine distance
+and other is Inner product. The score of 0.305 is not the state-of-the-art, but
+for the raw co-occurrence counts it's pretty good.
 
 .. [wordsim353] Lev Finkelstein, Evgeniy Gabrilovich, Yossi Matias, Ehud
     Rivlin, Zach Solan, Gadi Wolfman, and Eytan Ruppin. 2002. `Placing search
