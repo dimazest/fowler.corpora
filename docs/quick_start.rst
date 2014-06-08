@@ -242,6 +242,25 @@ contexts are part of speech tagged, while targets are not, we need to retrieve t
 
     bin/corpora bnc dictionary --bnc corpora/BNC/Texts/ -o data/dictionary_bnc.h5 --stem --omit-tags
 
+Now we are ready to weight the co-occurrence counts:
+
+.. code-block:: bash
+
+    bin/corpora space pmi --column-dictionary data/dictionary_bnc_pos.h5 --dictionary data/dictionary_bnc.h5 \
+    -m data/space_bnc_wordsim_101-2101.h5  -o data/space_bnc_wordsim_101-2101_ppmi.h5
+
+And run the experiment:
+
+.. code-block:: bash
+
+    bin/corpora wordsim353 evaluate -m data/space_bnc_wordsim_101-2101_ppmi.h5
+    ==================== ============== ===========
+                Measure   Spearman rho     p-value
+    ==================== ============== ===========
+                 Cosine         0.024    6.585e-01
+          Inner product        -0.048    3.708e-01
+    ==================== ============== ===========
+
 References
 ----------
 
