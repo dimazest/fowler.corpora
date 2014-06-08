@@ -209,11 +209,12 @@ Now we are ready to run the first experiment:
     ==================== ============== ===========
                 Measure   Spearman rho     p-value
     ==================== ============== ===========
-                 Cosine         0.277    1.172e-07
-          Inner product        -0.042    4.266e-01
+                 Cosine         0.350    1.357e-11
+          Inner product        -0.035    5.098e-01
     ==================== ============== ===========
+
 As you can see two similarity measures are used: one based on cosine distance
-and other is Inner product. The score of 0.277 is not the state-of-the-art, but
+and other is Inner product. The score of 0.35 is not the state-of-the-art, but
 for the raw co-occurrence counts it's pretty good.
 
 Tuning
