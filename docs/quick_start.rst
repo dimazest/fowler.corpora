@@ -125,8 +125,8 @@ to get them:
     cut downloads/wordsim353/combined.csv -d, -f 2 >> t
     # The header
     echo ngram > data/targets_wordsim353.csv
-    # Get rid of duplicates and "Word 1", "Word 2"
-    cat t | sort | uniq | grep -v Word >> data/targets_wordsim353.csv
+    # Get rid of duplicates and the column names ("Word 1", "Word 2"), lowercase the words and replace "troops" with its stem "troop"
+    cat t | sort | uniq | grep -v Word | tr '[:upper:]' '[:lower:]' | sed -e 's/troops/troop/g' >> data/targets_wordsim353.csv
     rm t
 
 Contexts
