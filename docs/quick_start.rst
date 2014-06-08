@@ -195,7 +195,7 @@ get the first semantic space:
 
 .. code-block:: bash
 
-    bin/corpora bnc cooc -t data/targets_wordsim353.csv -c data/contexts_bnc_pos_101-2101.csv \
+    bin/corpora bnc cooccurrence -t data/targets_wordsim353.csv -c data/contexts_bnc_pos_101-2101.csv \
     --bnc corpora/BNC/Texts/ -o data/space_bnc_wordsim_101-2101.h5 --stem
 
 Experiments
