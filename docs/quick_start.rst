@@ -76,32 +76,38 @@ between the corresponding vectors.
 To see how good our similarity predictions are, we will use the Spearman
 :math:`\rho` correlation.
 
+Before we begin
+---------------
+
+To avoid the mess, the data is organized to the following folders:
+
+* ``corpora`` is the folder for different corpus distributions, for example
+  ``corpora/BNC``.
+* ``downloads`` is for other resources, such as wordsim 353 dataset.
+* ``data`` is the folder for the experiment data.
+
+If you use https://github.com/dimazest/fc deployment configuration, you
+should already have wordsim 353, otherwise you can get it from
+http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/wordsim353.zip
+
+
+It takes a while to process the BNC and needs a powerful machine. If you
+are curious and want to go trough the tutorial quickly on your laptop, tell
+corpora to process only part of the BNC files by adding the following
+option::
+
+    --fileids='A\w*/\w*\.xml'
+
+Use the ``-v`` flag to write the ``/tmp/fowler.log`` file.
+
+If you run co-occurrence extraction on a laptop, to avoid lags, set the number
+of parallel jobs less than the CPU cores you have, for example, for a 4 core
+machine::
+
+    -j 3
+
 Extracting the data
 -------------------
-
-.. note::
-
-    To avoid the mess, the data is organized to the following folders:
-
-    * ``corpora`` is the folder for different corpus distributions, for example
-      ``corpora/BNC``.
-    * ``downloads`` is for other resources, such as wordsim 353 dataset.
-    * ``data`` is the folder for the experiment data.
-
-    If you use https://github.com/dimazest/fc deployment configuration, you
-    should already have wordsim 353, otherwise you can get it from
-    http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/wordsim353.zip
-
-.. warning::
-
-    It takes a while to process the BNC and needs a powerful machine. If you
-    are curious and want to go trough the tutorial quickly on your laptop, tell
-    corpora to process only part of the BNC files by adding the following
-    option::
-
-        --fileids='A\w*/\w*\.xm'
-
-    Use the ``-v`` flag to write the ``/tmp/fowler.log`` file.
 
 We will use the BNC to extract the co-occurrence counts.
 
