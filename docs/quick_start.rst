@@ -229,7 +229,7 @@ counts. A common technique is to use positive pointwise mutual information.
     ppmi(t, c) = max(0, \log(\frac{p(t|c)}{p(c)p(t)})) = max(0, log(\frac{count(t, c)N}{count(t)count(c)}))
 
 where :math:`count(t, c)` is the co-occurrence frequency of a target word with
-a context word, :mat:`count(t)` and :mat:`count(c)` are the total number of
+a context word, :math:`count(t)` and :math:`count(c)` are the total number of
 times the target word was seen in the corpus and the total number of times the
 context word was seen in the corpus, :math:`N` is the total number of words.
 
