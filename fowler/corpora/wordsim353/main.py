@@ -7,9 +7,25 @@ from scipy.stats import spearmanr
 
 
 from fowler.corpora.util import display
-from fowler.corpora.dispatcher import Dispatcher
+from fowler.corpora.dispatcher import Dispatcher, Resource
 
-dispatcher = Dispatcher()
+
+class WordsimDispatcher(Dispatcher):
+    """Wordsim 353 dispatcher."""
+
+    @Resource
+    def gold_standard(self):
+        gold_standard = pd.read_csv(self.kwargs['gold_standard'])
+
+        for column in 'Word 1', 'Word 2':
+            gold_standard[column] = gold_standard[column].str.lower()
+
+        gold_standard.replace('troops', 'troop', inplace=True)
+
+        return gold_standard
+
+
+dispatcher = WordsimDispatcher()
 command = dispatcher.command
 
 
@@ -53,7 +69,6 @@ def evaluate(
     show_details=('d', False, 'Show more details.'),
 ):
     """Evaluate a distributional semantic vector space."""
-    gold_standard = pd.read_csv(gold_standard)
     # space is just a csr_matrix here, not a Space instance.
     space, targets = get_space_targets(gold_standard, matrix)
 
