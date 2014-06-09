@@ -261,6 +261,11 @@ And run the experiment:
           Inner product        -0.048    3.708e-01
     ==================== ============== ===========
 
+IPython notebook
+----------------
+
+:download:`IPython notebook <quick_start_nb.ipynb>`
+
 References
 ----------
 
