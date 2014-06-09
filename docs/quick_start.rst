@@ -264,7 +264,9 @@ And run the experiment:
 IPython notebook
 ----------------
 
-:download:`IPython notebook <quick_start_nb.ipynb>`
+This IPython notebook :download:`quick_start_nb.ipynb <quick_start_nb.ipynb>`
+shows how ``corpora`` integrates with IPython. Copy the url to
+http://nbviewer.ipython.org to render it.
 
 References
 ----------
