@@ -21,8 +21,9 @@ import joblib
 from IPython import parallel
 
 import fowler.corpora
-from fowler.corpora.space.util import read_tokens
 from fowler.corpora.models import read_space_from_file
+from fowler.corpora.space.util import read_tokens
+from fowler.corpora.util import inside_ipython
 
 
 class Resource(Lazy):
@@ -65,7 +66,10 @@ class BaseDispatcher(opster.Dispatcher):
 
             f_kwargs = {f_arg: getattr(self, f_arg) for f_arg in f_args}
 
-            return func(**f_kwargs)
+            result = func(**f_kwargs)
+
+            if inside_ipython():
+                return result
 
         return wrapper
 
