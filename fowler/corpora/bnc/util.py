@@ -1,12 +1,15 @@
 import logging
 
-from collections import deque
+from collections import deque, namedtuple
 from itertools import islice, chain, filterfalse, takewhile, groupby
 
 import pandas as pd
 
 
 logger = logging.getLogger(__name__)
+
+
+CCGToken = namedtuple('CCGToken', 'word, stem, tag')
 
 
 def count_cooccurrence(words, window_size=5):
@@ -63,6 +66,7 @@ def collect_verb_subject_object(args):
     File format description [1].
 
     [1] http://svn.ask.it.usyd.edu.au/trac/candc/wiki/MarkedUp
+
     """
     f_name, tag_first_letter = args
     columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'
@@ -181,4 +185,4 @@ def parse_tokens(c, tag_first_letter=False):
         if tag_first_letter:
             tag = tag[0]
 
-        yield position, (word, stem, tag)
+        yield position, CCGToken(word, stem, tag)
