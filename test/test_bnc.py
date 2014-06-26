@@ -1,3 +1,5 @@
+import pandas as pd
+
 from fowler.corpora.bnc.util import count_cooccurrence
 
 import pytest
@@ -66,6 +68,13 @@ import pytest
     ),
 )
 def test_count_cooccurrence(sequence, window_size, expected_result):
+    sequence = ((e, 'N') for e in sequence)
+
     result = count_cooccurrence(iter(sequence), window_size=window_size)
 
-    assert sorted(result) == sorted(expected_result)
+    expected_result = pd.DataFrame(expected_result, columns=('target', 'context', 'count'))
+    expected_result['target_tag'] = 'N'
+    expected_result['context_tag'] = 'N'
+    expected_result = expected_result.reindex_axis(['target', 'target_tag', 'context', 'context_tag', 'count'], axis=1)
+
+    assert (result == expected_result).all().all()
