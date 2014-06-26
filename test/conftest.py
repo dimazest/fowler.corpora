@@ -1,12 +1,4 @@
-import py
-
 import pytest
-
-
-@pytest.fixture
-def pytestbdd_feature_base_dir():
-    here = py.path.local(__file__)
-    return str(here.dirpath('..', 'features'))
 
 
 @pytest.fixture

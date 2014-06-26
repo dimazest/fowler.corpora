@@ -1,33 +1,22 @@
 language: python
 
 python:
-  - "2.7"
   - "3.3"
-
-env:
-    global:
-        - WHEEL="pip install --find-links https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors"
 
 before_install:
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
   - wget -O- http://neuro.debian.net/lists/quantal.de-m.full | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list
   - sudo apt-key adv --recv-keys --keyserver pgp.mit.edu 2649A5A9
   - sudo apt-get update -qq
-  - sudo apt-get install -qq python-numpy python-scipy python-matplotlib python-pandas python-tables python-sklearn
-  - rm /home/travis/virtualenv/python*/lib/python*/no-global-site-packages.txt
-  - pip install setuptools --upgrade --use-mirrors
-  - pip install pip --upgrade --use-mirrors
-  - pip install wheel --use-mirrors
-  - $WHEEL numpy==1.7.1
-  - $WHEEL scipy==0.12.1 pytest==2.4.2 numexpr==2.2.2 matplotlib==1.3.0 nltk==3.0a3
-  - $WHEEL https://dl.dropboxusercontent.com/u/50040986/index/sparsesvd-cffi-0.2.3-dev.tar.gz
+  - sudo apt-get install -qq python-numpy python-scipy python-matplotlib python-pandas python-tables python-sklearn  python-yaml python-numexpr
 
 install:
-  - $WHEEL .
+  - python bootstrap.py
+  - bin/buildout
 
-script: python setup.py test
+script:
+  - bin/python setup.py test
+
 after_success:
-  - sudo apt-get install python-yaml
-  - pip install coveralls pytest-cov . --use-mirrors
-  - py.test --cov=fowler.corpora --cov-report=term-missing test
-  - coveralls
+  - bin/py.test --cov=fowler.corpora --cov-report=term-missing test
+  - bin/coveralls
