@@ -5,9 +5,12 @@ http://www.ota.ox.ac.uk/desc/2554
 
 """
 import logging
+import os.path
 
 from collections import Counter
 from itertools import chain
+from os import getcwd
+from urllib.parse import urlsplit, parse_qs
 
 from more_itertools import chunked
 
@@ -20,7 +23,7 @@ from py.path import local
 from fowler.corpora.dispatcher import Dispatcher, Resource, NewSpaceCreationMixin, DictionaryMixin
 from fowler.corpora.space.util import write_space
 
-from .util import count_cooccurrence, collect_verb_subject_object, ccg_words
+from .util import count_cooccurrence, collect_verb_subject_object, ccg_bnc_iter
 
 
 logger = logging.getLogger(__name__)
@@ -28,32 +31,64 @@ logger = logging.getLogger(__name__)
 
 class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
     """BNC dispatcher."""
-
-    global__bnc = '', 'corpora/BNC/Texts', 'Path to the BNC corpus.'
-    global__ccg_bnc = '', 'corpora/CCG_BNC_v1', 'Path to the CCG parsed BNC.'
-    global__fileids = '', r'[A-K]/\w*/\w*\.xml', 'Files to be read in the corpus.'
+    global__corpus = '', 'bnc://', 'The path to the corpus.'
+    global__stem = '', False, 'Use word stems instead of word strings.',
     global__tag_first_letter = '', False, 'Extract only the first letter of the POS tags.'
 
-    @Resource
-    def bnc(self):
-        """BNC corpus reader."""
-        root = self.kwargs['bnc']
-        return BNCCorpusReader(root=root, fileids=self.fileids)
-
     @property
-    def ccg_bnc(self):
-        files = [str(n) for n in local(self.kwargs['ccg_bnc']).visit() if n.check(file=True, exists=True)]
+    def corpus(self):
+        """Access to the corpus."""
+        corpus = urlsplit(self.kwargs['corpus'])
+        query = parse_qs(corpus.query)
+        query_dict = {k: v[0] for k, v in query.items()}
+
+        if corpus.scheme == 'bnc':
+            if 'fileids' not in query_dict:
+                query_dict['fileids'] = r'[A-K]/\w*/\w*\.xml'
+
+            path = corpus.path or os.path.join(getcwd(), 'corpora', 'BNC', 'Texts')
+            paths = BNCCorpusReader(root=corpus.path, **query_dict).fileids()
+
+            words = self.bnc_words
+            words_kwargs = {'root': corpus.path}
+        elif corpus.scheme == 'bnc+ccg':
+            path = corpus.path or os.path.join(getcwd(), 'corpora', 'CCG_BNC_v1')
+            paths = [str(n) for n in local(path).visit() if n.check(file=True, exists=True)]
+
+            words = self.bnc_ccg_words
+            words_kwargs = {}
+        else:
+            raise NotImplementedError('The {0}:// scheme is not supported.')
 
         if self.limit:
-            files = files[:self.limit]
+            paths = paths[:self.limit]
 
         if not self.no_p11n:
-            files = Bar(
-                'Reading CCG parsed BNC',
+            paths = Bar(
+                'Reading the corpus',
                 suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
-            ).iter(files)
+            ).iter(paths)
 
-        return files
+        return words, paths, words_kwargs
+
+    @staticmethod
+    def bnc_words(path, stem, tag_first_letter, **kwargs):
+        for word, tag in BNCCorpusReader(fileids=path, **kwargs).tagged_words(stem=stem):
+            if tag_first_letter:
+                tag = tag[0]
+
+            yield word, tag
+
+    @staticmethod
+    def bnc_ccg_words(path, stem, tag_first_letter, **kwargs):
+        def word_tags(dependencies, tokens):
+            for token in tokens.values():
+                if stem:
+                    yield token.stem, token.tag
+                else:
+                    yield token.word, token.tag
+
+        return ccg_bnc_iter(path, word_tags, tag_first_letter=tag_first_letter)
 
 
 dispatcher = BNCDispatcher()
@@ -62,12 +97,12 @@ command = dispatcher.command
 
 def bnc_cooccurrence(args):
     """Count word co-occurrence in a BNC file."""
-    root, fileids, window_size, stem, targets, context = args
+    words, path, kwargs, tag_first_letter, window_size, stem, targets, context = args
 
-    logger.debug('Processing %s', fileids)
+    logger.debug('Processing %s', path)
 
     counts = count_cooccurrence(
-        BNCCorpusReader(root=root, fileids=fileids).tagged_words(stem=stem),
+        words(path, stem, tag_first_letter, **kwargs),
         window_size=window_size,
     )
 
@@ -113,27 +148,23 @@ def sum_counters(counters, pool, chunk_size=7):
 
 @command()
 def cooccurrence(
-    bnc,
+    corpus,
     pool,
     targets,
     context,
+    stem,
+    tag_first_letter,
     window_size=('', 5, 'Window size.'),
     chunk_size=('', 7, 'Length of the chunk at the reduce stage.'),
-    stem=('', False, 'Use word stems instead of word strings.'),
     output=('o', 'matrix.h5', 'The output matrix file.'),
 ):
     """Build the co-occurrence matrix."""
-
-    all_fileids = bnc.fileids()
-    all_fileids = Bar(
-        'Reading BNC',
-        suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
-    ).iter(all_fileids)
+    words, paths, kwargs = corpus
 
     matrices = (
         pool.imap_unordered(
             bnc_cooccurrence,
-            ((bnc.root, fileids, window_size, stem, targets, context) for fileids in all_fileids),
+            ((words, path, kwargs, tag_first_letter, window_size, stem, targets, context) for path in paths),
         )
     )
 
@@ -218,23 +249,27 @@ def ccg_dictionary(
     frame = pd.concat(f for f in all_words if f is not None)
 
     if stem:
-        groupby_columns = 'ngram', 'tag'
+        groupby_columns = 'stem', 'tag'
     else:
-        groupby_columns = 'ngram', 'stem', 'tag'
+        groupby_columns = 'ngram', 'tag'
 
-    (
+    frame = (
         frame
         .groupby(groupby_columns)
         .sum()
         .sort('count', ascending=False)
         .reset_index()
-        .to_hdf(
-            output,
-            dictionary_key,
-            mode='w',
-            complevel=9,
-            complib='zlib',
-        )
+    )
+
+    if stem:
+        frame.rename(columns={'stem': 'ngram'}, inplace=True)
+
+    frame.to_hdf(
+        output,
+        dictionary_key,
+        mode='w',
+        complevel=9,
+        complib='zlib',
     )
 
 
