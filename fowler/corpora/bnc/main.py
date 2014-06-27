@@ -191,7 +191,7 @@ def dictionary(
         .groupby(('ngram', 'tag'))
         .sum()
         .sort('count', ascending=False)
-        .reset_index(drop=True)
+        .reset_index()
         .to_hdf(
             output,
             dictionary_key,
@@ -206,15 +206,17 @@ def dictionary(
 def transitive_verbs(
     pool,
     dictionary_key,
-    ccg_bnc,
+    corpus,
     tag_first_letter,
     output=('o', 'transitive_verbs.h5', 'The output verb space file.'),
 ):
     """Count occurrence of transitive verbs together with their subjects and objects."""
+    words, paths, kwargs = corpus
+
     columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag', 'count'
     vsos = pool.imap_unordered(
         collect_verb_subject_object,
-        ((f, tag_first_letter) for f in ccg_bnc),
+        ((path, tag_first_letter) for path in paths),
     )
 
     (
