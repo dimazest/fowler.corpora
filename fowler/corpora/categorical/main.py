@@ -92,12 +92,12 @@ def transitive_verb_space(
         ['subj_stem', 'subj_tag', 'obj_stem', 'obj_tag'],
     )
 
-    # groups = Bar(
-    #     'Subject object Kronecker products',
-    #     max=1,
-    #     # max=len(transitive_verb_arguments[['subj_stem', 'subj_tag', 'obj_stem', 'obj_tag']]),
-    #     suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
-    # ).iter(groups)
+    groups = Bar(
+        'Subject object Kronecker products',
+        max=1,
+        # max=len(transitive_verb_arguments[['subj_stem', 'subj_tag', 'obj_stem', 'obj_tag']]),
+        suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
+    ).iter(groups)
 
     verb_tensors = {}
 
@@ -116,6 +116,8 @@ def transitive_verb_space(
             logger.warning('Object %s %s is empty!', obj_stem, obj_tag)
             continue
 
+        import ipdb; ipdb.set_trace()
+
         subject_object_tensor = sparse.kron(subject_vector, object_vector)
 
         for verb_stem, count in group[['verb_stem', 'count']].values:
@@ -125,6 +127,5 @@ def transitive_verb_space(
             if verb_stem not in verb_tensors:
                 verb_tensors[verb_stem] = t
             else:
-                verb_tensors[verb_stem] = verb_tensors[verb_stem] + t
+                verb_tensors[verb_stem] += t
 
-    import ipdb; ipdb.set_trace()
