@@ -7,9 +7,9 @@ semantics experiments.
 The task
 --------
 
-The data set consists of 353 word pairs judged by humans for similarity
-[wordsim353]_. You can download the data set from `here`__. These are the first
-9 records::
+The [wordsim353]_ data set consists of 353 word pairs judged by humans for
+similarity. You can download the data set from `here`__. These are the first 9
+records::
 
     curl -s http://www.eecs.qmul.ac.uk/~dm303/static/data/wordsim353/combined.csv | head
     Word 1,Word 2,Human (mean)
@@ -29,11 +29,11 @@ Our task is to predict the human judgment given a pair of words from the
 dataset. Refer, for example, to [Agirre09]_ for one way of solving it.
 
 Idea
-------
+----
 
 We are going to exploit Zellig Harris's intuition, that semantically similar
-words tend to appear in similar contexts [harris54]_, in the following manner.
-Given a large piece of text, for every word we count its co-occurrence with
+words tend to appear in similar contexts [harris54]_, in the following manner:
+given a large piece of text, for every word we count its co-occurrence with
 other words in a symmetric window of 5 (5 words before the word and 5 words
 after). The word in the middle of a window is referred as the **target** word,
 the words before and after as **context** words.
@@ -58,7 +58,7 @@ and chose the following three words as context words:
 we produce this co-occurrence table
 
 ==== ========== ==== ======
-Word philosophy book school
+\    philosophy book school
 ==== ========== ==== ======
 Mary 0          10   22
 John 4          60   59
@@ -67,11 +67,10 @@ boy  0          12   146
 idea 10         47   39
 ==== ========== ==== ======
 
-``boy`` and ``girl`` get similar numbers, but different to ``idea``, which
-seems to fit the task. If we model word meaning as vectors in a highly
-dimensional vector space, where dimensions are optionally labeled by the
-context words, we can use the similarity of a word pair with the distance
-between the corresponding vectors.
+``boy`` and ``girl`` get similar numbers, but different to ``idea``. If we
+model word meaning as vectors in a highly dimensional vector space, where
+dimensions are optionally labeled by the context words, we can measure the
+similarity of a word pair as the distance between the corresponding vectors.
 
 To see how good our similarity predictions are, we will use the Spearman
 :math:`\rho` correlation.
@@ -81,15 +80,14 @@ Before we begin
 
 To avoid the mess, the data is organized to the following folders:
 
-* ``corpora`` is the folder for different corpus distributions, for example
+* ``corpora`` is the folder for different corpora distributions, for example
   ``corpora/BNC``.
-* ``downloads`` is for other resources, such as wordsim 353 dataset.
+* ``downloads`` is for other resources, such as the wordsim 353 dataset.
 * ``data`` is the folder for the experiment data.
 
 If you use https://github.com/dimazest/fc deployment configuration, you
 should already have wordsim 353, otherwise you can get it from
 http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/wordsim353.zip
-
 
 It takes a while to process the BNC and needs a powerful machine. If you
 are curious and want to go trough the tutorial quickly on your laptop, tell
@@ -98,34 +96,36 @@ option::
 
     --fileids='A\w*/\w*\.xml'
 
-Use the ``-v`` flag to write the ``/tmp/fowler.log`` file.
+Use the ``-v`` flag to write logs to ``/tmp/fowler.log``.
 
 If you run co-occurrence extraction on a laptop, to avoid lags, set the number
-of parallel jobs less than the CPU cores you have, for example, for a 4 core
-machine::
+of parallel jobs less than the CPU cores, for example, for a 4 core machine::
 
     -j 3
 
 Extracting the data
 -------------------
 
-We will use the BNC to extract the co-occurrence counts.
+We will use the BNC to extract the co-occurrence matrix. The rows in the matrix
+correspond to target words, while columns correspond to context words.
 
 Targets
 ~~~~~~~
 
-The words in the wordsim 353 dataset are the target words. Here is an ugly way
-to get them:
+The words in the wordsim 353 dataset are the target words. Here is a way to get
+them:
 
 .. code-block:: bash
 
     # Get the first colum
-    cut downloads/wordsim353/combined.csv -d, -f 1 >> t
+    cut downloads/wordsim353/combined.csv -d, -f 1 > t
     # Append the second column
     cut downloads/wordsim353/combined.csv -d, -f 2 >> t
     # The header
     echo ngram > data/targets_wordsim353.csv
-    # Get rid of duplicates and the column names ("Word 1", "Word 2"), lowercase the words and replace "troops" with its stem "troop"
+    # Get rid of duplicates and the column names ("Word 1", "Word 2")
+    # Lowercase the words and replace "troops" with its stem "troop"
+    # This transformation is needed because word sems will be used to extract co-occurences.
     cat t | sort | uniq | grep -v Word | tr '[:upper:]' '[:lower:]' | sed -e 's/troops/troop/g' >> data/targets_wordsim353.csv
     rm t
 
@@ -148,7 +148,7 @@ First we need to extract word frequencies:
 .. _DataFrame: http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.html
 
 ngram
-    a word.
+    a word or a stem.
 
 tag
     its part of speech tag. In the BNC, nous are tagged as ``SUBST``, verbs
@@ -157,7 +157,7 @@ tag
 count
     the frequency of the word.
 
-We can access it the and extract the context words the following way by using IPython::
+We can access it the and extract the context words using IPython::
 
     bin/corpora ipython
 
@@ -167,8 +167,8 @@ and executing the following code:
 
     >>> import pandas as pd
 
-
     >>> dictionary = pd.read_hdf('data/dictionary_bnc_pos.h5', key='dictionary')
+    >>> dictionary
            ngram   tag    count
     306889   the   ART  6042959
     45280      ,   PUN  5017057
@@ -221,7 +221,7 @@ Tuning
 ------
 
 The artistic part of the experiment is to tweak the initial co-occurrence
-counts. A common technique is to use positive pointwise mutual information.
+counts. A common technique is to use positive pointwise mutual information (PPMI):
 
 .. background and motivation
 
