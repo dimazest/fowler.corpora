@@ -43,7 +43,7 @@ class SimilarityDispatcher(Dispatcher, SpaceMixin):
 
     @property
     def similarity_experiment(self):
-        def inner(similarity_input, data, input_column, *, space=self.space):
+        def experiment(similarity_input, data, input_column, *, space=self.space):
             """Calculate similarities between items.
 
             :param similarity_input: accessor to the vectors of the passed data.
@@ -72,7 +72,8 @@ class SimilarityDispatcher(Dispatcher, SpaceMixin):
                 ylim=(0, 1),
             )
 
-        return inner
+        return experiment
+
 
 dispatcher = SimilarityDispatcher()
 command = dispatcher.command
@@ -85,11 +86,11 @@ def cosine_similarity(words):
 
 @command()
 def rg65(
-    space,
+    similarity_experiment,
     rg65_data=('', 'downloads/RubensteinGoodenough/EN-RG-65.txt', 'The rg65 dataset.'),
 
 ):
-    """The Rubenstein and Goodenough Noun similarity experiment [1]
+    """The Rubenstein and Goodenough noun similarity experiment [1]
 
     65 noun pairs with human similarity ratings.
 
@@ -100,6 +101,11 @@ def rg65(
     [2] http://www.cs.cmu.edu/~mfaruqui/suite.html
 
     """
+    similarity_experiment(
+        lambda data, space: ((space[w1], space[w2]) for w1, w2 in data[['Word 1', 'Word 2']].values),
+        rg65_data,
+        input_column='Human'
+    )
 
 
 @command()
@@ -113,5 +119,4 @@ def wordsim353(
         wordsim353_data,
         input_column='Human (mean)'
     )
-
 
