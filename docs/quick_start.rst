@@ -94,7 +94,7 @@ are curious and want to go trough the tutorial quickly on your laptop, tell
 corpora to process only part of the BNC files by adding the following
 option::
 
-    --fileids='A\w*/\w*\.xml'
+    --fileids='A/\w*/\w*\.xml'
 
 Use the ``-v`` flag to write logs to ``/tmp/fowler.log``.
 
