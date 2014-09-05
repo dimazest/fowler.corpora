@@ -75,7 +75,6 @@ dispatcher.nest(
     ms_paraphrase_main.__doc__,
 )
 
-
 dispatcher.nest(
     'similarity',
     similarity_main.dispatcher,

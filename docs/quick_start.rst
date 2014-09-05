@@ -139,7 +139,7 @@ First we need to extract word frequencies:
 .. code-block:: bash
 
     bin/corpora bnc dictionary \
-    --corpus bnc://${PWD}/corpora/BNC/Texts/'?fileids=A/\w*/\w*\.xml' \
+    --corpus bnc://${PWD}/corpora/BNC/Texts/\?fileids=A/\\w*/\\w*\\.xml \
     -o data/dictionary_bnc_pos.h5 \
     --stem -v -j 3
 
