@@ -89,19 +89,17 @@ If you use https://github.com/dimazest/fc deployment configuration, you
 should already have wordsim 353, otherwise you can get it from
 http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/wordsim353.zip
 
-It takes a while to process the BNC and needs a powerful machine. If you
-are curious and want to go trough the tutorial quickly on your laptop, tell
-corpora to process only part of the BNC files by adding the following
-option::
 
-    --fileids='A/\w*/\w*\.xml'
+..    It takes a while to process the BNC and needs a powerful machine. If you
+    are curious and want to go trough the tutorial quickly on your laptop, tell
+    corpora to process only part of the BNC files by adding the following
+    option::
 
-Use the ``-v`` flag to write logs to ``/tmp/fowler.log``.
+..        --fileids='A/\w*/\w*\.xml'
 
-If you run co-occurrence extraction on a laptop, to avoid lags, set the number
-of parallel jobs less than the CPU cores, for example, for a 4 core machine::
-
-    -j 3
+Use the ``-v`` flag to write logs to ``/tmp/fowler.log``. If you run
+co-occurrence extraction on a laptop, to avoid lags, set the number of parallel
+jobs less than the CPU cores, for example, for a 4 core machine ``-j 3``.
 
 Extracting the data
 -------------------
@@ -140,7 +138,10 @@ First we need to extract word frequencies:
 
 .. code-block:: bash
 
-    bin/corpora bnc dictionary --bnc corpora/BNC/Texts/ -o data/dictionary_bnc_pos.h5 --stem
+    bin/corpora bnc dictionary \
+    --corpus bnc://${PWD}/corpora/BNC/Texts/'?fileids=A/\w*/\w*\.xml' \
+    -o data/dictionary_bnc_pos.h5 \
+    --stem -v -j 3
 
 ``data/dictionary_bnc_pos.h5`` is a `Pandas`_ `DataFrame`_ with the following columns:
 

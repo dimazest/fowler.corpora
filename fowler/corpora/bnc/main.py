@@ -5,19 +5,20 @@ http://www.ota.ox.ac.uk/desc/2554
 
 """
 import logging
+import os.path
 
-from collections import Counter
-from itertools import chain
-
-from more_itertools import chunked
+from os import getcwd
+from urllib.parse import urlsplit, parse_qs
 
 import pandas as pd
 from nltk.corpus.reader.bnc import BNCCorpusReader
 
 from progress.bar import Bar
+from py.path import local
 
-from fowler.corpora.dispatcher import Dispatcher, Resource, NewSpaceCreationMixin, DictionaryMixin
+from fowler.corpora.dispatcher import Dispatcher, NewSpaceCreationMixin, DictionaryMixin
 from fowler.corpora.space.util import write_space
+
 from .util import count_cooccurrence
 
 
@@ -26,29 +27,78 @@ logger = logging.getLogger(__name__)
 
 class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
     """BNC dispatcher."""
+    global__corpus = '', 'bnc://', 'The path to the corpus.'
+    global__stem = '', False, 'Use word stems instead of word strings.',
+    global__tag_first_letter = '', False, 'Extract only the first letter of the POS tags.'
 
-    global__bnc = '', 'corpora/BNC/Texts', 'Path to the BNC corpus.'
-    global__fileids = '', r'[A-K]/\w*/\w*\.xml', 'Files to be read in the corpus.'
+    @property
+    def corpus(self):
+        """Access to the corpus."""
+        corpus = urlsplit(self.kwargs['corpus'])
+        query = parse_qs(corpus.query)
+        query_dict = {k: v[0] for k, v in query.items()}
 
-    @Resource
-    def bnc(self):
-        """BNC corpus reader."""
-        root = self.kwargs['bnc']
-        return BNCCorpusReader(root=root, fileids=self.fileids)
+        if corpus.scheme == 'bnc':
+            if 'fileids' not in query_dict:
+                query_dict['fileids'] = r'[A-K]/\w*/\w*\.xml'
+
+            path = corpus.path or os.path.join(getcwd(), 'corpora', 'BNC', 'Texts')
+            paths = BNCCorpusReader(root=path, **query_dict).fileids()
+
+            words = bnc_words
+            words_kwargs = {'root': path}
+        elif corpus.scheme == 'bnc+ccg':
+            path = corpus.path or os.path.join(getcwd(), 'corpora', 'CCG_BNC_v1')
+            paths = [str(n) for n in local(path).visit() if n.check(file=True, exists=True)]
+
+            words = bnc_ccg_words
+            words_kwargs = {}
+        else:
+            raise NotImplementedError('The {0}:// scheme is not supported.')
+
+        if self.limit:
+            paths = paths[:self.limit]
+
+        if not self.no_p11n:
+            paths = Bar(
+                'Reading the corpus',
+                suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
+            ).iter(paths)
+
+        return words, paths, words_kwargs
 
 
 dispatcher = BNCDispatcher()
 command = dispatcher.command
 
 
-def bnc_cooccurrence(args):
-    """Count word co-occurrence in a BNC file."""
-    root, fileids, window_size, stem, targets, context = args
+def bnc_words(path, stem, tag_first_letter, **kwargs):
+    for word, tag in BNCCorpusReader(fileids=path, **kwargs).tagged_words(stem=stem):
+        if tag_first_letter:
+            tag = tag[0]
 
-    logger.debug('Processing %s', fileids)
+        yield word, tag
+
+
+def bnc_ccg_words(path, stem, tag_first_letter, **kwargs):
+    def word_tags(dependencies, tokens):
+        for token in tokens.values():
+            if stem:
+                yield token.stem, token.tag
+            else:
+                yield token.word, token.tag
+
+    return ccg_bnc_iter(path, word_tags, tag_first_letter=tag_first_letter)
+
+
+def corpus_cooccurrence(args):
+    """Count word co-occurrence in a corpus file."""
+    words, path, kwargs, tag_first_letter, window_size, stem, targets, context = args
+
+    logger.debug('Processing %s', path)
 
     counts = count_cooccurrence(
-        BNCCorpusReader(root=root, fileids=fileids).tagged_words(stem=stem),
+        words(path, stem, tag_first_letter, **kwargs),
         window_size=window_size,
     )
 
@@ -73,104 +123,73 @@ def bnc_cooccurrence(args):
     return counts
 
 
-def do_sum_counters(args):
-    logger.debug('Summing up %d counters.', len(args))
-
-    first_counter, *rest = args
-    return sum(rest, first_counter)
-
-
-def sum_counters(counters, pool, chunk_size=7):
-    while True:
-        counters = chunked(counters, chunk_size)
-
-        first = next(counters)
-        if len(first) == 1:
-            logger.debug('Got results for a chunk.')
-            return first[0]
-
-        counters = pool.imap_unordered(do_sum_counters, chain([first], counters))
-
-
 @command()
 def cooccurrence(
-    bnc,
+    corpus,
     pool,
     targets,
     context,
+    stem,
+    tag_first_letter,
     window_size=('', 5, 'Window size.'),
     chunk_size=('', 7, 'Length of the chunk at the reduce stage.'),
-    stem=('', False, 'Use word stems instead of word strings.'),
     output=('o', 'matrix.h5', 'The output matrix file.'),
 ):
     """Build the co-occurrence matrix."""
-
-    all_fileids = bnc.fileids()
-    all_fileids = Bar(
-        'Reading BNC',
-        suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
-    ).iter(all_fileids)
+    words, paths, kwargs = corpus
 
     matrices = (
         pool.imap_unordered(
-            bnc_cooccurrence,
-            ((bnc.root, fileids, window_size, stem, targets, context) for fileids in all_fileids),
+            corpus_cooccurrence,
+            ((words, path, kwargs, tag_first_letter, window_size, stem, targets, context) for path in paths),
         )
     )
 
-    matrix = pd.concat(
-        (m for m in matrices),
-    ).groupby(['id_target', 'id_context']).sum()
+    matrix = pd.concat((m for m in matrices)).groupby(['id_target', 'id_context']).sum()
 
     write_space(output, context, targets, matrix)
 
 
-def bnc_words(args):
-    root, fileids, c5, stem, omit_tags = args
-    logger.debug('Processing %s', fileids)
-    bnc = BNCCorpusReader(root=root, fileids=fileids)
+def corpus_words(args):
+    """Count all the words from a corpus file."""
+    words, path, kwargs, tag_first_letter, stem = args
 
-    try:
-        if not omit_tags:
-            return Counter(bnc.tagged_words(stem=stem, c5=c5))
-        else:
-            return Counter(bnc.words(stem=stem))
-    except:
-        logger.error('Could not process %s', fileids)
-        raise
+    logger.debug('Processing %s', path)
+
+    result = pd.DataFrame(
+        words(path, stem, tag_first_letter, **kwargs),
+        columns=('ngram', 'tag'),
+    )
+    result['count'] = 1
+
+    return result.groupby(('ngram', 'tag'), as_index=False).sum()
 
 
 @command()
 def dictionary(
-    bnc,
     pool,
+    corpus,
     dictionary_key,
-    output=('o', 'dicitionary.h5', 'The output file.'),
-    c5=('', False, 'Use more detailed c5 tags.'),
+    tag_first_letter,
     stem=('', False, 'Use word stems instead of word strings.'),
     omit_tags=('', False, 'Do not use POS tags.'),
+    output=('o', 'dicitionary.h5', 'The output file.'),
 ):
-    """Extract word frequencies from the corpus."""
-    words = sum_counters(
+    words, paths, kwargs = corpus
+
+    all_words = (
         pool.imap_unordered(
-            bnc_words,
-            ((bnc.root, fid, c5, stem, omit_tags) for fid in bnc.fileids()),
-        ),
-        pool=pool,
+            corpus_words,
+            ((words, path, kwargs, tag_first_letter, stem) for path in paths),
+        )
     )
 
-    logger.debug('The final counter contains %d items.', len(words))
-
-    if not omit_tags:
-        words = ([w, t, c] for (w, t), c in words.items())
-        columns = 'ngram', 'tag', 'count'
-    else:
-        words = ([w, c] for w, c in words.items())
-        columns = 'ngram', 'count'
-
     (
-        pd.DataFrame(words, columns=columns)
+        pd.concat(f for f in all_words if f is not None)
+        .groupby(('ngram', 'tag'))
+        .sum()
         .sort('count', ascending=False)
+        .reset_index()
         .to_hdf(
             output,
             dictionary_key,
