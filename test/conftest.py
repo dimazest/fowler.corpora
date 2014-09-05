@@ -1,5 +1,6 @@
-import pytest
+import py
 
+import pytest
 
 @pytest.fixture
 def datadir():
@@ -7,31 +8,12 @@ def datadir():
 
 
 @pytest.fixture
-def wordsim_353_path(datadir):
-    return datadir.join('wordsim353')
-
-
-@pytest.fixture
-def context_path(datadir):
-    return datadir.join('context.csv')
-
-
-@pytest.fixture
-def google_ngrams_path(datadir):
-    return datadir.join('google_ngrams')
-
-
-@pytest.fixture
-def store_path(tmpdir):
-    return tmpdir.join('store.h5')
-
-
-@pytest.fixture
-def cooccurrence_dir_path(google_ngrams_path):
-    return google_ngrams_path.join('5_cooccurrence')
+def bnc_path(datadir):
+    return datadir.join('BNC', 'Texts')
 
 
 @pytest.fixture
 def dispatcher():
     from fowler.corpora.main import dispatcher
+
     return dispatcher

@@ -1,6 +1,7 @@
 import pandas as pd
 
 from fowler.corpora.bnc.util import count_cooccurrence
+from fowler.corpora.dispatcher import DictionaryMixin
 
 import pytest
 
@@ -78,3 +79,30 @@ def test_count_cooccurrence(sequence, window_size, expected_result):
     expected_result = expected_result.reindex_axis(['target', 'target_tag', 'context', 'context_tag', 'count'], axis=1)
 
     assert (result == expected_result).all().all()
+
+
+def test_bnc_dictionary(bnc_path, dispatcher, tmpdir):
+    dictionary_path = str(tmpdir.join("dictionary.h5"))
+    dispatcher.dispatch(
+        'bnc dictionary '
+        '--corpus bnc://{corpus} '
+        '-o {output} '
+        '--no_p11n'
+        ''.format(
+            corpus=bnc_path,
+            output=dictionary_path,
+        ).split()
+    )
+
+    dictionary = DictionaryMixin.get_dictionary(dictionary_path, 'dictionary')
+
+    dictionary.set_index(['ngram', 'tag'], inplace=True)
+
+    assert dictionary.loc[('.', 'PUN')]['count'] == 11
+    assert dictionary.loc[('she', 'PRON')]['count'] == 9
+    assert dictionary.loc[(',', 'PUN')]['count'] == 8
+    assert dictionary.loc[('to', 'PREP')]['count'] == 7
+    assert dictionary.loc[('and', 'CONJ')]['count'] == 5
+
+    assert dictionary['count'].sum() == 151
+    assert len(dictionary) == 88

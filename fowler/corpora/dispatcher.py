@@ -262,4 +262,8 @@ class DictionaryMixin:
             the POS tag of ngram
 
         """
-        return pd.read_hdf(self.kwargs['dictionary'], key=self.dictionary_key)
+        self.get_dictionary(path=self.kwargs['dictionary'], key=self.dictionary_key)
+
+    @staticmethod
+    def get_dictionary(path, key):
+        return pd.read_hdf(path, key=key)
