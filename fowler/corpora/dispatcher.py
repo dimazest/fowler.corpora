@@ -85,6 +85,9 @@ class DummyPool:
     def map(self, func, iterable, chunksize=None):
         return list(map(func, iterable))
 
+    def imap(self, func, iterable, chunksize=None):
+        return map(func, iterable)
+
 
 class Dispatcher(BaseDispatcher):
     global__display_max_rows = '', 0, 'Maximum number of rows to show in pandas.'

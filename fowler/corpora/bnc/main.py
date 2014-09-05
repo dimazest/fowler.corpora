@@ -145,9 +145,7 @@ def cooccurrence(
         )
     )
 
-    matrix = pd.concat(
-        (m for m in matrices),
-    ).groupby(['id_target', 'id_context']).sum()
+    matrix = pd.concat((m for m in matrices)).groupby(['id_target', 'id_context']).sum()
 
     write_space(output, context, targets, matrix)
 
