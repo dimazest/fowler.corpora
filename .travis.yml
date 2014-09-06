@@ -11,6 +11,7 @@ before_install:
   - sudo apt-get install -qq python-numpy python-scipy python-matplotlib python-pandas python-tables python-sklearn  python-yaml python-numexpr
 
 install:
+  - pip install numexpr
   - python bootstrap.py
   - bin/buildout
 
