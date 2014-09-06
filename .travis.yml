@@ -11,6 +11,7 @@ before_install:
 install:
   - pip install numexpr
   - pip install cython
+  - pip install wheelhouse-uploader
   - python bootstrap.py
   - bin/buildout
 
