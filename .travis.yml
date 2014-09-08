@@ -9,15 +9,14 @@ before_install:
   - sudo apt-get install -qq python-numpy python-scipy python-matplotlib python-pandas python-tables python-sklearn  python-yaml python-numexpr libhdf5-serial-dev
 
 install:
-  - pip install wheel
-  - pip install --pre --find-links https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr cython wheelhouse-uploader scipy
-  - python bootstrap.py
-  - bin/buildout
+  - pip install wheel tox
+  - pip install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr cython wheelhouse-uploader scipy
 
 script:
-  - bin/python setup.py test
+  - tox
 
 after_success:
-  - bin/py.test --cov=fowler.corpora --cov-report=term-missing test
-  - bin/coveralls
-  - bin/pip list -o
+  - pip install pytest-cov coveralls
+  - py.test --cov=fowler.corpora --cov-report=term-missing test
+  - coveralls
+  - pip list -o

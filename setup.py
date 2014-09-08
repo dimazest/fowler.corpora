@@ -73,7 +73,7 @@ setup(
         'raven',
         'scikit-learn',
         'scipy',
-        'seaborn',
+        'seaborn<0.3.9999',  # Seaborn 0.4 setup is broken.
         'setuptools',
         'six',
         'tables',
