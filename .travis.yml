@@ -9,9 +9,8 @@ before_install:
   - sudo apt-get install -qq python-numpy python-scipy python-matplotlib python-pandas python-tables python-sklearn  python-yaml python-numexpr libhdf5-serial-dev
 
 install:
-  - pip install numexpr
-  - pip install cython
-  - pip install wheelhouse-uploader
+  - pip install wheel
+  - pip install --pre --find-links https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr cython wheelhouse-uploader
   - python bootstrap.py
   - bin/buildout
 
