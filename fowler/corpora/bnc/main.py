@@ -132,7 +132,6 @@ def cooccurrence(
     stem,
     tag_first_letter,
     window_size=('', 5, 'Window size.'),
-    chunk_size=('', 7, 'Length of the chunk at the reduce stage.'),
     output=('o', 'matrix.h5', 'The output matrix file.'),
 ):
     """Build the co-occurrence matrix."""

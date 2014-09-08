@@ -35,7 +35,7 @@ class EagerResource(Resource):
 
 
 class BaseDispatcher(opster.Dispatcher):
-    """Base dispathcer with generic basic resources."""
+    """Base dispatcher with generic basic resources."""
 
     def __init__(self):
         global_option_prefix = 'global__'
@@ -95,7 +95,7 @@ class Dispatcher(BaseDispatcher):
     global__limit = '', 0, 'Number of elements to limit.'
     global__logger_backup_count = '', 1000, 'The number of log messages to keep.'
     global__logger_filename = '', '/tmp/fowler.log', 'File to log.'
-    global__no_p11n = '', False, "Don't parrallelize the code across several "
+    global__no_p11n = '', False, "Don't parallelize the code across several workers."
     global__verbose = 'v', False, 'Be verbose.'
 
     def __init__(self, *args, **kwargs):
