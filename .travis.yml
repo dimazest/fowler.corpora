@@ -10,7 +10,7 @@ before_install:
 
 install:
   - pip install wheel
-  - pip install --pre --find-links https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr cython wheelhouse-uploader
+  - pip install --pre --find-links https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr cython wheelhouse-uploader scipy
   - python bootstrap.py
   - bin/buildout
 
