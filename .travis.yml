@@ -13,10 +13,10 @@ install:
   - pip install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr cython wheelhouse-uploader scipy
 
 script:
-  - tox
+  - python setup.py test
 
 after_success:
-  - pip install pytest-cov coveralls
+  - pip install pytest-cov coveralls pytest
   - py.test --cov=fowler.corpora --cov-report=term-missing test
   - coveralls
   - pip list -o
