@@ -20,3 +20,4 @@ script:
 after_success:
   - bin/py.test --cov=fowler.corpora --cov-report=term-missing test
   - bin/coveralls
+  - bin/pip list -o
