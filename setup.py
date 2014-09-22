@@ -62,7 +62,7 @@ setup(
         'joblib',
         'matplotlib',
         'more-itertools',
-        'nltk',
+        'nltk>=3.0.0',
         'numexpr',
         'numpy',
         'openpyxl<1.9999',  # Pandas requires vresion < 2.0
