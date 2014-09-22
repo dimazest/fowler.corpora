@@ -11,17 +11,17 @@ before_install:
   - deactivate
   - export PATH=/opt/python/3.3.5/bin:$PATH
   - curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo /opt/python/3.3.5/bin/python3.3
-
+  - ls /opt/python/3.3.5/bin
 install:
-  - sudo pip-3.3 install wheel tox
-  - sudo pip-3.3 install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numpy scipy Cython
-  - sudo pip-3.3 install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr
+  - sudo /opt/python/3.3.5/bin/pip install wheel tox
+  - sudo /opt/python/3.3.5/bin/pip install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numpy scipy Cython
+  - sudo /opt/python/3.3.5/bin/pip-3.3 install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr
 
 script:
   - tox
 
 after_success:
-  - sudo pip-3.3 install pytest-cov coveralls pytest
+  - sudo /opt/python/3.3.5/bin/pip install pytest-cov coveralls pytest
   - tox -- --cov=fowler.corpora --cov-report=term-missing test
   - coveralls
   - pip list -o
