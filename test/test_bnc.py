@@ -82,43 +82,65 @@ def test_count_cooccurrence(sequence, window_size, expected_result):
     assert (result == expected_result).all().all()
 
 
-def test_bnc_dictionary(bnc_path, dispatcher, tmpdir):
+@pytest.mark.parametrize(
+    ('stem', 'tag_first_letter', 'ngrams', 'counts', 'dictionary_len'),
+    (
+        ('', '', [('.', 'PUN'), ('she', 'PRON'), (',', 'PUN'), ('to', 'PREP'), ('and', 'CONJ')], [11, 9, 8, 7, 5], 88),
+        ('--stem', '', [('.', 'PUN'), ('she', 'PRON'), (',', 'PUN'), ('to', 'PREP'), ('and', 'CONJ')], [11, 15, 8, 7, 6], 73),
+        ('', '--tag_first_letter', [('.', 'P'), ('she', 'P'), (',', 'P'), ('to', 'P'), ('and', 'C')], [11, 9, 8, 7, 5], 88),
+        ('--stem', '--tag_first_letter', [('.', 'P'), ('she', 'P'), (',', 'P'), ('to', 'P'), ('and', 'C')], [11, 15, 8, 7, 6], 73),
+    )
+)
+def test_bnc_dictionary(bnc_path, dispatcher, tmpdir, stem, tag_first_letter, ngrams, counts, dictionary_len):
     dictionary_path = str(tmpdir.join("dictionary.h5"))
     dispatcher.dispatch(
         'bnc dictionary '
         '--corpus bnc://{corpus} '
         '-o {output} '
-        '--no_p11n'
+        '--no_p11n '
+        '{stem} '
+        '{tag_first_letter} '
         ''.format(
             corpus=bnc_path,
             output=dictionary_path,
+            stem=stem,
+            tag_first_letter=tag_first_letter,
         ).split()
     )
 
     dictionary = DictionaryMixin.get_dictionary(dictionary_path, 'dictionary')
 
     dictionary.set_index(['ngram', 'tag'], inplace=True)
-
-    assert dictionary.loc[('.', 'PUN')]['count'] == 11
-    assert dictionary.loc[('she', 'PRON')]['count'] == 9
-    assert dictionary.loc[(',', 'PUN')]['count'] == 8
-    assert dictionary.loc[('to', 'PREP')]['count'] == 7
-    assert dictionary.loc[('and', 'CONJ')]['count'] == 5
+    # pytest.set_trace()
+    assert (dictionary.loc[ngrams]['count'] == counts).all()
 
     assert dictionary['count'].sum() == 151
-    assert len(dictionary) == 88
+    assert len(dictionary) == dictionary_len
 
 
-def test_bnc_ccg_dictionary(bnc_ccg_path, dispatcher, tmpdir):
+@pytest.mark.parametrize(
+    ('stem', 'tag_first_letter', 'ngrams', 'counts', 'dictionary_len'),
+    (
+        ('', '', [('.', '.'), ('she', 'PRP'), (',', ','), ('to', 'TO'), ('and', 'CC')], [117, 1, 55, 39, 22], 675),
+        ('--stem', '', [('.', '.'), ('she', 'PRP'), (',', ','), ('to', 'TO'), ('and', 'CC')], [117, 1, 55, 39, 24], 621),
+        ('', '--tag_first_letter', [('.', '.'), ('she', 'P'), (',', ','), ('to', 'T'), ('and', 'C')], [117, 1, 55, 39, 22], 654),
+        ('--stem', '--tag_first_letter', [('.', '.'), ('she', 'P'), (',', ','), ('to', 'T'), ('and', 'C')], [117, 1, 55, 39, 24], 547),
+    )
+)
+def test_bnc_ccg_dictionary(bnc_ccg_path, dispatcher, tmpdir, stem, tag_first_letter, ngrams, counts, dictionary_len):
     dictionary_path = str(tmpdir.join("dictionary.h5"))
     dispatcher.dispatch(
         'bnc dictionary '
         '--corpus bnc+ccg://{corpus} '
         '-o {output} '
-        '--no_p11n'
+        '--no_p11n '
+        '{stem} '
+        '{tag_first_letter} '
         ''.format(
             corpus=bnc_ccg_path,
             output=dictionary_path,
+            stem=stem,
+            tag_first_letter=tag_first_letter,
         ).split()
     )
 
@@ -126,14 +148,10 @@ def test_bnc_ccg_dictionary(bnc_ccg_path, dispatcher, tmpdir):
 
     dictionary.set_index(['ngram', 'tag'], inplace=True)
 
-    assert dictionary.loc[('.', '.')]['count'] == 117
-    assert dictionary.loc[('she', 'PRP')]['count'] == 1
-    assert dictionary.loc[(',', ',')]['count'] == 55
-    assert dictionary.loc[('to', 'TO')]['count'] == 39
-    assert dictionary.loc[('and', 'CC')]['count'] == 22
+    assert (dictionary.loc[ngrams]['count'] == counts).all()
 
     assert dictionary['count'].sum() == 1781
-    assert len(dictionary) == 675
+    assert len(dictionary) == dictionary_len
 
 
 def test_bnc_cooccurrence(bnc_path, dispatcher, tmpdir, wordsim_target_path, wordsim_context_path):
