@@ -10,15 +10,15 @@ before_install:
   - deactivate
 
 install:
-  - pip install wheel tox
-  - pip install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numpy scipy Cython
-  - pip install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr
+  - sudo pip install wheel tox
+  - sudo pip install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numpy scipy Cython
+  - sudo pip install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr
 
 script:
   - tox
 
 after_success:
-  - pip install pytest-cov coveralls pytest
+  - sudo pip install pytest-cov coveralls pytest
   - py.test --cov=fowler.corpora --cov-report=term-missing test
   - coveralls
   - pip list -o
