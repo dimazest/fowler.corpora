@@ -2,6 +2,7 @@ import py
 
 import pytest
 
+
 @pytest.fixture
 def datadir():
     return py.path.local(__file__).dirpath('data')
@@ -10,6 +11,11 @@ def datadir():
 @pytest.fixture
 def bnc_path(datadir):
     return datadir.join('BNC', 'Texts')
+
+
+@pytest.fixture
+def bnc_ccg_path(datadir):
+    return datadir.join('CCG_BNC_v1')
 
 
 @pytest.fixture
@@ -27,6 +33,7 @@ def wordsim_base_path(datadir):
 @pytest.fixture
 def wordsim_target_path(wordsim_base_path):
     return wordsim_base_path.join('targets_wordsim353.csv')
+
 
 @pytest.fixture
 def wordsim_context_path(wordsim_base_path):

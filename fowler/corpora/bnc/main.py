@@ -19,7 +19,7 @@ from py.path import local
 from fowler.corpora.dispatcher import Dispatcher, NewSpaceCreationMixin, DictionaryMixin
 from fowler.corpora.space.util import write_space
 
-from .util import count_cooccurrence
+from .util import count_cooccurrence, ccg_bnc_iter
 
 
 logger = logging.getLogger(__name__)

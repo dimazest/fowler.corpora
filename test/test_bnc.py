@@ -109,6 +109,33 @@ def test_bnc_dictionary(bnc_path, dispatcher, tmpdir):
     assert len(dictionary) == 88
 
 
+def test_bnc_ccg_dictionary(bnc_ccg_path, dispatcher, tmpdir):
+    dictionary_path = str(tmpdir.join("dictionary.h5"))
+    dispatcher.dispatch(
+        'bnc dictionary '
+        '--corpus bnc+ccg://{corpus} '
+        '-o {output} '
+        '--no_p11n'
+        ''.format(
+            corpus=bnc_ccg_path,
+            output=dictionary_path,
+        ).split()
+    )
+
+    dictionary = DictionaryMixin.get_dictionary(dictionary_path, 'dictionary')
+
+    dictionary.set_index(['ngram', 'tag'], inplace=True)
+
+    assert dictionary.loc[('.', '.')]['count'] == 117
+    assert dictionary.loc[('she', 'PRP')]['count'] == 1
+    assert dictionary.loc[(',', ',')]['count'] == 55
+    assert dictionary.loc[('to', 'TO')]['count'] == 39
+    assert dictionary.loc[('and', 'CC')]['count'] == 22
+
+    assert dictionary['count'].sum() == 1781
+    assert len(dictionary) == 675
+
+
 def test_bnc_cooccurrence(bnc_path, dispatcher, tmpdir, wordsim_target_path, wordsim_context_path):
     path = str(tmpdir.join("space.h5"))
     dispatcher.dispatch(
