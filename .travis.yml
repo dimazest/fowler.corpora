@@ -7,8 +7,10 @@ before_install:
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
   - sudo apt-get update -qq
   - sudo apt-get install -qq python-matplotlib python-pandas python-tables python-sklearn  python-yaml libhdf5-serial-dev
+  - which python
   - deactivate
   - curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python
+  - which python
 
 install:
   - sudo pip-3.3 install wheel tox
