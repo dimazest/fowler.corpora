@@ -9,9 +9,10 @@ before_install:
   - sudo apt-get install -qq python-matplotlib python-pandas python-tables python-sklearn  python-yaml libhdf5-serial-dev
   - which python
   - deactivate
-  - curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python
+  - export PATH=/opt/python/3.3.5/bin:$$PATH
   - which python
-  - ls /opt/python
+  - which python3.3
+  - curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python
 
 install:
   - sudo pip-3.3 install wheel tox
