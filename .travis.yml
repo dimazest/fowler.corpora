@@ -11,6 +11,7 @@ before_install:
   - deactivate
   - curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python
   - which python
+  - ls /opt/python
 
 install:
   - sudo pip-3.3 install wheel tox
