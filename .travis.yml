@@ -6,11 +6,13 @@ python:
 before_install:
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
   - sudo apt-get update -qq
-  - sudo apt-get install -qq python-numpy python-scipy python-matplotlib python-pandas python-tables python-sklearn  python-yaml python-numexpr libhdf5-serial-dev
+  - sudo apt-get install -qq python-matplotlib python-pandas python-tables python-sklearn  python-yaml libhdf5-serial-dev
+  - deactivate
 
 install:
   - pip install wheel tox
-  - pip install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr cython wheelhouse-uploader scipy
+  - pip install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numpy scipy Cython
+  - pip install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr
 
 script:
   - tox
