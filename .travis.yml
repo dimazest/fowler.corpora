@@ -8,17 +8,18 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq python-matplotlib python-pandas python-tables python-sklearn  python-yaml libhdf5-serial-dev
   - deactivate
+  - curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python3.3
 
 install:
-  - sudo pip install wheel tox
-  - sudo pip install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numpy scipy Cython
-  - sudo pip install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr
+  - sudo pip-3.3 install wheel tox
+  - sudo pip-3.3 install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numpy scipy Cython
+  - sudo pip-3.3 install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr
 
 script:
   - tox
 
 after_success:
-  - sudo pip install pytest-cov coveralls pytest
-  - py.test --cov=fowler.corpora --cov-report=term-missing test
+  - sudo pip-3.3 install pytest-cov coveralls pytest
+  - tox -- --cov=fowler.corpora --cov-report=term-missing test
   - coveralls
   - pip list -o
