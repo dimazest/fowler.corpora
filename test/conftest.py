@@ -1,3 +1,5 @@
+import py
+
 import pytest
 
 
@@ -7,31 +9,32 @@ def datadir():
 
 
 @pytest.fixture
-def wordsim_353_path(datadir):
-    return datadir.join('wordsim353')
+def bnc_path(datadir):
+    return datadir.join('BNC', 'Texts')
 
 
 @pytest.fixture
-def context_path(datadir):
-    return datadir.join('context.csv')
-
-
-@pytest.fixture
-def google_ngrams_path(datadir):
-    return datadir.join('google_ngrams')
-
-
-@pytest.fixture
-def store_path(tmpdir):
-    return tmpdir.join('store.h5')
-
-
-@pytest.fixture
-def cooccurrence_dir_path(google_ngrams_path):
-    return google_ngrams_path.join('5_cooccurrence')
+def bnc_ccg_path(datadir):
+    return datadir.join('CCG_BNC_v1')
 
 
 @pytest.fixture
 def dispatcher():
     from fowler.corpora.main import dispatcher
+
     return dispatcher
+
+
+@pytest.fixture
+def wordsim_base_path(datadir):
+    return datadir.join('wordsim353')
+
+
+@pytest.fixture
+def wordsim_target_path(wordsim_base_path):
+    return wordsim_base_path.join('targets_wordsim353.csv')
+
+
+@pytest.fixture
+def wordsim_context_path(wordsim_base_path):
+    return wordsim_base_path.join('contexts_bnc_pos_1000.csv')

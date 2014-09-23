@@ -3,30 +3,7 @@ import fileinput
 import contextlib
 import codecs
 
-import numpy as np
-from scipy.sparse import csc_matrix
-
 from py.path import local
-
-
-def load_cooccurrence_matrix(store, matrix_type=csc_matrix):
-    """Load a co-occurrence matrix from a store."""
-
-    ij = np.vstack((
-        store['row_ids'].values,
-        store['col_ids'].values,
-    ))
-
-    matrix = matrix_type((
-        store['data'].values,
-        ij,
-    ))
-
-    return matrix
-
-
-def load_labels(store):
-    return store['labels'].values.astype(str)
 
 
 @contextlib.contextmanager

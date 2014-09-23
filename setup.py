@@ -62,7 +62,7 @@ setup(
         'joblib',
         'matplotlib',
         'more-itertools',
-        'nltk',
+        'nltk>=3.0.0',
         'numexpr',
         'numpy',
         'openpyxl<1.9999',  # Pandas requires vresion < 2.0
@@ -73,7 +73,7 @@ setup(
         'raven',
         'scikit-learn',
         'scipy',
-        'seaborn',
+        'seaborn<0.3.9999',  # Seaborn 0.4 setup is broken.
         'setuptools',
         'six',
         'tables',

@@ -76,7 +76,6 @@ dispatcher.nest(
     ms_paraphrase_main.__doc__,
 )
 
-
 dispatcher.nest(
     'categorical',
     categorical_main.dispatcher,

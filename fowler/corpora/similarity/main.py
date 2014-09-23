@@ -13,11 +13,7 @@ class SimilarityDispatcher(Dispatcher, SpaceMixin):
 
     @Resource
     def rg65_data(self):
-        """The data set grouped by verb, subject, object and landmark.
-
-        The mean of the input values per group is calculated.
-
-        """
+        """The Rubenstein and Goodenough noun similarity dataset."""
         data = pd.read_csv(
             self.kwargs['rg65_data'],
             sep='\t',
@@ -32,6 +28,7 @@ class SimilarityDispatcher(Dispatcher, SpaceMixin):
 
     @Resource
     def wordsim353_data(self):
+        """The worsim353 similarity dataset."""
         data = pd.read_csv(self.kwargs['wordsim353_data'])
 
         # for column in 'Word 1', 'Word 2':
@@ -90,7 +87,7 @@ def rg65(
     rg65_data=('', 'downloads/RubensteinGoodenough/EN-RG-65.txt', 'The rg65 dataset.'),
 
 ):
-    """The Rubenstein and Goodenough noun similarity experiment [1]
+    """The Rubenstein and Goodenough noun similarity experiment [1].
 
     65 noun pairs with human similarity ratings.
 

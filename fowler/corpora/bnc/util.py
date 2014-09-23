@@ -170,19 +170,40 @@ def parse_dependencies(dependencies):
             )
 
 
-def parse_tokens(c, tag_first_letter=False):
-    """Parse and retrieve token position, word, stem and tag from a C&C parse.
+def ccg_bnc_iter(f_name, postprocessor):
+    logger.debug('Processing %s', f_name)
 
-    Replaces C&C tags with the BNC pos tags.
+    with open(f_name, 'rt', encoding='utf8') as f:
+        # Get rid of trailing whitespace.
+        lines = (l.strip() for l in f)
 
-    """
+        while True:
+            # Sentences are split by an empty line.
+            sentence = list(takewhile(bool, lines))
+
+            if not sentence:
+                # No line were taken, this means all the file has be read!
+                break
+
+            # Take extra care of comments.
+            sentence = list(filterfalse(lambda l: l.startswith('#'), sentence))
+
+            if not sentence:
+                # If we got nothing, but comments: skip.
+                continue
+
+            *dependencies, c = sentence
+            tokens = dict(parse_tokens(c))
+
+            yield from postprocessor(dependencies, tokens)
+
+
+def parse_tokens(c):
+    """Parse and retrieve token position, word, stem and tag from a C&C parse."""
     assert c[:4] == '<c> '
     c = c[4:]
 
     for position, token in enumerate(c.split()):
         word, stem, tag, *_ = token.split('|')
-
-        if tag_first_letter:
-            tag = tag[0]
 
         yield position, CCGToken(word, stem, tag)
