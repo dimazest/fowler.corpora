@@ -1,7 +1,7 @@
 import logging
 
 from collections import deque, namedtuple
-from itertools import islice, chain, filterfalse, takewhile, groupby
+from itertools import islice, chain, takewhile, filterfalse, groupby
 
 import pandas as pd
 
@@ -121,34 +121,6 @@ def _ccg_words(dependencies, tokens):
     yield from tokens.values()
 
 
-def ccg_bnc_iter(f_name, postprocessor, tag_first_letter=False):
-    logger.debug('Processing %s', f_name)
-
-    with open(f_name, 'rt', encoding='utf8') as f:
-        # Get rid of trailing whitespace.
-        lines = (l.strip() for l in f)
-
-        while True:
-            # Sentences are split by an empty line.
-            sentence = list(takewhile(bool, lines))
-
-            if not sentence:
-                # No line were taken, this means all the file has be read!f.
-                break
-
-            # Take extra care of comments.
-            sentence = list(filterfalse(lambda l: l.startswith('#'), sentence))
-
-            if not sentence:
-                # If we got nothing, but comments: skip.
-                continue
-
-            *dependencies, c = sentence
-            tokens = dict(parse_tokens(c, tag_first_letter=tag_first_letter))
-
-            yield from postprocessor(dependencies, tokens)
-
-
 def parse_dependencies(dependencies):
     """Parse and filter out verb subject/object dependencies from a C&C parse."""
     for dependency in dependencies:
@@ -157,7 +129,7 @@ def parse_dependencies(dependencies):
         dependency = dependency[1:-1]
 
         try:
-            relation, head, dependant, *_  = dependency.split()
+            relation, head, dependant, *_ = dependency.split()
         except ValueError:
             logger.debug('Invalid dependency: %s', dependency)
             break
