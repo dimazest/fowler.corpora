@@ -1,7 +1,7 @@
 import logging
 
 from collections import deque, namedtuple
-from itertools import islice, chain, takewhile, filterfalse, groupby
+from itertools import islice, chain, takewhile, groupby
 
 import pandas as pd
 
@@ -17,7 +17,6 @@ def count_cooccurrence(words, window_size=5):
 
     :param iter words: the sequence of words.
     :param int window_size: the symmetric window size.
-    :param bool pos_tag: use POS tags.
 
     :return: a pandas.DataFrame of the co-occurrence counts.
         The key columns are::
@@ -38,7 +37,7 @@ def count_cooccurrence(words, window_size=5):
             try:
                 word = next(words)
             except StopIteration:
-                '''There are no words anymore.'''
+                '''There are no more words.'''
             else:
                 before.append(word)
 
@@ -154,12 +153,11 @@ def ccg_bnc_iter(f_name, postprocessor):
             sentence = list(takewhile(bool, lines))
 
             if not sentence:
-                # No line were taken, this means all the file has be read!
+                # No line was taken, this means all the file has be read!
                 break
 
             # Take extra care of comments.
-            sentence = list(filterfalse(lambda l: l.startswith('#'), sentence))
-
+            sentence = [l for l in sentence if not l.startswith('#')]
             if not sentence:
                 # If we got nothing, but comments: skip.
                 continue
