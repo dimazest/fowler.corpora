@@ -3,6 +3,7 @@ import pandas as pd
 from fowler.corpora.bnc.util import count_cooccurrence
 from fowler.corpora.dispatcher import DictionaryMixin
 from fowler.corpora.models import read_space_from_file
+from fowler.corpora.categorical.main import CategoricalDispatcher
 
 import pytest
 
@@ -174,3 +175,25 @@ def test_bnc_cooccurrence(bnc_path, dispatcher, tmpdir, wordsim_target_path, wor
     space = read_space_from_file(path)
 
     assert space.matrix.sum() == 29
+
+
+def test_bnc_ccg_transitive_verbs(bnc_ccg_path, dispatcher, tmpdir):
+    vso_path = str(tmpdir.join("dictionary.h5"))
+    dispatcher.dispatch(
+        'bnc transitive-verbs '
+        '--corpus bnc+ccg://{corpus} '
+        '-o {output} '
+        '--no_p11n '
+        ''.format(
+            corpus=bnc_ccg_path,
+            output=vso_path,
+        ).split()
+    )
+
+    vso = CategoricalDispatcher.read_vso_file(vso_path, 'dictionary')
+
+    vso.set_index(
+        ['verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'],
+        inplace=True,
+    )
+    assert len(vso) == 74

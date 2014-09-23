@@ -25,11 +25,10 @@ class CategoricalDispatcher(Dispatcher, NewSpaceCreationMixin, SpaceMixin, Dicti
     def transitive_verb_arguments(self):
         """Counted transitive verbs together with their subjects and objects."""
         return (
-            pd.read_hdf(
+            self.read_vso_file(
                 self.kwargs['transitive_verb_arguments'],
-                key=self.dictionary_key,
-            )
-            [
+                self.dictionary_key,
+            )[
                 ['verb_stem', 'subj_stem', 'subj_tag', 'obj_stem', 'obj_tag', 'count']
             ]
             # Because we get rid of the verb, there might be multiple entries for a verb_stem!
@@ -37,6 +36,12 @@ class CategoricalDispatcher(Dispatcher, NewSpaceCreationMixin, SpaceMixin, Dicti
             .set_index('verb_stem')
             .loc[self.verbs]
             .reset_index()
+        )
+
+    @staticmethod
+    def read_vso_file(path, key):
+        return (
+            pd.read_hdf(path, key=key)
         )
 
     @Resource
@@ -128,4 +133,3 @@ def transitive_verb_space(
                 verb_tensors[verb_stem] = t
             else:
                 verb_tensors[verb_stem] += t
-

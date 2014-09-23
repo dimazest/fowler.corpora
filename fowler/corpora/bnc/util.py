@@ -59,7 +59,7 @@ def count_cooccurrence(words, window_size=5):
     return counts.groupby(columns, as_index=False).sum()
 
 
-def collect_verb_subject_object(args):
+def collect_verb_subject_object(f_name):
     """Retrieve verb together with it's subject and object from a C&C parsed file.
 
     File format description [1].
@@ -67,10 +67,9 @@ def collect_verb_subject_object(args):
     [1] http://svn.ask.it.usyd.edu.au/trac/candc/wiki/MarkedUp
 
     """
-    f_name, tag_first_letter = args
     columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'
 
-    result = list(ccg_bnc_iter(f_name, _collect_verb_subject_object, tag_first_letter=tag_first_letter))
+    result = list(ccg_bnc_iter(f_name, _collect_verb_subject_object))
 
     if result:
         result = pd.DataFrame(
@@ -99,25 +98,6 @@ def _collect_verb_subject_object(dependencies, tokens):
                     yield tuple(chain(tokens[head_id], tokens[subj_id], tokens[obj_id]))
                 except KeyError:
                     logger.debug('Invalid group %s', group)
-
-
-def ccg_words(args):
-    f_name, tag_first_letter = args
-    result = list(ccg_bnc_iter(f_name, _ccg_words, tag_first_letter=True))
-
-    columns = 'ngram', 'stem', 'tag'
-    if result:
-        result = pd.DataFrame(
-            result,
-            columns=columns,
-        )
-        result['count'] = 1
-
-        return result.groupby(columns, as_index=False).sum()
-
-
-def _ccg_words(dependencies, tokens):
-    yield from tokens.values()
 
 
 def parse_dependencies(dependencies):

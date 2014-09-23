@@ -216,17 +216,12 @@ def transitive_verbs(
     pool,
     dictionary_key,
     corpus,
-    tag_first_letter,
     output=('o', 'transitive_verbs.h5', 'The output verb space file.'),
 ):
     """Count occurrence of transitive verbs together with their subjects and objects."""
-    words, paths, kwargs = corpus
+    words, paths = corpus
 
-    columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag', 'count'
-    vsos = pool.imap_unordered(
-        collect_verb_subject_object,
-        ((path, tag_first_letter) for path in paths),
-    )
+    vsos = pool.imap_unordered(collect_verb_subject_object, paths)
 
     (
         pd.concat(f for f in vsos if f is not None)
