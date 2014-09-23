@@ -59,7 +59,7 @@ def count_cooccurrence(words, window_size=5):
     return counts.groupby(columns, as_index=False).sum()
 
 
-def ccg_bnc_iter(f_name, postprocessor, tag_first_letter=False):
+def ccg_bnc_iter(f_name, postprocessor):
     logger.debug('Processing %s', f_name)
 
     with open(f_name, 'rt', encoding='utf8') as f:
@@ -82,20 +82,17 @@ def ccg_bnc_iter(f_name, postprocessor, tag_first_letter=False):
                 continue
 
             *dependencies, c = sentence
-            tokens = dict(parse_tokens(c, tag_first_letter=tag_first_letter))
+            tokens = dict(parse_tokens(c))
 
             yield from postprocessor(dependencies, tokens)
 
 
-def parse_tokens(c, tag_first_letter):
+def parse_tokens(c):
     """Parse and retrieve token position, word, stem and tag from a C&C parse."""
     assert c[:4] == '<c> '
     c = c[4:]
 
     for position, token in enumerate(c.split()):
         word, stem, tag, *_ = token.split('|')
-
-        if tag_first_letter:
-            tag = tag[0]
 
         yield position, CCGToken(word, stem, tag)

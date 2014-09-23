@@ -42,19 +42,27 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
             if 'fileids' not in query_dict:
                 query_dict['fileids'] = r'[A-K]/\w*/\w*\.xml'
 
-            path = corpus.path or os.path.join(getcwd(), 'corpora', 'BNC', 'Texts')
-            paths = BNCCorpusReader(root=path, **query_dict).fileids()
+            root = corpus.path or os.path.join(getcwd(), 'corpora', 'BNC', 'Texts')
+            paths = BNCCorpusReader(root=root, **query_dict).fileids()
 
-            words = bnc_words
-            words_kwargs = {'root': path}
+            bnc = BNC(
+                root=root,
+                stem=self.kwargs['stem'],
+                tag_first_letter=self.kwargs['tag_first_letter'],
+            )
+            words = bnc.words
+
         elif corpus.scheme == 'bnc+ccg':
             path = corpus.path or os.path.join(getcwd(), 'corpora', 'CCG_BNC_v1')
             paths = [str(n) for n in local(path).visit() if n.check(file=True, exists=True)]
 
-            words = bnc_ccg_words
-            words_kwargs = {}
+            bnc_ccg = BNC_CCG(
+                stem=self.kwargs['stem'],
+                tag_first_letter=self.kwargs['tag_first_letter'],
+            )
+            words = bnc_ccg.words
         else:
-            raise NotImplementedError('The {0}:// scheme is not supported.')
+            raise NotImplementedError('The {0}:// scheme is not supported.'.format(corpus.scheme))
 
         if self.limit:
             paths = paths[:self.limit]
@@ -65,42 +73,53 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
                 suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
             ).iter(paths)
 
-        return words, paths, words_kwargs
+        return words, paths
 
 
 dispatcher = BNCDispatcher()
 command = dispatcher.command
 
 
-def bnc_words(path, stem, tag_first_letter, **kwargs):
-    for word, tag in BNCCorpusReader(fileids=path, **kwargs).tagged_words(stem=stem):
-        if tag_first_letter:
-            tag = tag[0]
+class BNC:
+    def __init__(self, root, stem, tag_first_letter):
+        self.root = root
+        self.stem = stem
+        self.tag_first_letter = tag_first_letter
 
-        yield word, tag
+    def words(self, path):
+        for word, tag in BNCCorpusReader(fileids=path, root=self.root).tagged_words(stem=self.stem):
+            if self.tag_first_letter:
+                tag = tag[0]
+
+            yield word, tag
 
 
-def bnc_ccg_words(path, stem, tag_first_letter, **kwargs):
-    def word_tags(dependencies, tokens):
-        for token in tokens.values():
-            if stem:
-                yield token.stem, token.tag
-            else:
-                yield token.word, token.tag
+class BNC_CCG:
+    def __init__(self, stem, tag_first_letter):
+        self.stem = stem
+        self.tag_first_letter = tag_first_letter
 
-    return ccg_bnc_iter(path, word_tags, tag_first_letter=tag_first_letter)
+    def words(self, path):
+        def word_tags(dependencies, tokens):
+            for token in tokens.values():
+
+                tag = token.tag[0] if self.tag_first_letter else token.tag
+
+                if self.stem:
+                    yield token.stem, tag
+                else:
+                    yield token.word, tag
+
+        return ccg_bnc_iter(path, word_tags)
 
 
 def corpus_cooccurrence(args):
     """Count word co-occurrence in a corpus file."""
-    words, path, kwargs, tag_first_letter, window_size, stem, targets, context = args
+    words, path, window_size, targets, context = args
 
     logger.debug('Processing %s', path)
 
-    counts = count_cooccurrence(
-        words(path, stem, tag_first_letter, **kwargs),
-        window_size=window_size,
-    )
+    counts = count_cooccurrence(words(path), window_size=window_size)
 
     # Targets might be just words, not (word, POS) pairs.
     if isinstance(targets.index[0], tuple):
@@ -129,18 +148,16 @@ def cooccurrence(
     pool,
     targets,
     context,
-    stem,
-    tag_first_letter,
     window_size=('', 5, 'Window size.'),
     output=('o', 'matrix.h5', 'The output matrix file.'),
 ):
     """Build the co-occurrence matrix."""
-    words, paths, kwargs = corpus
+    words, paths = corpus
 
     matrices = (
         pool.imap_unordered(
             corpus_cooccurrence,
-            ((words, path, kwargs, tag_first_letter, window_size, stem, targets, context) for path in paths),
+            ((words, path, window_size, targets, context) for path in paths),
         )
     )
 
@@ -151,14 +168,11 @@ def cooccurrence(
 
 def corpus_words(args):
     """Count all the words from a corpus file."""
-    words, path, kwargs, tag_first_letter, stem = args
+    words, path, = args
 
     logger.debug('Processing %s', path)
 
-    result = pd.DataFrame(
-        words(path, stem, tag_first_letter, **kwargs),
-        columns=('ngram', 'tag'),
-    )
+    result = pd.DataFrame(words(path), columns=('ngram', 'tag'))
     result['count'] = 1
 
     return result.groupby(('ngram', 'tag'), as_index=False).sum()
@@ -169,17 +183,15 @@ def dictionary(
     pool,
     corpus,
     dictionary_key,
-    tag_first_letter,
-    stem=('', False, 'Use word stems instead of word strings.'),
     omit_tags=('', False, 'Do not use POS tags.'),
     output=('o', 'dicitionary.h5', 'The output file.'),
 ):
-    words, paths, kwargs = corpus
+    words, paths = corpus
 
     all_words = (
         pool.imap_unordered(
             corpus_words,
-            ((words, path, kwargs, tag_first_letter, stem) for path in paths),
+            ((words, path) for path in paths),
         )
     )
 
