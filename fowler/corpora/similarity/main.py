@@ -29,10 +29,15 @@ class SimilarityDispatcher(Dispatcher, SpaceMixin):
     @Resource
     def wordsim353_data(self):
         """The worsim353 similarity dataset."""
-        data = pd.read_csv(self.kwargs['wordsim353_data'])
+        data = pd.read_csv(
+            self.kwargs['wordsim353_data'],
+            header=0,
+            names=('Word 1', 'Word 2', 'Human (mean)'),
+
+        )
 
         # for column in 'Word 1', 'Word 2':
-            # data[column] = data[column].str.lower()
+        #     data[column] = data[column].str.lower()
 
         # data.replace('troops', 'troop', inplace=True)
 
@@ -116,4 +121,3 @@ def wordsim353(
         wordsim353_data,
         input_column='Human (mean)'
     )
-
