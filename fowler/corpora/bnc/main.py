@@ -150,7 +150,7 @@ def cooccurrence(
     targets,
     context,
     window_size=('', 5, 'Window size.'),
-    output=('o', 'matrix.h5', 'The output matrix file.'),
+    output=('o', 'space.h5', 'The output space file.'),
 ):
     """Build the co-occurrence matrix."""
     words, paths = corpus
