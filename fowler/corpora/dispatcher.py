@@ -74,7 +74,10 @@ class BaseDispatcher(opster.Dispatcher):
         return wrapper
 
     def __getattr__(self, name):
-        return self.kwargs[name]
+        if 'kwargs' in dir(self):
+            return self.kwargs[name]
+
+        raise AttributeError
 
 
 class DummyPool:
