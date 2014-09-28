@@ -2,7 +2,6 @@ import pandas as pd
 
 from fowler.corpora.bnc.util import count_cooccurrence
 from fowler.corpora.dispatcher import DictionaryMixin
-from fowler.corpora.models import read_space_from_file
 
 import pytest
 
@@ -154,23 +153,5 @@ def test_bnc_ccg_dictionary(bnc_ccg_path, dispatcher, tmpdir, stem, tag_first_le
     assert len(dictionary) == dictionary_len
 
 
-def test_bnc_cooccurrence(bnc_path, dispatcher, tmpdir, wordsim_target_path, wordsim_context_path):
-    path = str(tmpdir.join("space.h5"))
-    dispatcher.dispatch(
-        'bnc cooccurrence '
-        '--corpus bnc://{corpus} '
-        '-t {target} '
-        '-c {context} '
-        '-o {output} '
-        '--no_p11n'
-        ''.format(
-            corpus=bnc_path,
-            target=wordsim_target_path,
-            context=wordsim_context_path,
-            output=path,
-        ).split()
-    )
-
-    space = read_space_from_file(path)
-
+def test_bnc_cooccurrence(space):
     assert space.matrix.sum() == 29
