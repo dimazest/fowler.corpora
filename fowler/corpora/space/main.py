@@ -1,19 +1,12 @@
 import numpy as np
 import pandas as pd
 
-from fowler.corpora.dispatcher import Dispatcher, DictionaryMixin, Resource
+from fowler.corpora.dispatcher import Dispatcher, DictionaryMixin, SpaceMixin
 from fowler.corpora.models import read_space_from_file, Space
 
 
-class SpaceDispatcher(Dispatcher, DictionaryMixin):
-    global__matrix = 'm', 'space.h5', 'Vector space.'
+class SpaceDispatcher(Dispatcher, SpaceMixin, DictionaryMixin):
     global__output = 'o', 'out_space.h5', 'Output vector space file.'
-
-    @Resource
-    def space(self):
-        # TODO: this is depricated, SpaceMixin should be used, and
-        # global__matrix should be renamed to global__space.
-        return read_space_from_file(self.matrix)
 
 
 dispatcher = SpaceDispatcher()
