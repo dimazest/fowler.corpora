@@ -89,13 +89,15 @@ If you use https://github.com/dimazest/fc deployment configuration, you
 should already have wordsim 353, otherwise you can get it from
 http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/wordsim353.zip
 
+It takes a while to process the BNC and needs a powerful machine. If you are
+curious and want to go trough the tutorial quickly on your laptop, tell corpora
+to process only a part of the BNC files by referring to the BNC corpus as::
 
-..    It takes a while to process the BNC and needs a powerful machine. If you
-    are curious and want to go trough the tutorial quickly on your laptop, tell
-    corpora to process only part of the BNC files by adding the following
-    option::
+bnc://${PWD}/corpora/BNC/Texts/\?fileids=A/\\w*/\\w*\\.xml
 
-..        --fileids='A/\w*/\w*\.xml'
+If you want to use the whole corpus, refer to the BNC as::
+
+bnc://${PWD}/corpora/BNC/Texts/
 
 Use the ``-v`` flag to write logs to ``/tmp/fowler.log``. If you run
 co-occurrence extraction on a laptop, to avoid lags, set the number of parallel
@@ -134,9 +136,7 @@ Context selection is more art than science, but a rather popular approach is to
 select the 2000 most frequent nouns, verbs, adjectives and adverbs, excluding
 the 100 most frequent.
 
-First we need to extract word frequencies. Note that only a part of the BNC is
-being read (to speed up the co-occurrence extraction process) by passing the
-``fileids`` parameter:
+First we need to extract word frequencies:
 
 .. code-block:: bash
 
