@@ -134,7 +134,9 @@ Context selection is more art than science, but a rather popular approach is to
 select the 2000 most frequent nouns, verbs, adjectives and adverbs, excluding
 the 100 most frequent.
 
-First we need to extract word frequencies:
+First we need to extract word frequencies. Note that only a part of the BNC is
+being read (to speed up the co-occurrence extraction process) by passing the
+``fileids`` parameter:
 
 .. code-block:: bash
 
