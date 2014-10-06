@@ -265,7 +265,7 @@ class DictionaryMixin:
             the POS tag of ngram
 
         """
-        self.get_dictionary(path=self.kwargs['dictionary'], key=self.dictionary_key)
+        return self.get_dictionary(path=self.kwargs['dictionary'], key=self.dictionary_key)
 
     @staticmethod
     def get_dictionary(path, key):

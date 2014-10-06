@@ -196,9 +196,14 @@ def dictionary(
         )
     )
 
+    if omit_tags:
+        group_by = 'ngram',
+    else:
+        group_by = 'ngram', 'tag'
+
     (
         pd.concat(f for f in all_words if f is not None)
-        .groupby(('ngram', 'tag'))
+        .groupby(group_by)
         .sum()
         .sort('count', ascending=False)
         .reset_index()

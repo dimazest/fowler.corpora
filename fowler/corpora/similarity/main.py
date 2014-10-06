@@ -11,6 +11,9 @@ from fowler.corpora.dispatcher import Dispatcher, Resource, SpaceMixin
 class SimilarityDispatcher(Dispatcher, SpaceMixin):
     """Similarity task dispatcher."""
 
+    global__alter_experiment_data = '', False, 'Alter experiment data. E.g. stem words in Wordsim353.'
+
+
     @Resource
     def rg65_data(self):
         """The Rubenstein and Goodenough noun similarity dataset."""
@@ -36,10 +39,11 @@ class SimilarityDispatcher(Dispatcher, SpaceMixin):
 
         )
 
-        # for column in 'Word 1', 'Word 2':
-        #     data[column] = data[column].str.lower()
+        if self.kwargs['alter_experiment_data']:
+            for column in 'Word 1', 'Word 2':
+                data[column] = data[column].str.lower()
 
-        # data.replace('troops', 'troop', inplace=True)
+            data.replace('troops', 'troop', inplace=True)
 
         return data
 
@@ -61,7 +65,7 @@ class SimilarityDispatcher(Dispatcher, SpaceMixin):
             data['Cosine similarity'] = list(similarities)
 
             print(
-                'Spearman correlation: rho={0:.3f}, p={1:.3f}'
+                'Cosine similarity (Spearman): rho={0:.3f}, p={1:.3f}'
                 .format(*stats.spearmanr(data[[input_column, 'Cosine similarity']]))
             )
 
@@ -73,6 +77,8 @@ class SimilarityDispatcher(Dispatcher, SpaceMixin):
                 xlim=(1, 7),
                 ylim=(0, 1),
             )
+
+            return data
 
         return experiment
 
@@ -103,7 +109,7 @@ def rg65(
     [2] http://www.cs.cmu.edu/~mfaruqui/suite.html
 
     """
-    similarity_experiment(
+    return similarity_experiment(
         lambda data, space: ((space[w1], space[w2]) for w1, w2 in data[['Word 1', 'Word 2']].values),
         rg65_data,
         input_column='Human'
@@ -116,7 +122,7 @@ def wordsim353(
     wordsim353_data=('', 'downloads/wordsim353/combined.csv', 'The wordsim 353 dataset.'),
 ):
     """The worsim353 similarity experiment."""
-    similarity_experiment(
+    return similarity_experiment(
         lambda data, space: ((space[w1], space[w2]) for w1, w2 in data[['Word 1', 'Word 2']].values),
         wordsim353_data,
         input_column='Human (mean)'
