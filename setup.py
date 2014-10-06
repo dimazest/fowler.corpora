@@ -56,6 +56,7 @@ setup(
     zip_safe=False,
     install_requires=[
         'fowler.switchboard',
+        'gensim',
         'google-ngram-downloader',
         'ipython',
         'jinja2',
