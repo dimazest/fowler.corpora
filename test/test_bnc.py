@@ -111,7 +111,6 @@ def test_bnc_dictionary(bnc_path, dispatcher, tmpdir, stem, tag_first_letter, ng
     dictionary = DictionaryMixin.get_dictionary(dictionary_path, 'dictionary')
 
     dictionary.set_index(['ngram', 'tag'], inplace=True)
-    # pytest.set_trace()
     assert (dictionary.loc[ngrams]['count'] == counts).all()
 
     assert dictionary['count'].sum() == 151
