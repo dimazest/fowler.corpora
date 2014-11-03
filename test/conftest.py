@@ -41,6 +41,7 @@ def wordsim_target_path(wordsim_base_path):
 def wordsim_context_path(wordsim_base_path):
     return wordsim_base_path.join('contexts_bnc_pos_1000.csv')
 
+
 @pytest.fixture
 def space_path(tmpdir, dispatcher, bnc_path, wordsim_target_path, wordsim_context_path):
     path = str(tmpdir.join("space.h5"))
@@ -60,6 +61,7 @@ def space_path(tmpdir, dispatcher, bnc_path, wordsim_target_path, wordsim_contex
     )
 
     return path
+
 
 @pytest.fixture
 def space(space_path):

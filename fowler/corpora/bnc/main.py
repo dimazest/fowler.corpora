@@ -19,7 +19,8 @@ from py.path import local
 from fowler.corpora.dispatcher import Dispatcher, NewSpaceCreationMixin, DictionaryMixin
 from fowler.corpora.space.util import write_space
 
-from .util import count_cooccurrence, collect_verb_subject_object, ccg_bnc_iter
+from .util import count_cooccurrence
+from .readers import BNC_CCG
 
 
 logger = logging.getLogger(__name__)
@@ -98,26 +99,6 @@ class BNC:
                 tag = tag[0]
 
             yield word, tag
-
-
-class BNC_CCG:
-    def __init__(self, paths, stem, tag_first_letter):
-        self.paths = paths
-        self.stem = stem
-        self.tag_first_letter = tag_first_letter
-
-    def words(self, path):
-        def word_tags(dependencies, tokens):
-            for token in tokens.values():
-
-                tag = token.tag[0] if self.tag_first_letter else token.tag
-
-                if self.stem:
-                    yield token.stem, tag
-                else:
-                    yield token.word, tag
-
-        return ccg_bnc_iter(path, word_tags)
 
 
 def corpus_cooccurrence(args):
@@ -227,12 +208,11 @@ def transitive_verbs(
     pool,
     dictionary_key,
     corpus,
+    paths_progress_iter,
     output=('o', 'transitive_verbs.h5', 'The output verb space file.'),
 ):
     """Count occurrence of transitive verbs together with their subjects and objects."""
-    words, paths = corpus
-
-    vsos = pool.imap_unordered(collect_verb_subject_object, paths)
+    vsos = pool.imap_unordered(corpus.collect_verb_subject_object, paths_progress_iter)
 
     (
         pd.concat(f for f in vsos if f is not None)
