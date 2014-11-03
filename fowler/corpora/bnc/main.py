@@ -121,23 +121,24 @@ def corpus_cooccurrence(args):
 
     counts = count_cooccurrence(words(path), window_size=window_size)
 
-    # Targets might be just words, not (word, POS) pairs.
-    if isinstance(targets.index[0], tuple):
-        target_join_columns = 'target', 'target_tag'
-    else:
-        target_join_columns = 'target',
+    def join_columns(frame, prefix):
+        # Targets or contexts might be just words, not (word, POS) pairs.
+        if isinstance(frame.index[0], tuple):
+            return prefix, '{}_tag'.format(prefix)
 
-    counts = (
-        counts
-        .merge(targets, left_on=target_join_columns, right_index=True, how='inner')
-        .merge(
-            context,
-            left_on=('context', 'context_tag'),
-            right_index=True,
-            how='inner',
-            suffixes=('_target', '_context'),
-        )[['id_target', 'id_context', 'count']]
-    )
+        return (prefix, )
+
+    counts = counts.merge(targets, left_on=join_columns(targets, 'target'), right_index=True, how='inner')
+
+    counts = counts.merge(
+        context,
+        left_on=join_columns(context, 'context'),
+        right_index=True,
+        how='inner',
+        suffixes=('_target', '_context'),
+    )[['id_target', 'id_context', 'count']]
+
+    # XXX make sure that there are no duplicates!
 
     return counts
 
@@ -149,7 +150,7 @@ def cooccurrence(
     targets,
     context,
     window_size=('', 5, 'Window size.'),
-    output=('o', 'matrix.h5', 'The output matrix file.'),
+    output=('o', 'space.h5', 'The output space file.'),
 ):
     """Build the co-occurrence matrix."""
     words, paths = corpus
@@ -195,9 +196,14 @@ def dictionary(
         )
     )
 
+    if omit_tags:
+        group_by = 'ngram',
+    else:
+        group_by = 'ngram', 'tag'
+
     (
         pd.concat(f for f in all_words if f is not None)
-        .groupby(('ngram', 'tag'))
+        .groupby(group_by)
         .sum()
         .sort('count', ascending=False)
         .reset_index()

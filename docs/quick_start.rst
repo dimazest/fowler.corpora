@@ -89,13 +89,15 @@ If you use https://github.com/dimazest/fc deployment configuration, you
 should already have wordsim 353, otherwise you can get it from
 http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/wordsim353.zip
 
+It takes a while to process the BNC and needs a powerful machine. If you are
+curious and want to go trough the tutorial quickly on your laptop, tell corpora
+to process only a part of the BNC files by referring to the BNC corpus as::
 
-..    It takes a while to process the BNC and needs a powerful machine. If you
-    are curious and want to go trough the tutorial quickly on your laptop, tell
-    corpora to process only part of the BNC files by adding the following
-    option::
+    bnc://${PWD}/corpora/BNC/Texts/\?fileids=\\w/\\w[ADGR07]\\w*/\\w*\\.xml
 
-..        --fileids='A/\w*/\w*\.xml'
+If you want to use the whole corpus, refer to the BNC as::
+
+    bnc://${PWD}/corpora/BNC/Texts/
 
 Use the ``-v`` flag to write logs to ``/tmp/fowler.log``. If you run
 co-occurrence extraction on a laptop, to avoid lags, set the number of parallel
@@ -131,17 +133,16 @@ Contexts
 ~~~~~~~~
 
 Context selection is more art than science, but a rather popular approach is to
-select the 2000 most frequent nouns, verbs, adjectives and adverbs, excluding
-the 100 most frequent.
+select the 3000 most frequent nouns, verbs, adjectives and adverbs.
 
 First we need to extract word frequencies:
 
 .. code-block:: bash
 
     bin/corpora bnc dictionary \
-    --corpus bnc://${PWD}/corpora/BNC/Texts/\?fileids=A/\\w*/\\w*\\.xml \
+    --corpus bnc://${PWD}/corpora/BNC/Texts/\?fileids=\\w/\\w[ADGR07]\\w*/\\w*\\.xml \
     -o data/dictionary_bnc_pos.h5 \
-    --stem -v -j 3
+    --stem -v -j 2
 
 ``data/dictionary_bnc_pos.h5`` is a `Pandas`_ `DataFrame`_ with the following columns:
 
@@ -169,22 +170,19 @@ and executing the following code:
     >>> import pandas as pd
 
     >>> dictionary = pd.read_hdf('data/dictionary_bnc_pos.h5', key='dictionary')
-    >>> dictionary
-           ngram   tag    count
-    306889   the   ART  6042959
-    45280      ,   PUN  5017057
-    95027      .   PUN  4715135
-    522342    be  VERB  4121594
-    540719    of  PREP  3041681
+    >>> dictionary.head()
+      ngram   tag    count
+    0   the   ART  1327711
+    1     ,   PUN  1143990
+    2     .   PUN  1047297
+    3    be  VERB   929343
+    4    of  PREP   667639
 
-    [5 rows x 3 columns]
-
-    >>> #  We are interested only in 2000 most frequent (excluding the first 100)
-    >>> #  nouns, verbs, adjectives and adverbs!
+    >>> #  We are interested only in 3000 most frequent nouns, verbs, adjectives and adverbs!
     >>> tags = dictionary['tag']
-    >>> contexts = dictionary[(tags == 'SUBST') | (tags == 'VERB') | (tags == 'ADJ') | (tags == 'ADV')][101:2101]
+    >>> contexts = dictionary[(tags == 'SUBST') | (tags == 'VERB') | (tags == 'ADJ') | (tags == 'ADV')][:3000]
 
-    >>> contexts[['ngram', 'tag']].to_csv('data/contexts_bnc_pos_101-2101.csv', index=False)
+    >>> contexts[['ngram', 'tag']].to_csv('data/contexts_bnc_pos_3000.csv', index=False)
 
     >>> quit()
 
@@ -196,8 +194,10 @@ get the first semantic space:
 
 .. code-block:: bash
 
-    bin/corpora bnc cooccurrence -t data/targets_wordsim353.csv -c data/contexts_bnc_pos_101-2101.csv \
-    --bnc corpora/BNC/Texts/ -o data/space_bnc_wordsim_101-2101.h5 --stem
+    bin/corpora bnc cooccurrence -t data/targets_wordsim353.csv -c data/contexts_bnc_pos_3000.csv \
+    --corpus bnc://${PWD}/corpora/BNC/Texts/\?fileids=\\w/\\w[A0]\\w*/\\w*\\.xml \
+    -o data/space_bnc_wordsim_3000.h5 \
+    --stem -j 2 -v
 
 Experiments
 -----------
@@ -206,17 +206,13 @@ Now we are ready to run the first experiment:
 
 .. code-block:: bash
 
-    bin/corpora wordsim353 evaluate -m data/space_bnc_wordsim_101-2101.h5
-    ==================== ============== ===========
-                Measure   Spearman rho     p-value
-    ==================== ============== ===========
-                 Cosine         0.350    1.357e-11
-          Inner product        -0.035    5.098e-01
-    ==================== ============== ===========
+    bin/corpora similarity wordsim353 -s data/space_bnc_wordsim_3000.h5  \
+    --alter_experiment_data
 
-As you can see two similarity measures are used: one based on cosine distance
-and other is Inner product. The score of 0.35 is not the state-of-the-art, but
-for the raw co-occurrence counts it's pretty good.
+    Spearman correlation: rho=-0.054, p=0.314
+
+The score of -0.054 is very far fro the state-of-the-art, because of the tiny
+part of the corpus we've used.
 
 Tuning
 ------
@@ -239,35 +235,58 @@ So far we know the co-occurrence counts :math:`count(t, c)` from the space file
 and the context counts :math:`count(c)` from the dictionary. Because our
 contexts are part of speech tagged, while targets are not, we need to retrieve the counts for targets:
 
-.. code-block:: bash
+.. code-block:: python
 
-    bin/corpora bnc dictionary --bnc corpora/BNC/Texts/ -o data/dictionary_bnc.h5 --stem --omit-tags
+    >>> import pandas as pd
+
+    >>> pd.read_hdf('data/dictionary_bnc_pos.h5', key='dictionary').groupby('ngram').sum().sort('count', ascending=False).reset_index().to_hdf('data/dictionary_bnc.h5', 'dictionary', mode='w', complevel=9, complib='zlib')
+
+    >>> quit()
 
 Now we are ready to weight the co-occurrence counts:
 
 .. code-block:: bash
 
     bin/corpora space pmi --column-dictionary data/dictionary_bnc_pos.h5 --dictionary data/dictionary_bnc.h5 \
-    -m data/space_bnc_wordsim_101-2101.h5  -o data/space_bnc_wordsim_101-2101_ppmi.h5
+    -s data/space_bnc_wordsim_3000.h5 -o data/space_bnc_wordsim_3000_ppmi.h5
 
 And run the experiment:
 
 .. code-block:: bash
 
-    bin/corpora wordsim353 evaluate -m data/space_bnc_wordsim_101-2101_ppmi.h5
-    ==================== ============== ===========
-                Measure   Spearman rho     p-value
-    ==================== ============== ===========
-                 Cosine         0.024    6.585e-01
-          Inner product        -0.048    3.708e-01
-    ==================== ============== ===========
+    bin/corpora similarity wordsim353 -s data/space_bnc_wordsim_3000_ppmi.h5 \
+    --alter_experiment_data
 
-IPython notebook
-----------------
+    Cosine similarity (Spearman): rho=0.032, p=0.55
+
+The small result is due to the small size of the corpus.
+
+Integration with IPython notebook
+---------------------------------
 
 This IPython notebook :download:`quick_start_nb.ipynb <quick_start_nb.ipynb>`
 shows how ``corpora`` integrates with IPython. Copy the url to
 http://nbviewer.ipython.org to render it.
+
+Start IPython Notebook as:
+
+.. code-block:: bash
+
+    bin/corpora notebook
+
+to have access to ``fowler.corpora``.
+
+Conclusion
+----------
+
+A general workflow is the following:
+
+1. Decide what are the target words
+2. Think of context words, possibly by extracting the (tagged) token counts from the corpus
+3. Extract the co-occurrence counts as an initial space
+4. Optionally modify the co-occurrence space, for example, by applying the PPMI weighting scheme.
+5. Run an experiment.
+
 
 References
 ----------

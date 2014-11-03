@@ -74,7 +74,10 @@ class BaseDispatcher(opster.Dispatcher):
         return wrapper
 
     def __getattr__(self, name):
-        return self.kwargs[name]
+        if 'kwargs' in dir(self):
+            return self.kwargs[name]
+
+        raise AttributeError
 
 
 class DummyPool:
@@ -262,7 +265,7 @@ class DictionaryMixin:
             the POS tag of ngram
 
         """
-        self.get_dictionary(path=self.kwargs['dictionary'], key=self.dictionary_key)
+        return self.get_dictionary(path=self.kwargs['dictionary'], key=self.dictionary_key)
 
     @staticmethod
     def get_dictionary(path, key):

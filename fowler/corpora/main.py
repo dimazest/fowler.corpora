@@ -19,6 +19,7 @@ import fowler.corpora.ms_paraphrase.main as ms_paraphrase_main
 import fowler.corpora.serafin03.main as serafin03_main
 import fowler.corpora.similarity.main as similarity_main
 import fowler.corpora.space.main as space_main
+import fowler.corpora.word2vec.main as word2vec_main
 import fowler.corpora.wsd.main as wsd_main
 
 
@@ -87,6 +88,13 @@ dispatcher.nest(
     'similarity',
     similarity_main.dispatcher,
     similarity_main.__doc__,
+)
+
+
+dispatcher.nest(
+    'word2vec',
+    word2vec_main.dispatcher,
+    word2vec_main.__doc__,
 )
 
 

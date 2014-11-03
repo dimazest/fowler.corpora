@@ -1,5 +1,7 @@
 import py
 
+from fowler.corpora.models import read_space_from_file
+
 import pytest
 
 
@@ -38,3 +40,27 @@ def wordsim_target_path(wordsim_base_path):
 @pytest.fixture
 def wordsim_context_path(wordsim_base_path):
     return wordsim_base_path.join('contexts_bnc_pos_1000.csv')
+
+@pytest.fixture
+def space_path(tmpdir, dispatcher, bnc_path, wordsim_target_path, wordsim_context_path):
+    path = str(tmpdir.join("space.h5"))
+    dispatcher.dispatch(
+        'bnc cooccurrence '
+        '--corpus bnc://{corpus} '
+        '-t {target} '
+        '-c {context} '
+        '-o {output} '
+        '--no_p11n'
+        ''.format(
+            corpus=bnc_path,
+            target=wordsim_target_path,
+            context=wordsim_context_path,
+            output=path,
+        ).split()
+    )
+
+    return path
+
+@pytest.fixture
+def space(space_path):
+    return read_space_from_file(space_path)
