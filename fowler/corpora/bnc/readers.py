@@ -3,11 +3,27 @@ from collections import namedtuple
 from itertools import chain, takewhile, groupby
 
 import pandas as pd
+from nltk.corpus.reader.bnc import BNCCorpusReader
 
 logger = logging.getLogger(__name__)
 
 
 CCGToken = namedtuple('CCGToken', 'word, stem, tag')
+
+
+class BNC:
+    def __init__(self, paths, root, stem, tag_first_letter):
+        self.paths = paths
+        self.root = root
+        self.stem = stem
+        self.tag_first_letter = tag_first_letter
+
+    def words(self, path):
+        for word, tag in BNCCorpusReader(fileids=path, root=self.root).tagged_words(stem=self.stem):
+            if self.tag_first_letter:
+                tag = tag[0]
+
+            yield word, tag
 
 
 class BNC_CCG:

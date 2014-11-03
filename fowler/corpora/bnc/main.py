@@ -20,8 +20,7 @@ from fowler.corpora.dispatcher import Dispatcher, NewSpaceCreationMixin, Diction
 from fowler.corpora.space.util import write_space
 
 from .util import count_cooccurrence
-from .readers import BNC_CCG
-
+from .readers import BNC, BNC_CCG
 
 logger = logging.getLogger(__name__)
 
@@ -84,21 +83,6 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
 
 dispatcher = BNCDispatcher()
 command = dispatcher.command
-
-
-class BNC:
-    def __init__(self, paths, root, stem, tag_first_letter):
-        self.paths = paths
-        self.root = root
-        self.stem = stem
-        self.tag_first_letter = tag_first_letter
-
-    def words(self, path):
-        for word, tag in BNCCorpusReader(fileids=path, root=self.root).tagged_words(stem=self.stem):
-            if self.tag_first_letter:
-                tag = tag[0]
-
-            yield word, tag
 
 
 def corpus_cooccurrence(args):
