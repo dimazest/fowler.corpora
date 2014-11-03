@@ -45,27 +45,33 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
             root = corpus.path or os.path.join(getcwd(), 'corpora', 'BNC', 'Texts')
             paths = BNCCorpusReader(root=root, **query_dict).fileids()
 
-            bnc = BNC(
+            Corpus = BNC
+            corpus_kwargs = dict(
                 root=root,
                 stem=self.kwargs['stem'],
                 tag_first_letter=self.kwargs['tag_first_letter'],
             )
-            words = bnc.words
 
         elif corpus.scheme == 'bnc+ccg':
             path = corpus.path or os.path.join(getcwd(), 'corpora', 'CCG_BNC_v1')
             paths = [str(n) for n in local(path).visit() if n.check(file=True, exists=True)]
 
-            bnc_ccg = BNC_CCG(
+            Corpus = BNC_CCG
+            corpus_kwargs = dict(
                 stem=self.kwargs['stem'],
                 tag_first_letter=self.kwargs['tag_first_letter'],
             )
-            words = bnc_ccg.words
         else:
             raise NotImplementedError('The {0}:// scheme is not supported.'.format(corpus.scheme))
 
         if self.limit:
             paths = paths[:self.limit]
+
+        return Corpus(paths=paths, **corpus_kwargs)
+
+    @property
+    def paths_progress_iter(self):
+        paths = self.corpus.paths
 
         if not self.no_p11n:
             paths = Bar(
@@ -73,15 +79,15 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
                 suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
             ).iter(paths)
 
-        return words, paths
-
+        return paths
 
 dispatcher = BNCDispatcher()
 command = dispatcher.command
 
 
 class BNC:
-    def __init__(self, root, stem, tag_first_letter):
+    def __init__(self, paths, root, stem, tag_first_letter):
+        self.paths = paths
         self.root = root
         self.stem = stem
         self.tag_first_letter = tag_first_letter
@@ -95,7 +101,8 @@ class BNC:
 
 
 class BNC_CCG:
-    def __init__(self, stem, tag_first_letter):
+    def __init__(self, paths, stem, tag_first_letter):
+        self.paths = paths
         self.stem = stem
         self.tag_first_letter = tag_first_letter
 
@@ -149,16 +156,15 @@ def cooccurrence(
     pool,
     targets,
     context,
+    paths_progress_iter,
     window_size=('', 5, 'Window size.'),
     output=('o', 'space.h5', 'The output space file.'),
 ):
     """Build the co-occurrence matrix."""
-    words, paths = corpus
-
     matrices = (
         pool.imap_unordered(
             corpus_cooccurrence,
-            ((words, path, window_size, targets, context) for path in paths),
+            ((corpus.words, path, window_size, targets, context) for path in paths_progress_iter),
         )
     )
 
@@ -184,15 +190,14 @@ def dictionary(
     pool,
     corpus,
     dictionary_key,
+    paths_progress_iter,
     omit_tags=('', False, 'Do not use POS tags.'),
     output=('o', 'dicitionary.h5', 'The output file.'),
 ):
-    words, paths = corpus
-
     all_words = (
         pool.imap_unordered(
             corpus_words,
-            ((words, path) for path in paths),
+            ((corpus.words, path) for path in paths_progress_iter),
         )
     )
 
