@@ -5,22 +5,17 @@ http://www.ota.ox.ac.uk/desc/2554
 
 """
 import logging
-import os.path
-
-from os import getcwd
 from urllib.parse import urlsplit, parse_qs
 
 import pandas as pd
-from nltk.corpus.reader.bnc import BNCCorpusReader
 
 from progress.bar import Bar
-from py.path import local
 
 from fowler.corpora.dispatcher import Dispatcher, NewSpaceCreationMixin, DictionaryMixin
 from fowler.corpora.space.util import write_space
 
-from .util import count_cooccurrence
 from .readers import BNC, BNC_CCG
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,40 +29,31 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
     @property
     def corpus(self):
         """Access to the corpus."""
-        corpus = urlsplit(self.kwargs['corpus'])
-        query = parse_qs(corpus.query)
+        corpus_uri = urlsplit(self.kwargs['corpus'])
+        query = parse_qs(corpus_uri.query)
         query_dict = {k: v[0] for k, v in query.items()}
 
-        if corpus.scheme == 'bnc':
-            if 'fileids' not in query_dict:
-                query_dict['fileids'] = r'[A-K]/\w*/\w*\.xml'
+        scheme_mapping = {
+            'bnc': BNC,
+            'bnc+ccg': BNC_CCG,
+        }
 
-            root = corpus.path or os.path.join(getcwd(), 'corpora', 'BNC', 'Texts')
-            paths = BNCCorpusReader(root=root, **query_dict).fileids()
+        try:
+            Corpus = scheme_mapping[corpus_uri.scheme]
+        except KeyError:
+            raise NotImplementedError('The {0}:// scheme is not supported.'.format(corpus_uri.scheme))
 
-            Corpus = BNC
-            corpus_kwargs = dict(
-                root=root,
-                stem=self.kwargs['stem'],
-                tag_first_letter=self.kwargs['tag_first_letter'],
-            )
-
-        elif corpus.scheme == 'bnc+ccg':
-            path = corpus.path or os.path.join(getcwd(), 'corpora', 'CCG_BNC_v1')
-            paths = [str(n) for n in local(path).visit() if n.check(file=True, exists=True)]
-
-            Corpus = BNC_CCG
-            corpus_kwargs = dict(
-                stem=self.kwargs['stem'],
-                tag_first_letter=self.kwargs['tag_first_letter'],
-            )
-        else:
-            raise NotImplementedError('The {0}:// scheme is not supported.'.format(corpus.scheme))
+        corpus_kwargs = Corpus.init_kwargs(
+            root=corpus_uri.path,
+            stem=self.stem,
+            tag_first_letter=self.tag_first_letter,
+            **query_dict
+        )
 
         if self.limit:
-            paths = paths[:self.limit]
+            corpus_kwargs['paths'] = corpus_kwargs['paths'][:self.limit]
 
-        return Corpus(paths=paths, **corpus_kwargs)
+        return Corpus(**corpus_kwargs)
 
     @property
     def paths_progress_iter(self):
@@ -81,38 +67,9 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
 
         return paths
 
+
 dispatcher = BNCDispatcher()
 command = dispatcher.command
-
-
-def corpus_cooccurrence(args):
-    """Count word co-occurrence in a corpus file."""
-    words, path, window_size, targets, context = args
-
-    logger.debug('Processing %s', path)
-
-    counts = count_cooccurrence(words(path), window_size=window_size)
-
-    def join_columns(frame, prefix):
-        # Targets or contexts might be just words, not (word, POS) pairs.
-        if isinstance(frame.index[0], tuple):
-            return prefix, '{}_tag'.format(prefix)
-
-        return (prefix, )
-
-    counts = counts.merge(targets, left_on=join_columns(targets, 'target'), right_index=True, how='inner')
-
-    counts = counts.merge(
-        context,
-        left_on=join_columns(context, 'context'),
-        right_index=True,
-        how='inner',
-        suffixes=('_target', '_context'),
-    )[['id_target', 'id_context', 'count']]
-
-    # XXX make sure that there are no duplicates!
-
-    return counts
 
 
 @command()
@@ -128,26 +85,14 @@ def cooccurrence(
     """Build the co-occurrence matrix."""
     matrices = (
         pool.imap_unordered(
-            corpus_cooccurrence,
-            ((corpus.words, path, window_size, targets, context) for path in paths_progress_iter),
+            corpus.cooccurrence,
+            ((path, window_size, targets, context) for path in paths_progress_iter),
         )
     )
 
     matrix = pd.concat((m for m in matrices)).groupby(['id_target', 'id_context']).sum()
 
     write_space(output, context, targets, matrix)
-
-
-def corpus_words(args):
-    """Count all the words from a corpus file."""
-    words, path, = args
-
-    logger.debug('Processing %s', path)
-
-    result = pd.DataFrame(words(path), columns=('ngram', 'tag'))
-    result['count'] = 1
-
-    return result.groupby(('ngram', 'tag'), as_index=False).sum()
 
 
 @command()
@@ -159,12 +104,7 @@ def dictionary(
     omit_tags=('', False, 'Do not use POS tags.'),
     output=('o', 'dicitionary.h5', 'The output file.'),
 ):
-    all_words = (
-        pool.imap_unordered(
-            corpus_words,
-            ((corpus.words, path) for path in paths_progress_iter),
-        )
-    )
+    all_words = pool.imap_unordered(corpus.words, paths_progress_iter)
 
     if omit_tags:
         group_by = 'ngram',
