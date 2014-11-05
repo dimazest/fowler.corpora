@@ -196,3 +196,24 @@ def test_bnc_ccg_transitive_verbs(bnc_ccg_path, dispatcher, tmpdir):
         inplace=True,
     )
     assert len(vso) == 74
+
+
+def test_bnc_ccg_dependencies(bnc_ccg_path, dispatcher, tmpdir):
+    path = str(tmpdir.join("dependencies.h5"))
+    dispatcher.dispatch(
+        'bnc dependencies '
+        '--corpus bnc+ccg://{corpus} '
+        '-o {output} '
+        '--no_p11n '
+        ''.format(
+            corpus=bnc_ccg_path,
+            output=path,
+        ).split()
+    )
+
+    result = pd.read_hdf(path, 'dictionary')
+
+    assert result.index.is_unique
+    assert len(result) == 1290
+    assert result['count'].sum() == 1436
+

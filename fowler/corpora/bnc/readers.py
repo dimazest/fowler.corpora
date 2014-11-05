@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 CCGToken = namedtuple('CCGToken', 'word, stem, tag')
+CCGDependency = namedtuple('CCGDependency', 'head, relation, dependant')
 
 
 class Corpus:
@@ -62,6 +63,36 @@ class Corpus:
 
         return result.groupby(('ngram', 'tag'), as_index=False).sum()
 
+    def dependencies(self, path):
+        logger.debug('Processing %s', path)
+
+        result = pd.DataFrame(
+            (
+                (h.word, h.stem, h.tag, r, d.word, d.stem, d.tag)
+                for h, r, d in self.dependencies_iter(path)
+            ),
+            columns=(
+                'head_word',
+                'head_stem',
+                'head_tag',
+                'relation',
+                'dependant_word',
+                'dependant_stem',
+                'dependant_tag',
+            )
+        )
+
+        if self.tag_first_letter:
+            raise NotImplemented('Tagging by first letter is not supported!')
+
+        if self.stem:
+            group_coulumns = ('head_stem', 'head_tag', 'relation', 'dependant_stem', 'dependant_tag')
+        else:
+            group_coulumns = ('head_word', 'head_tag', 'relation', 'dependant_word', 'dependant_tag')
+
+        result['count'] = 1
+
+        return result.groupby(group_coulumns).sum()
 
 class BNC(Corpus):
     def __init__(self, root, **kwargs):
@@ -142,6 +173,8 @@ class BNC_CCG(Corpus):
                 *dependencies, c = sentence
                 tokens = dict(self.parse_tokens(c))
 
+                dependencies = self.parse_dependencies(dependencies)
+
                 yield from postprocessor(dependencies, tokens)
 
     def collect_verb_subject_object(self, path):
@@ -166,13 +199,15 @@ class BNC_CCG(Corpus):
             return result.groupby(columns, as_index=False).sum()
 
     def _collect_verb_subject_object(self, dependencies, tokens):
-        dependencies = sorted(self.parse_dependencies(dependencies))
+        dependencies = sorted(
+            d for d in dependencies if d.relation in ('dobj', 'ncsubj')
+        )
 
-        for head_id, group in groupby(dependencies, lambda r: r[0]):
+        for head_id, group in groupby(dependencies, lambda d: d.head):
             group = list(group)
 
             try:
-                (_, obj, obj_id), (_, subj, subj_id) = sorted(g for g in group if g[1] in ('dobj', 'ncsubj'))
+                (_, obj, obj_id), (_, subj, subj_id) = sorted(g for g in group if g.relation in ('dobj', 'ncsubj'))
             except ValueError:
                 pass
             else:
@@ -183,6 +218,15 @@ class BNC_CCG(Corpus):
                     except KeyError:
                         logger.debug('Invalid group %s', group)
 
+    def dependencies_iter(self, path):
+
+        def collect_dependencies(dependencies, tokens):
+            for d in dependencies:
+                yield CCGDependency(tokens[d.head], d.relation, tokens[d.dependant])
+
+
+        return self.ccg_bnc_iter(path, collect_dependencies)
+
     def parse_dependencies(self, dependencies):
         """Parse and filter out verb subject/object dependencies from a C&C parse."""
         for dependency in dependencies:
@@ -190,18 +234,35 @@ class BNC_CCG(Corpus):
             assert dependency[-1] == ')'
             dependency = dependency[1:-1]
 
+            split_dependency = dependency.split()
             try:
-                relation, head, dependant, *_ = dependency.split()
+                # if split_dependency[0] == 'ncsubj':
+                #     import pdb; pdb.set_trace()
+                if split_dependency[-1] != '_' and '_' in split_dependency[-1]:
+                    # (ncsubj being_19 judgement_17 _)
+                    # (ncsubj laid_13 rule_12 obj)
+                    # (xmod _ judgement_17 as_18)
+                    # (dobj in_15 judgement_17)
+                    *relation, head, dependant = split_dependency
+                else:
+                    *relation, head, dependant = split_dependency[:-1]
             except ValueError:
                 logger.debug('Invalid dependency: %s', dependency)
-                break
+                continue
+            else:
+                relation = ' '.join(relation)
 
-            if relation in set(['ncsubj', 'dobj']):
-                yield (
-                    int(head.split('_')[1]),
-                    relation,
-                    int(dependant.split('_')[1]),
-                )
+            def parse_argument(argument):
+                return int(argument.split('_')[1])
+
+            try:
+                head_id = parse_argument(head)
+                dependant_id = parse_argument(dependant)
+            except (ValueError, IndexError):
+                logger.debug('Could not extract dependency argument: %s', dependency)
+                continue
+
+            yield CCGDependency(head_id, relation, dependant_id)
 
     def parse_tokens(self, c):
         """Parse and retrieve token position, word, stem and tag from a C&C parse."""

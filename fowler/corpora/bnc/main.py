@@ -157,3 +157,31 @@ def transitive_verbs(
             complib='zlib',
         )
     )
+
+
+@command()
+def dependencies(
+    pool,
+    dictionary_key,
+    corpus,
+    paths_progress_iter,
+    output=('o', 'dependencies.h5', 'The output file.'),
+):
+    """Count dependencies (head, relation, dependant)."""
+    dependencies = pd.concat(
+        f for f in pool.imap_unordered(corpus.dependencies, paths_progress_iter) if f is not None
+    )
+
+    (
+        dependencies
+        .groupby(level=dependencies.index.names)
+        .sum()
+        .sort('count', ascending=False)
+        .to_hdf(
+            output,
+            dictionary_key,
+            mode='w',
+            complevel=9,
+            complib='zlib',
+        )
+    )
