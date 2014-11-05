@@ -214,6 +214,22 @@ def test_bnc_ccg_dependencies(bnc_ccg_path, dispatcher, tmpdir):
     result = pd.read_hdf(path, 'dictionary')
 
     assert result.index.is_unique
-    assert len(result) == 1290
-    assert result['count'].sum() == 1436
+    assert len(result) == 1267
+    assert result['count'].sum() == 1413
 
+    assert len(set(result.index.levels[2])) == len(result.index.levels[2])
+
+    assert set(result.index.levels[2]) == {
+        'aux',
+        'ccomp',
+        'cmod',
+        'conj',
+        'det',
+        'dobj',
+        'iobj',
+        'ncmod',
+        'ncsubj',
+        'obj2',
+        'xcomp',
+        'xmod',
+    }

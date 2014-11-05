@@ -180,9 +180,10 @@ class BNC_CCG(Corpus):
     def collect_verb_subject_object(self, path):
         """Retrieve verb together with it's subject and object from a C&C parsed file.
 
-        File format description [1].
+        File format description [1] or Table 13 in [2].
 
         [1] http://svn.ask.it.usyd.edu.au/trac/candc/wiki/MarkedUp
+        [2] http://anthology.aclweb.org/J/J07/J07-4004.pdf
 
         """
         columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'
@@ -235,26 +236,31 @@ class BNC_CCG(Corpus):
             dependency = dependency[1:-1]
 
             split_dependency = dependency.split()
-            try:
-                # if split_dependency[0] == 'ncsubj':
-                #     import pdb; pdb.set_trace()
-                if split_dependency[-1] != '_' and '_' in split_dependency[-1]:
+            split_dependency_len = len(split_dependency)
+
+            if split_dependency_len == 3:
+                # (dobj in_15 judgement_17)
+                relation, head, dependant = split_dependency
+            elif split_dependency_len == 4:
+                empty = lambda r: r == '_' or '_' not in r
+                if empty(split_dependency[-1]):
                     # (ncsubj being_19 judgement_17 _)
                     # (ncsubj laid_13 rule_12 obj)
+                    relation, head, dependant = split_dependency[:-1]
+                elif empty(split_dependency[1]):
                     # (xmod _ judgement_17 as_18)
-                    # (dobj in_15 judgement_17)
-                    *relation, head, dependant = split_dependency
+                    # (ncmod poss CHOICE_4 IT_1)
+                    relation, _ ,head, dependant = split_dependency
                 else:
-                    *relation, head, dependant = split_dependency[:-1]
-            except ValueError:
+                    # (cmod who_11 people_3 share_12)
+                    logger.debug('Ignoring dependency: %s', dependency)
+                    continue
+
+            else:
                 logger.debug('Invalid dependency: %s', dependency)
                 continue
-            else:
-                relation = ' '.join(relation)
 
-            def parse_argument(argument):
-                return int(argument.split('_')[1])
-
+            parse_argument = lambda a: int(a.split('_')[1])
             try:
                 head_id = parse_argument(head)
                 dependant_id = parse_argument(dependant)
