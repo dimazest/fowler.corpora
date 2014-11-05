@@ -67,6 +67,25 @@ import pytest
                 ('c', 'b', 2),
             ],
         ),
+        (
+            'abbc',
+            (1, 2),
+            [
+                ('a', 'b', 2),
+                ('b', 'a', 1),
+                ('b', 'b', 2),
+                ('b', 'c', 2),
+                ('c', 'b', 1),
+            ],
+        ),
+        (
+            'abc',
+            (1, 0),
+            [
+                ('b', 'a', 1),
+                ('c', 'b', 1),
+            ],
+        ),
     ),
 )
 def test_count_cooccurrence(sequence, window_size, expected_result):

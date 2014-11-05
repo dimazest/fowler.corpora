@@ -79,10 +79,13 @@ def cooccurrence(
     targets,
     context,
     paths_progress_iter,
-    window_size=('', 5, 'Window size.'),
+    window_size_before=('', 5, 'Window size before.'),
+    window_size_after=('', 5, 'Window size after.'),
     output=('o', 'space.h5', 'The output space file.'),
 ):
     """Build the co-occurrence matrix."""
+    window_size = window_size_before, window_size_after
+
     matrices = (
         pool.imap_unordered(
             corpus.cooccurrence,
