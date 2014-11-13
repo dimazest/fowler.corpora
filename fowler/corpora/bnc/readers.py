@@ -94,6 +94,7 @@ class Corpus:
 
         return result.groupby(group_coulumns).sum()
 
+
 class BNC(Corpus):
     def __init__(self, root, **kwargs):
         super().__init__(**kwargs)
