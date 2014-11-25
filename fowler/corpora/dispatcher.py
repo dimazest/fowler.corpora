@@ -91,6 +91,9 @@ class DummyPool:
     def imap(self, func, iterable, chunksize=None):
         return map(func, iterable)
 
+    def starmap(self, *args, **kwargs):
+        return itertools.starmap(*args, **kwargs)
+
 
 class Dispatcher(BaseDispatcher):
     global__display_max_rows = '', 0, 'Maximum number of rows to show in pandas.'
