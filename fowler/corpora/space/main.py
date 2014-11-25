@@ -1,3 +1,5 @@
+import  logging
+
 import numpy as np
 import pandas as pd
 
@@ -9,6 +11,7 @@ class SpaceDispatcher(Dispatcher, SpaceMixin, DictionaryMixin):
     global__output = 'o', 'out_space.h5', 'Output vector space file.'
 
 
+logger = logging.getLogger(__name__)
 dispatcher = SpaceDispatcher()
 command = dispatcher.command
 
@@ -141,6 +144,7 @@ def pmi(
         if not remove_missing:
             raise ValueError('These rows are not finite!', row_totals[missing_rows])
         else:
+            logger.warning('Removing the following rows: %s', row_totals[missing_rows])
             row_totals = row_totals[~missing_rows]
 
     row_totals = row_totals.values[:, np.newaxis]
