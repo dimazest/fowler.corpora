@@ -71,6 +71,7 @@ setup(
         'pandas',
         'progress',
         'py',
+        'pygments',
         'raven',
         'scikit-learn',
         'scipy',

@@ -1,6 +1,7 @@
 import inspect
 import logging
 import os
+import sys
 
 from logging.handlers import RotatingFileHandler
 from multiprocessing import Pool
@@ -32,6 +33,18 @@ class Resource(Lazy):
 
 class EagerResource(Resource):
     """A resource that is evaluated even if it's not requested."""
+
+
+def excepthook(type, value, tb):
+    import traceback
+    from pygments import highlight
+    from pygments.lexers import get_lexer_by_name
+    from pygments.formatters import TerminalFormatter
+
+    tbtext = ''.join(traceback.format_exception(type, value, tb))
+    lexer = get_lexer_by_name("pytb", stripall=True)
+    formatter = TerminalFormatter()
+    sys.stderr.write(highlight(tbtext, lexer, formatter))
 
 
 class BaseDispatcher(opster.Dispatcher):
@@ -149,6 +162,10 @@ class Dispatcher(BaseDispatcher):
             pd.set_option('display.max_rows', display_max_rows)
 
         return display_max_rows
+
+    @EagerResource
+    def exception_hook(self):
+        sys.excepthook = excepthook
 
     @Resource
     def ip_client(self):
