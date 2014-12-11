@@ -55,6 +55,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
+        'colored',
         'fowler.switchboard',
         'gensim',
         'google-ngram-downloader',
@@ -66,7 +67,7 @@ setup(
         'nltk>=3.0.0',
         'numexpr',
         'numpy',
-        'openpyxl<1.9999',  # Pandas requires vresion < 2.0
+        'openpyxl',
         'opster',
         'pandas',
         'progress',
@@ -75,12 +76,12 @@ setup(
         'raven',
         'scikit-learn',
         'scipy',
-        'seaborn<0.3.9999',  # Seaborn 0.4 setup is broken.
+        'seaborn',
         'setuptools',
         'six',
         'tables',
         'tornado',
-        'xlwt-future',
+        'XlsxWriter',
         'zope.cachedescriptors',
     ],
     entry_points={
