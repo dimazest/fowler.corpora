@@ -172,16 +172,20 @@ def dependencies(
         f for f in pool.imap_unordered(corpus.dependencies, paths_progress_iter) if f is not None
     )
 
-    (
+    group_by = dependencies.index.names
+    dependencies = (
         dependencies
-        .groupby(level=dependencies.index.names)
+        .reset_index()
+        .groupby(group_by)
         .sum()
         .sort('count', ascending=False)
-        .to_hdf(
-            output,
-            dictionary_key,
-            mode='w',
-            complevel=9,
-            complib='zlib',
-        )
     )
+
+    dependencies.to_hdf(
+        output,
+        dictionary_key,
+        mode='w',
+        complevel=9,
+        complib='zlib',
+    )
+
