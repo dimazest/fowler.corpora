@@ -146,7 +146,7 @@ def sentence_similarity(
         composition_operator,
         space,
         dataset=('', 'downloads/compdistmeaning/emnlp2013_turk.txt', 'The KS2013 dataset.'),
-        tagset=('', ('bnc', 'bnc+ccg'), 'Space tagset'),
+        tagset=('', ('bnc', 'bnc+ccg', 'ukwac'), 'Space tagset'),
         output=('o', 'sentence_similarity.h5', 'Result output file.'),
         no_group=('', False, "Don't calculate the mean of human judgments."),
         human_judgement_column=('', 'score', 'Column name for human judgments.'),
@@ -241,7 +241,8 @@ def ks13_targets(
 
     tag_mappings = {
         'bnc': {'N': 'SUBST', 'V': 'VERB'},
-        'bnc+ccg': {'N': 'N', 'V': 'V'}
+        'bnc+ccg': {'N': 'N', 'V': 'V'},
+        'ukwac': {'N': 'N', 'V': 'V'},
     }
 
     def extract_tokens(frame, tag=None):

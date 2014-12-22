@@ -1,15 +1,19 @@
+import gzip
 import logging
 import os.path
-from os import getcwd
+
 from collections import namedtuple
-from itertools import chain, takewhile, groupby
+from itertools import chain, takewhile, groupby, islice
+from os import getcwd
 
 import pandas as pd
 
+from more_itertools import peekable
 from nltk.corpus.reader.bnc import BNCCorpusReader
+from nltk.parse.dependencygraph import DependencyGraph
 from py.path import local
 
-from .util import count_cooccurrence
+from .util import co_occurrences
 
 
 logger = logging.getLogger(__name__)
@@ -20,6 +24,9 @@ CCGDependency = namedtuple('CCGDependency', 'head, relation, dependant')
 
 
 class Corpus:
+
+    chunk_size = 1 * 10 ** 7
+
     def __init__(self, paths, stem, tag_first_letter):
         self.paths = paths
         self.stem = stem
@@ -31,37 +38,126 @@ class Corpus:
 
         logger.debug('Processing %s', path)
 
-        counts = count_cooccurrence(self.words_iter(path), window_size=window_size)
+        def merge():
+            def join_columns(frame, prefix):
+                # Targets or contexts might be just words, not (word, POS) pairs.
+                if isinstance(frame.index[0], tuple):
+                    return prefix, '{}_tag'.format(prefix)
 
-        def join_columns(frame, prefix):
-            # Targets or contexts might be just words, not (word, POS) pairs.
-            if isinstance(frame.index[0], tuple):
-                return prefix, '{}_tag'.format(prefix)
+                return (prefix, )
 
-            return (prefix, )
+            columns = 'target', 'target_tag', 'context', 'context_tag'
 
-        counts = counts.merge(targets, left_on=join_columns(targets, 'target'), right_index=True, how='inner')
+            target_contexts = peekable(
+                co_occurrences(self.words_iter(path), window_size),
+            )
 
-        counts = counts.merge(
-            context,
-            left_on=join_columns(context, 'context'),
-            right_index=True,
-            how='inner',
-            suffixes=('_target', '_context'),
-        )[['id_target', 'id_context', 'count']]
+            index = 0
+            while target_contexts:
+                logger.debug('Computing frame #%s', index)
+                some_target_contexts = islice(
+                    target_contexts,
+                    self.chunk_size,
+                )
 
-        # XXX make sure that there are no duplicates!
+                co_occurrence_pairs = peekable(
+                    chain.from_iterable(
+                        (t + c for c in cs if c in context.index)
+                        for t, cs in some_target_contexts
+                        if t in targets.index
+                    )
+                )
 
-        return counts
+                if not co_occurrence_pairs:
+                    return
+
+                counts = pd.DataFrame(
+                    (i for i in co_occurrence_pairs),
+                    columns=columns,
+                )
+                counts['count'] = 1
+
+                logger.debug('Merging contexts.')
+                counts = counts.merge(
+                    context,
+                    left_on=join_columns(context, 'context'),
+                    right_index=True,
+                    how='inner',
+                )
+
+                logger.debug('Merging targets.')
+                counts = counts.merge(
+                    targets,
+                    left_on=join_columns(targets, 'target'),
+                    right_index=True,
+                    how='inner',
+                    suffixes=('_context', '_target'),
+                )[['id_target', 'id_context', 'count']]
+
+                yield counts.groupby(['id_target', 'id_context']).sum()
+
+                index += 1
+
+        counts = peekable(merge())
+        if not counts:
+            logger.warning('No co-occurrences collected in %s', path)
+            return
+
+        result = next(counts)
+        for df in counts:
+            logger.debug('Starting adding frames.')
+            result = result.add(df, fill_value=0)
+            logger.debug('Finished adding frames.')
+
+        if result.empty:
+            logger.warning('No co-occurrences collected in %s', path)
+        else:
+            return result.reset_index()
 
     def words(self, path):
         """Count all the words from a corpus file."""
         logger.debug('Processing %s', path)
 
-        result = pd.DataFrame(self.words_iter(path), columns=('ngram', 'tag'))
-        result['count'] = 1
+        def frames(words):
 
-        return result.groupby(('ngram', 'tag'), as_index=False).sum()
+            words = peekable(words)
+
+            index = 0
+            while words:
+
+                some_words = islice(words, self.chunk_size)
+
+                logger.debug('Computing frame #%s', index)
+                df = pd.DataFrame(
+                    (x for x in some_words),
+                    columns=('ngram', 'tag'),
+                )
+                df['count'] = 1
+
+                logger.debug('Starting groupby.')
+                result = df.groupby(('ngram', 'tag')).sum()
+                logger.debug('Finished groupby.')
+
+                del df
+
+                yield result
+
+                index += 1
+
+        data_frames = frames(self.words_iter(path))
+
+        try:
+            result = next(data_frames)
+        except StopIteration:
+            logger.warning('%s is probably empty.', path)
+        else:
+            for df in data_frames:
+                logger.debug('Starting adding frames.')
+                result = result.add(df, fill_value=0)
+                logger.debug('Finished adding frames.')
+
+            assert result['count'].notnull().all()
+            return result.reset_index()
 
     def dependencies(self, path):
         logger.debug('Processing %s', path)
@@ -226,7 +322,6 @@ class BNC_CCG(Corpus):
             for d in dependencies:
                 yield CCGDependency(tokens[d.head], d.relation, tokens[d.dependant])
 
-
         return self.ccg_bnc_iter(path, collect_dependencies)
 
     def parse_dependencies(self, dependencies):
@@ -251,7 +346,7 @@ class BNC_CCG(Corpus):
                 elif empty(split_dependency[1]):
                     # (xmod _ judgement_17 as_18)
                     # (ncmod poss CHOICE_4 IT_1)
-                    relation, _ ,head, dependant = split_dependency
+                    relation, _, head, dependant = split_dependency
                 else:
                     # (cmod who_11 people_3 share_12)
                     logger.debug('Ignoring dependency: %s', dependency)
@@ -280,3 +375,54 @@ class BNC_CCG(Corpus):
             word, stem, tag, *_ = token.split('|')
 
             yield position, CCGToken(word, stem, tag)
+
+
+class UKWAC(Corpus):
+    @classmethod
+    def init_kwargs(cls, stem, tag_first_letter, root=None, **kwargs):
+        if root is None:
+            root = os.path.join(getcwd(), 'corpora', 'WaCky', 'dep_parsed_ukwac')
+
+        return dict(
+            paths=[str(n) for n in local(root).visit() if n.check(file=True, exists=True)],
+            stem=stem,
+            tag_first_letter=tag_first_letter,
+        )
+
+    def words_iter(self, path):
+        with gzip.open(path, 'rt', encoding='ISO-8859-1') as f:
+            lines = (l.rstrip() for l in f)
+
+            lines = (
+                l for l in lines
+                if not l.startswith('<text')
+                and l != '</text>'
+                and l != '<s>'
+            )
+
+            lines = (
+                logger.debug('%s lines are read.', i) or l
+                if divmod(i, 10 ** 5)[1] == 0 else l
+                for i, l in enumerate(lines)
+            )
+
+            def cell_extractor(cells):
+                word, lemma, tag, feats, head, rel = cells
+                return word, lemma, tag, tag, feats, head, rel
+
+            while True:
+                sent = list(takewhile(lambda l: l != '</s>', lines))
+
+                if not sent:
+                    return
+
+                dep = DependencyGraph(sent, cell_extractor=cell_extractor)
+
+                for node in dep.nodelist:
+                    ngram = node['lemma'] if self.stem else node['word']
+                    if ngram is not None:
+                        tag = node['tag']
+                        if self.tag_first_letter:
+                            tag = tag[0]
+
+                        yield ngram, tag

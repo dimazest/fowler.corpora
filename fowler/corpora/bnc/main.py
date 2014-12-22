@@ -5,6 +5,7 @@ http://www.ota.ox.ac.uk/desc/2554
 
 """
 import logging
+
 from urllib.parse import urlsplit, parse_qs
 
 import pandas as pd
@@ -14,7 +15,7 @@ from progress.bar import Bar
 from fowler.corpora.dispatcher import Dispatcher, NewSpaceCreationMixin, DictionaryMixin
 from fowler.corpora.space.util import write_space
 
-from .readers import BNC, BNC_CCG
+from .readers import BNC, BNC_CCG, UKWAC
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
         scheme_mapping = {
             'bnc': BNC,
             'bnc+ccg': BNC_CCG,
+            'dep-parsed-ukwac': UKWAC,
         }
 
         try:
@@ -44,7 +46,7 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
             raise NotImplementedError('The {0}:// scheme is not supported.'.format(corpus_uri.scheme))
 
         corpus_kwargs = Corpus.init_kwargs(
-            root=corpus_uri.path,
+            root=corpus_uri.path or None,
             stem=self.stem,
             tag_first_letter=self.tag_first_letter,
             **query_dict
@@ -93,7 +95,9 @@ def cooccurrence(
         )
     )
 
-    matrix = pd.concat((m for m in matrices)).groupby(['id_target', 'id_context']).sum()
+    matrix = pd.concat(
+        (m for m in matrices if m is not None)
+    ).groupby(['id_target', 'id_context']).sum()
 
     write_space(output, context, targets, matrix)
 
@@ -105,28 +109,34 @@ def dictionary(
     dictionary_key,
     paths_progress_iter,
     omit_tags=('', False, 'Do not use POS tags.'),
-    output=('o', 'dicitionary.h5', 'The output file.'),
+    output=('o', 'dictionary.h5', 'The output file.'),
 ):
-    all_words = pool.imap_unordered(corpus.words, paths_progress_iter)
+    """Count tokens."""
+    word_chunks = pool.imap_unordered(corpus.words, paths_progress_iter)
 
     if omit_tags:
         group_by = 'ngram',
     else:
         group_by = 'ngram', 'tag'
 
-    (
-        pd.concat(f for f in all_words if f is not None)
-        .groupby(group_by)
-        .sum()
-        .sort('count', ascending=False)
-        .reset_index()
-        .to_hdf(
-            output,
-            dictionary_key,
-            mode='w',
-            complevel=9,
-            complib='zlib',
-        )
+    result = pd.concat(c for c in word_chunks if c is not None)
+    assert result['count'].notnull().all()
+
+    result = result.groupby(group_by).sum()
+    assert result['count'].notnull().all()
+    assert result.index.is_unique
+
+    result.sort('count', ascending=False, inplace=True)
+    result.reset_index(inplace=True)
+
+    assert result.notnull().all().all()
+
+    result.to_hdf(
+        output,
+        dictionary_key,
+        mode='w',
+        complevel=9,
+        complib='zlib',
     )
 
 
@@ -188,4 +198,3 @@ def dependencies(
         complevel=9,
         complib='zlib',
     )
-

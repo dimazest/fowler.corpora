@@ -1,10 +1,10 @@
 import inspect
+import itertools
 import logging
 import os
 import sys
 
 from logging.handlers import RotatingFileHandler
-from multiprocessing import Pool
 
 import numpy as np
 import pandas as pd
@@ -25,6 +25,9 @@ import fowler.corpora
 from fowler.corpora.models import read_space_from_file
 from fowler.corpora.space.util import read_tokens
 from fowler.corpora.util import inside_ipython
+
+
+logger = logging.getLogger(__name__)
 
 
 class Resource(Lazy):
@@ -79,7 +82,15 @@ class BaseDispatcher(opster.Dispatcher):
 
             f_kwargs = {f_arg: getattr(self, f_arg) for f_arg in f_args}
 
+            # XXX remove or implement as a feature.
+            # import cProfile
+            # pr = cProfile.Profile()
+            # pr.enable()
+
             result = func(**f_kwargs)
+
+            # pr.disable()
+            # pr.dump_stats('profile')
 
             if inside_ipython():
                 return result
@@ -125,6 +136,7 @@ class Dispatcher(BaseDispatcher):
         if self.no_p11n:
             return DummyPool()
 
+        from multiprocessing import Pool
         return Pool(self.job_num or None)
 
     @Resource
@@ -235,7 +247,9 @@ class NewSpaceCreationMixin:
         frame.set_index(frame.columns.tolist(), inplace=True)
         frame['id'] = pd.Series(np.arange(len(frame)), index=frame.index)
 
-        assert frame.index.is_unique
+        if not frame.index.is_unique:
+            # XXX turn back into assertion with a more reliable check!
+            logger.warning('Index might not be unique!')
 
         return frame
 

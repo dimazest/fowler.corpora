@@ -137,7 +137,8 @@ class Tagger:
 
     tag_mappings = {
         'bnc': {'N': 'SUBST', 'V': 'VERB'},
-        'bnc+ccg': {'N': 'N', 'V': 'V'}
+        'bnc+ccg': {'N': 'N', 'V': 'V'},
+        'ukwac': {'N': 'N', 'V': 'V'},
     }
 
     def __init__(self, space, tagset):
