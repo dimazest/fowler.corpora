@@ -26,6 +26,8 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
     global__corpus = '', 'bnc://', 'The path to the corpus.'
     global__stem = '', False, 'Use word stems instead of word strings.',
     global__tag_first_letter = '', False, 'Extract only the first letter of the POS tags.'
+    global__window_size_before = '', 5, 'Window before.'
+    global__window_size_after = '', 5, 'Window after.'
 
     @property
     def corpus(self):
@@ -47,15 +49,19 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
 
         corpus_kwargs = Corpus.init_kwargs(
             root=corpus_uri.path or None,
-            stem=self.stem,
-            tag_first_letter=self.tag_first_letter,
             **query_dict
         )
 
         if self.limit:
             corpus_kwargs['paths'] = corpus_kwargs['paths'][:self.limit]
 
-        return Corpus(**corpus_kwargs)
+        return Corpus(
+            stem=self.stem,
+            tag_first_letter=self.tag_first_letter,
+            window_size_before=self.kwargs['window_size_before'],
+            window_size_after=self.kwargs['window_size_after'],
+            **corpus_kwargs
+        )
 
     @property
     def paths_progress_iter(self):
@@ -81,20 +87,17 @@ def cooccurrence(
     targets,
     context,
     paths_progress_iter,
-    window_size_before=('', 5, 'Window size before.'),
-    window_size_after=('', 5, 'Window size after.'),
     output=('o', 'space.h5', 'The output space file.'),
 ):
     """Build the co-occurrence matrix."""
-    window_size = window_size_before, window_size_after
-
     matrices = (
         pool.imap_unordered(
             corpus.cooccurrence,
-            ((path, window_size, targets, context) for path in paths_progress_iter),
+            ((path, targets, context) for path in paths_progress_iter),
         )
     )
 
+    # XXX Consider adding up matrices instead of concatinating and grouping.
     matrix = pd.concat(
         (m for m in matrices if m is not None)
     ).groupby(['id_target', 'id_context']).sum()

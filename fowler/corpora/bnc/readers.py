@@ -27,14 +27,16 @@ class Corpus:
 
     chunk_size = 1 * 10 ** 7
 
-    def __init__(self, paths, stem, tag_first_letter):
+    def __init__(self, paths, stem, tag_first_letter, window_size_before, window_size_after):
         self.paths = paths
         self.stem = stem
         self.tag_first_letter = tag_first_letter
+        self.window_size_before = window_size_before
+        self.window_size_after = window_size_after
 
     def cooccurrence(self, args):
         """Count word co-occurrence in a corpus file."""
-        path, window_size, targets, context = args
+        path, targets, context = args
 
         logger.debug('Processing %s', path)
 
@@ -49,7 +51,11 @@ class Corpus:
             columns = 'target', 'target_tag', 'context', 'context_tag'
 
             target_contexts = peekable(
-                co_occurrences(self.words_iter(path), window_size),
+                co_occurrences(
+                    self.words_iter(path),
+                    window_size_before=self.window_size_before,
+                    window_size_after=self.window_size_after,
+                )
             )
 
             index = 0
@@ -94,7 +100,12 @@ class Corpus:
                     suffixes=('_context', '_target'),
                 )[['id_target', 'id_context', 'count']]
 
-                yield counts.groupby(['id_target', 'id_context']).sum()
+                result = counts.groupby(['id_target', 'id_context']).sum()
+                logger.debug(
+                    '%s unique co-occurrence pairs are collected.',
+                    len(result)
+                )
+                yield result
 
                 index += 1
 
@@ -114,6 +125,15 @@ class Corpus:
         else:
             return result.reset_index()
 
+    def words_iter(self, path):
+        NONE = None, None
+        before = [NONE] * self.window_size_before
+        after = [NONE] * self.window_size_after
+
+        batches = self.word_batches(path)
+        for batch in batches:
+            yield from chain(before, batch, after)
+
     def words(self, path):
         """Count all the words from a corpus file."""
         logger.debug('Processing %s', path)
@@ -124,7 +144,6 @@ class Corpus:
 
             index = 0
             while words:
-
                 some_words = islice(words, self.chunk_size)
 
                 logger.debug('Computing frame #%s', index)
@@ -198,42 +217,39 @@ class BNC(Corpus):
         self.root = root
 
     @classmethod
-    def init_kwargs(cls, stem, tag_first_letter, root=None, **kwargs):
+    def init_kwargs(cls, root=None, fileids=r'[A-K]/\w*/\w*\.xml'):
         if root is None:
             root = os.path.join(getcwd(), 'corpora', 'BNC', 'Texts')
 
-        if 'fileids' not in kwargs:
-            kwargs['fileids'] = r'[A-K]/\w*/\w*\.xml'
-
         return dict(
             root=root,
-            paths=BNCCorpusReader(root=root, **kwargs).fileids(),
-            stem=stem,
-            tag_first_letter=tag_first_letter,
+            paths=BNCCorpusReader(root=root, fileids=fileids).fileids(),
         )
 
-    def words_iter(self, path):
-        for word, tag in BNCCorpusReader(fileids=path, root=self.root).tagged_words(stem=self.stem):
-            if self.tag_first_letter:
-                tag = tag[0]
+    def word_batches(self, path):
+        def it():
+            for word, tag in BNCCorpusReader(fileids=path, root=self.root).tagged_words(stem=self.stem):
+                if self.tag_first_letter:
+                    tag = tag[0]
 
-            yield word, tag
+                yield word, tag
+
+        # Consider the whole file as one document!
+        yield it()
 
 
 class BNC_CCG(Corpus):
 
     @classmethod
-    def init_kwargs(cls, stem, tag_first_letter, root=None, **kwargs):
+    def init_kwargs(cls, root=None):
         if root is None:
             root = os.path.join(getcwd(), 'corpora', 'CCG_BNC_v1')
 
         return dict(
             paths=[str(n) for n in local(root).visit() if n.check(file=True, exists=True)],
-            stem=stem,
-            tag_first_letter=tag_first_letter,
         )
 
-    def words_iter(self, path):
+    def word_batches(self, path):
         def word_tags(dependencies, tokens):
             for token in tokens.values():
 
@@ -244,7 +260,8 @@ class BNC_CCG(Corpus):
                 else:
                     yield token.word, tag
 
-        return self.ccg_bnc_iter(path, word_tags)
+        # Consider the whole file as one document!
+        yield self.ccg_bnc_iter(path, word_tags)
 
     def ccg_bnc_iter(self, f_name, postprocessor):
         logger.debug('Processing %s', f_name)
@@ -377,52 +394,62 @@ class BNC_CCG(Corpus):
             yield position, CCGToken(word, stem, tag)
 
 
+def ukwac_cell_extractor(cells):
+    word, lemma, tag, feats, head, rel = cells
+    return word, lemma, tag, tag, feats, head, rel
+
+
 class UKWAC(Corpus):
+
     @classmethod
-    def init_kwargs(cls, stem, tag_first_letter, root=None, **kwargs):
+    def init_kwargs(cls, root=None):
         if root is None:
             root = os.path.join(getcwd(), 'corpora', 'WaCky', 'dep_parsed_ukwac')
 
         return dict(
             paths=[str(n) for n in local(root).visit() if n.check(file=True, exists=True)],
-            stem=stem,
-            tag_first_letter=tag_first_letter,
         )
 
-    def words_iter(self, path):
+    def word_batches(self, path):
         with gzip.open(path, 'rt', encoding='ISO-8859-1') as f:
             lines = (l.rstrip() for l in f)
 
             lines = (
                 l for l in lines
                 if not l.startswith('<text')
-                and l != '</text>'
+                # and l != '</text>'
                 and l != '<s>'
             )
 
-            lines = (
+            lines = peekable(
                 logger.debug('%s lines are read.', i) or l
                 if divmod(i, 10 ** 5)[1] == 0 else l
                 for i, l in enumerate(lines)
             )
 
-            def cell_extractor(cells):
-                word, lemma, tag, feats, head, rel = cells
-                return word, lemma, tag, tag, feats, head, rel
+            while lines:
+                text = takewhile(lambda l: l != '</text>', lines)
 
-            while True:
-                sent = list(takewhile(lambda l: l != '</s>', lines))
+                i = self.text_batch(text)
 
-                if not sent:
-                    return
+                logger.debug(i)
 
-                dep = DependencyGraph(sent, cell_extractor=cell_extractor)
+                yield i
 
-                for node in dep.nodelist:
-                    ngram = node['lemma'] if self.stem else node['word']
-                    if ngram is not None:
-                        tag = node['tag']
-                        if self.tag_first_letter:
-                            tag = tag[0]
+    def text_batch(self, text_lines):
+        text_lines = peekable(text_lines)
 
-                        yield ngram, tag
+        while text_lines:
+
+            sent = list(takewhile(lambda l: l != '</s>', text_lines))
+
+            dep = DependencyGraph(sent, cell_extractor=ukwac_cell_extractor)
+
+            for node in dep.nodelist:
+                ngram = node['lemma'] if self.stem else node['word']
+                if ngram is not None:
+                    tag = node['tag']
+                    if self.tag_first_letter:
+                        tag = tag[0]
+
+                    yield ngram, tag
