@@ -82,6 +82,7 @@ setup(
         'tables',
         'tornado',
         'XlsxWriter',
+        'xlwt-future',
         'zope.cachedescriptors',
     ],
     entry_points={
