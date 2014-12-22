@@ -14,7 +14,7 @@ def limit(
     dictionary,
     dictionary_key,
     limit=('l', 30000, 'Number of rows to leave in the index.'),
-    output=('o', 'dicitionary_limited.h5', 'The output file.'),
+    output=('o', 'dictionary_limited.h5', 'The output file.'),
 ):
     dictionary = dictionary.head(limit)
     dictionary.to_hdf(
