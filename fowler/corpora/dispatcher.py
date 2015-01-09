@@ -1,6 +1,7 @@
 import inspect
 import itertools
 import logging
+import multiprocessing
 import os
 import sys
 
@@ -14,6 +15,7 @@ from raven.conf import setup_logging
 from raven.handlers.logging import SentryHandler
 
 import opster
+import execnet
 
 from jinja2 import Environment, PackageLoader
 from zope.cachedescriptors.property import Lazy
@@ -22,6 +24,7 @@ import joblib
 from IPython import parallel
 
 import fowler.corpora
+from fowler.corpora.execnet import ExecnetHub
 from fowler.corpora.models import read_space_from_file
 from fowler.corpora.space.util import read_tokens
 from fowler.corpora.util import inside_ipython
@@ -127,9 +130,51 @@ class Dispatcher(BaseDispatcher):
     global__logger_filename = '', '/tmp/fowler.log', 'File to log.'
     global__no_p11n = '', False, "Don't parallelize the code across several workers."
     global__verbose = 'v', False, 'Be verbose.'
+    global__gateway = 'g', [], 'Execnet gateway configuration.'
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    @property
+    def execnet_gateways(self):
+        gw = self.gateway
+
+        if not gw:
+            for _ in range(self.job_num):
+                yield execnet.makegateway()
+
+        for gateway_spec in gw:
+            if '*' in gateway_spec:
+                num, spec = gateway_spec.split('*')
+                num = int(num)
+
+                group = execnet.Group()
+                group.defaultspec = spec
+
+                xspec = execnet.XSpec(spec)
+                master_spec = (
+                    'ssh={xspec.via}//'
+                    'id={xspec.via}//'
+                    'python={xspec.python}'
+                    ''.format(xspec=xspec)
+                )
+
+                logger.debug(
+                    'Connecting to master %s to create %s gateways.',
+                    master_spec,
+                    num,
+                )
+                group.makegateway(master_spec)
+
+                for _ in range(num):
+                    yield group.makegateway()
+            else:
+                yield execnet.makegateway()
+
+    @Resource
+    def execnet_hub(self):
+        return ExecnetHub(list(self.execnet_gateways))
+
+    @property
+    def job_num(self):
+        return self.kwargs['job_num'] or multiprocessing.cpu_count()
 
     @Resource
     def pool(self):

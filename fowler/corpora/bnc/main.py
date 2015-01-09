@@ -5,6 +5,7 @@ http://www.ota.ox.ac.uk/desc/2554
 
 """
 import logging
+import pickle
 
 from urllib.parse import urlsplit, parse_qs
 
@@ -13,6 +14,7 @@ import pandas as pd
 from progress.bar import Bar
 
 from fowler.corpora.dispatcher import Dispatcher, NewSpaceCreationMixin, DictionaryMixin
+from fowler.corpora.execnet import sum_folder
 from fowler.corpora.space.util import write_space
 
 from .readers import BNC, BNC_CCG, UKWAC
@@ -46,6 +48,9 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
             Corpus = scheme_mapping[corpus_uri.scheme]
         except KeyError:
             raise NotImplementedError('The {0}:// scheme is not supported.'.format(corpus_uri.scheme))
+
+        if Corpus == UKWAC:
+            query_dict['workers_count'] = len(self.execnet_hub.gateways)
 
         corpus_kwargs = Corpus.init_kwargs(
             root=corpus_uri.path or None,
@@ -83,31 +88,48 @@ command = dispatcher.command
 @command()
 def cooccurrence(
     corpus,
-    pool,
+    execnet_hub,
     targets,
     context,
     paths_progress_iter,
     output=('o', 'space.h5', 'The output space file.'),
 ):
     """Build the co-occurrence matrix."""
-    matrices = (
-        pool.imap_unordered(
-            corpus.cooccurrence,
-            ((path, targets, context) for path in paths_progress_iter),
+
+    def init(channel):
+        channel.send(
+            (
+                'data',
+                pickle.dumps(
+                    {
+                        'kwargs': {
+                            'targets': targets,
+                            'context': context,
+                        },
+                        'instance': corpus,
+                        'folder_name': 'cooccurrence',
+                    },
+                )
+            )
         )
+
+    result = execnet_hub.run(
+        remote_func=sum_folder,
+        iterable=paths_progress_iter,
+        init_func=init,
     )
 
-    # XXX Consider adding up matrices instead of concatinating and grouping.
-    matrix = pd.concat(
-        (m for m in matrices if m is not None)
-    ).groupby(['id_target', 'id_context']).sum()
+    result = [r for r in result if r is not None]
 
-    write_space(output, context, targets, matrix)
+    result = pd.concat(result)
+    result = result.groupby(['id_target', 'id_context']).sum()
+
+    write_space(output, context, targets, result)
 
 
 @command()
 def dictionary(
-    pool,
+    execnet_hub,
     corpus,
     dictionary_key,
     paths_progress_iter,
@@ -115,14 +137,29 @@ def dictionary(
     output=('o', 'dictionary.h5', 'The output file.'),
 ):
     """Count tokens."""
-    word_chunks = pool.imap_unordered(corpus.words, paths_progress_iter)
+    def init(channel):
+        def send(x):
+            channel.send(pickle.dumps(x))
 
+        send({})
+        send(corpus)
+        send('words')
+
+    result = execnet_hub.run(
+        remote_func=sum_folder,
+        iterable=paths_progress_iter,
+        init_func=init,
+    )
+
+    result = list(result)
+
+    # This can be done in Corpus.words()
     if omit_tags:
         group_by = 'ngram',
     else:
         group_by = 'ngram', 'tag'
 
-    result = pd.concat(c for c in word_chunks if c is not None)
+    result = pd.concat(result)
     assert result['count'].notnull().all()
 
     result = result.groupby(group_by).sum()

@@ -3,7 +3,7 @@ import logging
 import os.path
 
 from collections import namedtuple
-from itertools import chain, takewhile, groupby, islice
+from itertools import chain, takewhile, groupby, islice, count
 from os import getcwd
 
 import pandas as pd
@@ -34,151 +34,105 @@ class Corpus:
         self.window_size_before = window_size_before
         self.window_size_after = window_size_after
 
-    def cooccurrence(self, args):
+    def cooccurrence(self, path, targets, context):
         """Count word co-occurrence in a corpus file."""
-        path, targets, context = args
-
         logger.debug('Processing %s', path)
 
-        def merge():
-            def join_columns(frame, prefix):
-                # Targets or contexts might be just words, not (word, POS) pairs.
-                if isinstance(frame.index[0], tuple):
-                    return prefix, '{}_tag'.format(prefix)
+        def join_columns(frame, prefix):
+            # Targets or contexts might be just words, not (word, POS) pairs.
+            if isinstance(frame.index[0], tuple):
+                return prefix, '{}_tag'.format(prefix)
 
-                return (prefix, )
+            return (prefix, )
 
-            columns = 'target', 'target_tag', 'context', 'context_tag'
+        columns = 'target', 'target_tag', 'context', 'context_tag'
 
-            target_contexts = peekable(
-                co_occurrences(
-                    self.words_iter(path),
-                    window_size_before=self.window_size_before,
-                    window_size_after=self.window_size_after,
+        target_contexts = peekable(
+            co_occurrences(
+                self.words_iter(path),
+                window_size_before=self.window_size_before,
+                window_size_after=self.window_size_after,
+            )
+        )
+
+        while target_contexts:
+            some_target_contexts = islice(
+                target_contexts,
+                self.chunk_size,
+            )
+
+            co_occurrence_pairs = list(
+                chain.from_iterable(
+                    (t + c for c in cs if c in context.index)
+                    for t, cs in some_target_contexts
+                    if t in targets.index
                 )
             )
 
-            index = 0
-            while target_contexts:
-                logger.debug('Computing frame #%s', index)
-                some_target_contexts = islice(
-                    target_contexts,
-                    self.chunk_size,
-                )
+            if not co_occurrence_pairs:
+                continue
 
-                co_occurrence_pairs = peekable(
-                    chain.from_iterable(
-                        (t + c for c in cs if c in context.index)
-                        for t, cs in some_target_contexts
-                        if t in targets.index
-                    )
-                )
+            counts = pd.DataFrame(co_occurrence_pairs, columns=columns)
+            counts['count'] = 1
 
-                if not co_occurrence_pairs:
-                    return
+            logger.debug('Merging contexts.')
+            counts = counts.merge(
+                context,
+                left_on=join_columns(context, 'context'),
+                right_index=True,
+                how='inner',
+            )
 
-                counts = pd.DataFrame(
-                    (i for i in co_occurrence_pairs),
-                    columns=columns,
-                )
-                counts['count'] = 1
+            logger.debug('Merging targets.')
+            counts = counts.merge(
+                targets,
+                left_on=join_columns(targets, 'target'),
+                right_index=True,
+                how='inner',
+                suffixes=('_context', '_target'),
+            )[['id_target', 'id_context', 'count']]
 
-                logger.debug('Merging contexts.')
-                counts = counts.merge(
-                    context,
-                    left_on=join_columns(context, 'context'),
-                    right_index=True,
-                    how='inner',
-                )
-
-                logger.debug('Merging targets.')
-                counts = counts.merge(
-                    targets,
-                    left_on=join_columns(targets, 'target'),
-                    right_index=True,
-                    how='inner',
-                    suffixes=('_context', '_target'),
-                )[['id_target', 'id_context', 'count']]
-
-                result = counts.groupby(['id_target', 'id_context']).sum()
-                logger.debug(
-                    '%s unique co-occurrence pairs are collected.',
-                    len(result)
-                )
-                yield result
-
-                index += 1
-
-        counts = peekable(merge())
-        if not counts:
-            logger.warning('No co-occurrences collected in %s', path)
-            return
-
-        result = next(counts)
-        for df in counts:
-            logger.debug('Starting adding frames.')
-            result = result.add(df, fill_value=0)
-            logger.debug('Finished adding frames.')
-
-        if result.empty:
-            logger.warning('No co-occurrences collected in %s', path)
-        else:
-            return result.reset_index()
+            counts = counts.groupby(['id_target', 'id_context']).sum()
+            logger.debug(
+                '%s unique co-occurrence pairs are collected. %s in total.',
+                len(counts),
+                counts['count'].sum(),
+            )
+            yield counts
 
     def words_iter(self, path):
         NONE = None, None
         before = [NONE] * self.window_size_before
         after = [NONE] * self.window_size_after
 
-        batches = self.word_batches(path)
-        for batch in batches:
-            yield from chain(before, batch, after)
+        words_by_document = self.words_by_document(path)
+        for document_words in words_by_document:
+            yield from chain(before, document_words, after)
 
     def words(self, path):
         """Count all the words from a corpus file."""
         logger.debug('Processing %s', path)
 
-        def frames(words):
+        words = peekable(self.words_iter(path))
+        iteration = count()
+        while words:
+            some_words = islice(words, self.chunk_size)
 
-            words = peekable(words)
+            logger.info('Computing frame #%s', next(iteration))
+            result = pd.DataFrame(
+                (x for x in some_words),
+                columns=('ngram', 'tag'),
+            )
+            result['count'] = 1
 
-            index = 0
-            while words:
-                some_words = islice(words, self.chunk_size)
+            logger.debug('Starting groupby.')
+            result = result.groupby(('ngram', 'tag')).sum()
+            logger.debug('Finished groupby.')
 
-                logger.debug('Computing frame #%s', index)
-                df = pd.DataFrame(
-                    (x for x in some_words),
-                    columns=('ngram', 'tag'),
-                )
-                df['count'] = 1
-
-                logger.debug('Starting groupby.')
-                result = df.groupby(('ngram', 'tag')).sum()
-                logger.debug('Finished groupby.')
-
-                del df
-
-                yield result
-
-                index += 1
-
-        data_frames = frames(self.words_iter(path))
-
-        try:
-            result = next(data_frames)
-        except StopIteration:
-            logger.warning('%s is probably empty.', path)
-        else:
-            for df in data_frames:
-                logger.debug('Starting adding frames.')
-                result = result.add(df, fill_value=0)
-                logger.debug('Finished adding frames.')
-
-            assert result['count'].notnull().all()
-            return result.reset_index()
+            yield result
 
     def dependencies(self, path):
+        """Count dependency triples."""
         logger.debug('Processing %s', path)
 
         result = pd.DataFrame(
@@ -226,7 +180,7 @@ class BNC(Corpus):
             paths=BNCCorpusReader(root=root, fileids=fileids).fileids(),
         )
 
-    def word_batches(self, path):
+    def words_by_document(self, path):
         def it():
             for word, tag in BNCCorpusReader(fileids=path, root=self.root).tagged_words(stem=self.stem):
                 if self.tag_first_letter:
@@ -249,7 +203,7 @@ class BNC_CCG(Corpus):
             paths=[str(n) for n in local(root).visit() if n.check(file=True, exists=True)],
         )
 
-    def word_batches(self, path):
+    def words_by_document(self, path):
         def word_tags(dependencies, tokens):
             for token in tokens.values():
 
@@ -401,55 +355,116 @@ def ukwac_cell_extractor(cells):
 
 class UKWAC(Corpus):
 
+    def __init__(self, file_passes, lowercase_stem, limit, **kwargs):
+        super().__init__(**kwargs)
+
+        self.file_passes = int(file_passes)
+        self.lowercase_stem = lowercase_stem
+        self.limit = int(limit)
+
     @classmethod
-    def init_kwargs(cls, root=None):
+    def init_kwargs(
+        cls,
+        root=None,
+        workers_count=16,
+        lowercase_stem=False,
+        limit=None,
+    ):
         if root is None:
             root = os.path.join(getcwd(), 'corpora', 'WaCky', 'dep_parsed_ukwac')
 
-        return dict(
-            paths=[str(n) for n in local(root).visit() if n.check(file=True, exists=True)],
+        paths = [
+            str(n) for n in local(root).visit()
+            if n.check(file=True, exists=True)
+        ]
+
+        file_passes = max(1, workers_count // len(paths))
+
+        paths = list(
+            chain.from_iterable(
+                ((i, p) for p in paths)
+                for i in range(file_passes)
+            )
         )
 
-    def word_batches(self, path):
+        assert lowercase_stem in ('', 'y', False)
+        lowercase_stem = bool(lowercase_stem)
+
+        return dict(
+            paths=paths,
+            file_passes=file_passes,
+            lowercase_stem=lowercase_stem,
+            limit=limit,
+        )
+
+    def words_by_document(self, path):
+        # XXX rename to words_by_document
+        for document in self.documents(path):
+            yield self.document_words(document)
+
+    def documents(self, path):
+        file_pass, path = path
+
         with gzip.open(path, 'rt', encoding='ISO-8859-1') as f:
             lines = (l.rstrip() for l in f)
 
-            lines = (
+            lines = peekable(
                 l for l in lines
                 if not l.startswith('<text')
-                # and l != '</text>'
                 and l != '<s>'
             )
 
-            lines = peekable(
-                logger.debug('%s lines are read.', i) or l
-                if divmod(i, 10 ** 5)[1] == 0 else l
-                for i, l in enumerate(lines)
-            )
-
+            c = 0
             while lines:
-                text = takewhile(lambda l: l != '</text>', lines)
+                if (c % (10 ** 4)) == 0:
+                    logger.debug(
+                        '%s text elements are read, every %s is processed.',
+                        c,
+                        self.file_passes,
+                    )
 
-                i = self.text_batch(text)
+                if (self.limit is not None) and (c > self.limit):
+                    logger.info('Limit of sentences is reached.')
+                    break
 
-                logger.debug(i)
+                document = list(takewhile(lambda l: l != '</text>', lines))
 
-                yield i
+                if (c % self.file_passes) == file_pass:
+                    yield document
 
-    def text_batch(self, text_lines):
-        text_lines = peekable(text_lines)
+                c += 1
 
-        while text_lines:
-
-            sent = list(takewhile(lambda l: l != '</s>', text_lines))
-
-            dep = DependencyGraph(sent, cell_extractor=ukwac_cell_extractor)
-
-            for node in dep.nodelist:
+    def document_words(self, document):
+        for dg in self.dependency_graph_by_document(document):
+            for node in dg.nodelist:
                 ngram = node['lemma'] if self.stem else node['word']
                 if ngram is not None:
+                    if self.stem and self.lowercase_stem:
+                        ngram = ngram.lower()
+
                     tag = node['tag']
                     if self.tag_first_letter:
                         tag = tag[0]
 
                     yield ngram, tag
+
+    def dependency_graph_by_document(self, document):
+        document = peekable(iter(document))
+
+        while document:
+            sentence = list(takewhile(lambda l: l != '</s>', document))
+
+            if not sentence:
+                # It might happen because of the snippets like this:
+                #
+                #    plates  plate   NNS     119     116     PMOD
+                #    </text>
+                #    </s>
+                #    <text id="ukwac:http://www.learning-connections.co.uk/curric/cur_pri/artists/links.html">
+                #    <s>
+                #    Ideas   Ideas   NP      1       14      DEP
+                #
+                # where </text> is before </s>.
+                continue
+
+            yield DependencyGraph(sentence, cell_extractor=ukwac_cell_extractor)
