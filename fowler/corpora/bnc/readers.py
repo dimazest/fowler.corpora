@@ -436,8 +436,10 @@ class UKWAC(Corpus):
 
     def document_words(self, document):
         for dg in self.dependency_graph_by_document(document):
-            for node in dg.nodelist:
+            # Make sure that nodes are sorted by the position in the sentence.
+            for _, node in sorted(dg.nodes.items()):
                 ngram = node['lemma'] if self.stem else node['word']
+
                 if ngram is not None:
                     if self.stem and self.lowercase_stem:
                         ngram = ngram.lower()
@@ -467,4 +469,8 @@ class UKWAC(Corpus):
                 # where </text> is before </s>.
                 continue
 
-            yield DependencyGraph(sentence, cell_extractor=ukwac_cell_extractor)
+            yield DependencyGraph(
+                sentence,
+                cell_extractor=ukwac_cell_extractor,
+                cell_separator='\t',
+            )
