@@ -163,6 +163,19 @@ class Corpus:
 
         return result.groupby(group_coulumns).sum()
 
+    def verb_subject_object(self, path):
+        columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'
+
+        result = list(self.verb_subject_object_iter(path))
+        if result:
+            result = pd.DataFrame(
+                result,
+                columns=columns,
+            )
+            result['count'] = 1
+
+            return result.groupby(columns, as_index=False).sum()
+
 
 class BNC(Corpus):
     def __init__(self, root, **kwargs):
@@ -215,9 +228,10 @@ class BNC_CCG(Corpus):
                     yield token.word, tag
 
         # Consider the whole file as one document!
-        yield self.ccg_bnc_iter(path, word_tags)
+        for dependencies, tokens in self.ccg_bnc_iter(path):
+            yield word_tags(dependencies, tokens)
 
-    def ccg_bnc_iter(self, f_name, postprocessor):
+    def ccg_bnc_iter(self, f_name):
         logger.debug('Processing %s', f_name)
 
         with open(f_name, 'rt', encoding='utf8') as f:
@@ -243,9 +257,13 @@ class BNC_CCG(Corpus):
 
                 dependencies = self.parse_dependencies(dependencies)
 
-                yield from postprocessor(dependencies, tokens)
+                yield dependencies, tokens
 
-    def collect_verb_subject_object(self, path):
+    def verb_subject_object_iter(self, path):
+        for dependencies, tokens in self.ccg_bnc_iter(path):
+            yield from self._collect_verb_subject_object(dependencies, tokens)
+
+    def _collect_verb_subject_object(self, dependencies, tokens):
         """Retrieve verb together with it's subject and object from a C&C parsed file.
 
         File format description [1] or Table 13 in [2].
@@ -254,20 +272,7 @@ class BNC_CCG(Corpus):
         [2] http://anthology.aclweb.org/J/J07/J07-4004.pdf
 
         """
-        columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'
 
-        result = list(self.ccg_bnc_iter(path, self._collect_verb_subject_object))
-
-        if result:
-            result = pd.DataFrame(
-                result,
-                columns=columns,
-            )
-            result['count'] = 1
-
-            return result.groupby(columns, as_index=False).sum()
-
-    def _collect_verb_subject_object(self, dependencies, tokens):
         dependencies = sorted(
             d for d in dependencies if d.relation in ('dobj', 'ncsubj')
         )
@@ -288,12 +293,13 @@ class BNC_CCG(Corpus):
                         logger.debug('Invalid group %s', group)
 
     def dependencies_iter(self, path):
-
         def collect_dependencies(dependencies, tokens):
             for d in dependencies:
                 yield CCGDependency(tokens[d.head], d.relation, tokens[d.dependant])
 
-        return self.ccg_bnc_iter(path, collect_dependencies)
+        # Consider the whole file as one document!
+        for dependencies, tokens in self.ccg_bnc_iter(path):
+            yield collect_dependencies(dependencies, tokens)
 
     def parse_dependencies(self, dependencies):
         """Parse and filter out verb subject/object dependencies from a C&C parse."""

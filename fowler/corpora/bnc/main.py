@@ -189,7 +189,7 @@ def transitive_verbs(
     output=('o', 'transitive_verbs.h5', 'The output verb space file.'),
 ):
     """Count occurrence of transitive verbs together with their subjects and objects."""
-    vsos = pool.imap_unordered(corpus.collect_verb_subject_object, paths_progress_iter)
+    vsos = pool.imap_unordered(corpus.verb_subject_object, paths_progress_iter)
 
     (
         pd.concat(f for f in vsos if f is not None)
