@@ -398,7 +398,6 @@ class UKWAC(Corpus):
         )
 
     def words_by_document(self, path):
-        # XXX rename to words_by_document
         for document in self.documents(path):
             yield self.document_words(document)
 
