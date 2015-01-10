@@ -3,14 +3,14 @@ import logging
 import os.path
 
 from collections import namedtuple
-from itertools import chain, takewhile, groupby, islice, count
+from itertools import chain, takewhile, groupby, islice, count, product
 from os import getcwd
 
 import pandas as pd
 
 from more_itertools import peekable
 from nltk.corpus.reader.bnc import BNCCorpusReader
-from nltk.parse.dependencygraph import DependencyGraph
+from nltk.parse.dependencygraph import DependencyGraph, DependencyGraphError
 from py.path import local
 
 from .util import co_occurrences
@@ -366,7 +366,7 @@ class UKWAC(Corpus):
 
         self.file_passes = int(file_passes)
         self.lowercase_stem = lowercase_stem
-        self.limit = int(limit)
+        self.limit = int(limit) if limit is not None else None
 
     @classmethod
     def init_kwargs(
@@ -440,22 +440,42 @@ class UKWAC(Corpus):
                 c += 1
 
     def document_words(self, document):
-        for dg in self.dependency_graph_by_document(document):
+        for dg in self.document_dependency_graphs(document):
             # Make sure that nodes are sorted by the position in the sentence.
             for _, node in sorted(dg.nodes.items()):
                 ngram = node['lemma'] if self.stem else node['word']
 
                 if ngram is not None:
-                    if self.stem and self.lowercase_stem:
-                        ngram = ngram.lower()
+                    yield ngram, node['tag']
 
-                    tag = node['tag']
-                    if self.tag_first_letter:
-                        tag = tag[0]
+    def verb_subject_object_iter(self, path):
+        for document in self.documents(path):
+            for dg in self.document_dependency_graphs(document):
+                for node in dg.nodes.values():
+                    if node['tag'][0] == 'V':
+                        if 'SBJ' in node['deps'] and 'OBJ' in node['deps']:
 
-                    yield ngram, tag
+                            for sbj_address, obj_address in product(
+                                node['deps']['SBJ'],
+                                node['deps']['OBJ'],
+                            ):
 
-    def dependency_graph_by_document(self, document):
+                                sbj = dg.nodes[sbj_address]
+                                obj = dg.nodes[obj_address]
+
+                                yield (
+                                    node['word'],
+                                    node['lemma'],
+                                    node['tag'],
+                                    sbj['word'],
+                                    sbj['lemma'],
+                                    sbj['tag'],
+                                    obj['word'],
+                                    obj['lemma'],
+                                    obj['tag'],
+                                )
+
+    def document_dependency_graphs(self, document):
         document = peekable(iter(document))
 
         while document:
@@ -474,8 +494,21 @@ class UKWAC(Corpus):
                 # where </text> is before </s>.
                 continue
 
-            yield DependencyGraph(
-                sentence,
-                cell_extractor=ukwac_cell_extractor,
-                cell_separator='\t',
-            )
+            try:
+                dg = DependencyGraph(
+                    sentence,
+                    cell_extractor=ukwac_cell_extractor,
+                    cell_separator='\t',
+                )
+            except DependencyGraphError:
+                logger.exception("Couldn't instantiate a dependency graph.")
+            else:
+                for node in dg.nodes:
+
+                    if self.lowercase_stem:
+                        node['lemma'] = node['lemma'].lower()
+
+                    if self.tag_first_letter:
+                        node['tag'] = node['tag'][0]
+
+                yield dg

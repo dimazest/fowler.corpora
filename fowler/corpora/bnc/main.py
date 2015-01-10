@@ -191,7 +191,7 @@ def transitive_verbs(
     """Count occurrence of transitive verbs together with their subjects and objects."""
     vsos = pool.imap_unordered(corpus.verb_subject_object, paths_progress_iter)
 
-    (
+    result = (
         pd.concat(f for f in vsos if f is not None)
         .groupby(
             ('verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'),
@@ -199,13 +199,14 @@ def transitive_verbs(
         )
         .sum()
         .sort('count', ascending=False)
-        .to_hdf(
-            output,
-            dictionary_key,
-            mode='w',
-            complevel=9,
-            complib='zlib',
-        )
+    )
+
+    result.to_hdf(
+        output,
+        dictionary_key,
+        mode='w',
+        complevel=9,
+        complib='zlib',
     )
 
 
