@@ -174,7 +174,7 @@ class Corpus:
             )
             result['count'] = 1
 
-            return result.groupby(columns, as_index=False).sum()
+            yield result.groupby(columns).sum()
 
 
 class BNC(Corpus):
@@ -503,9 +503,9 @@ class UKWAC(Corpus):
             except DependencyGraphError:
                 logger.exception("Couldn't instantiate a dependency graph.")
             else:
-                for node in dg.nodes:
+                for node in dg.nodes.values():
 
-                    if self.lowercase_stem:
+                    if self.lowercase_stem and node['lemma']:
                         node['lemma'] = node['lemma'].lower()
 
                     if self.tag_first_letter:

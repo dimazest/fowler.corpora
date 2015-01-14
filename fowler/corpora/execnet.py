@@ -116,10 +116,7 @@ class ExecnetHub:
 
 def sum_folder(channel):
     import pickle
-    import logging as this_logging
     from more_itertools import peekable
-
-    logger = this_logging.getLogger(__name__)
 
     channel.send(('message', 'ready'))
 
@@ -148,11 +145,7 @@ def sum_folder(channel):
         type_, data = item
         if type_ == 'task':
 
-            try:
-                intermediate_results = peekable(folder(data, **kwargs))
-            except BaseException as e:
-                logger.exception('Exception during execution, %s', e)
-                raise
+            intermediate_results = peekable(folder(data, **kwargs))
 
             if intermediate_results:
                 if result is None:

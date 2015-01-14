@@ -182,17 +182,35 @@ def dictionary(
 
 @command()
 def transitive_verbs(
-    pool,
+    execnet_hub,
     dictionary_key,
     corpus,
     paths_progress_iter,
     output=('o', 'transitive_verbs.h5', 'The output verb space file.'),
 ):
     """Count occurrence of transitive verbs together with their subjects and objects."""
-    vsos = pool.imap_unordered(corpus.verb_subject_object, paths_progress_iter)
+
+    def init(channel):
+        channel.send(
+            (
+                'data',
+                pickle.dumps(
+                    {
+                        'instance': corpus,
+                        'folder_name': 'verb_subject_object',
+                    },
+                )
+            )
+        )
+
+    result = execnet_hub.run(
+        remote_func=sum_folder,
+        iterable=paths_progress_iter,
+        init_func=init,
+    )
 
     result = (
-        pd.concat(f for f in vsos if f is not None)
+        pd.concat(r for r in result if r is not None)
         .groupby(
             ('verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'),
             as_index=False,
