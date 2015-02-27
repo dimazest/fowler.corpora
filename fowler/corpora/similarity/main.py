@@ -13,7 +13,6 @@ class SimilarityDispatcher(Dispatcher, SpaceMixin):
 
     global__alter_experiment_data = '', False, 'Alter experiment data. E.g. stem words in Wordsim353.'
 
-
     @Resource
     def rg65_data(self):
         """The Rubenstein and Goodenough noun similarity dataset."""

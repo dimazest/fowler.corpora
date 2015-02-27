@@ -186,7 +186,7 @@ def transitive_verbs(
     dictionary_key,
     corpus,
     paths_progress_iter,
-    output=('o', 'transitive_verbs.h5', 'The output verb space file.'),
+    output=('o', 'transitive_verbs.h5', 'The output transitive verb file.'),
 ):
     """Count occurrence of transitive verbs together with their subjects and objects."""
 

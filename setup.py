@@ -85,6 +85,7 @@ setup(
         'XlsxWriter',
         'xlwt-future',
         'zope.cachedescriptors',
+        'eventlet',
     ],
     entry_points={
         'console_scripts': [

@@ -4,6 +4,7 @@ import logging
 import pandas as pd
 
 from fowler.corpora.dispatcher import Dispatcher, Resource, SpaceMixin
+from fowler.corpora.models import read_space_from_file
 from fowler.corpora.util import display
 
 from .experiments import SimilarityExperiment
@@ -16,8 +17,29 @@ logger = logging.getLogger(__name__)
 class WSDDispatcher(Dispatcher, SpaceMixin):
     """WSD task dispatcher."""
 
-    global__composition_operator = '', 'kron', 'Composition operator [kron|sum|mult|verb].'
+    global__composition_operator = (
+        '',
+        (
+            'verb',
+            'add',
+            'mult',
+            'kron',
+            'relational',
+            'copy-object',
+            'copy-subject',
+            'frobenious-add',
+            'frobenious-mult',
+            'frobenious-outer',
+        ),
+        'Composition operator.',
+    )
     global__google_vectors = '', False, 'Get rid of certain words in the input data that are not in Google vectors.'
+    global__verb_space = '', '', 'Separate transitive verb space.'
+
+    @Resource
+    def verb_space(self):
+        if self.kwargs['verb_space']:
+            return read_space_from_file(self.kwargs['verb_space'])
 
     @Resource
     def gs11_data(self):
@@ -145,6 +167,7 @@ def sentence_similarity(
         no_p11n,
         composition_operator,
         space,
+        verb_space,
         dataset=('', 'downloads/compdistmeaning/emnlp2013_turk.txt', 'The KS2013 dataset.'),
         tagset=('', ('bnc', 'bnc+ccg', 'ukwac'), 'Space tagset'),
         output=('o', 'sentence_similarity.h5', 'Result output file.'),
@@ -163,6 +186,7 @@ def sentence_similarity(
             dataset_filename=dataset,
             composition_operator=composition_operator,
             space=space,
+            verb_space=verb_space,
             tagset=tagset,
             group=not no_group,
             human_judgement_column=human_judgement_column,

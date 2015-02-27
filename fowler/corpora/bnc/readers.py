@@ -174,6 +174,10 @@ class Corpus:
             )
             result['count'] = 1
 
+            if self.tag_first_letter:
+                for column in 'verb_tag', 'subj_tag', 'obj_tag':
+                    result[column] = result[column].str.get(0)
+
             yield result.groupby(columns).sum()
 
 

@@ -1,7 +1,13 @@
+import logging
+
 import pandas as pd
-from scipy.sparse import kron
+import numpy as np
+from scipy.sparse import kron, csr_matrix
 
 from fowler.corpora.util import Worker
+
+
+logger = logging.getLogger(__name__)
 
 
 class Dataset(Worker):
@@ -20,6 +26,7 @@ class SimilarityDataset(Dataset):
         *args,
         human_judgement_column=None,
         group=True,
+        verb_space=None,
         **kwargs
     ):
         super().__init__(*args, **kwargs)
@@ -34,6 +41,8 @@ class SimilarityDataset(Dataset):
             )
         self.space = space
         self.tagset = tagset
+
+        self.verb_space = verb_space
 
 
 class KS13Dataset(SimilarityDataset):
@@ -116,20 +125,63 @@ class KS13Dataset(SimilarityDataset):
                     )
                 )
             )
+        elif self.composition_operator in (
+            'relational',
+            'copy-object',
+            'copy-subject',
+            'frobenious-add',
+            'frobenious-mult',
+            'frobenious-outer',
+        ):
+            # Verb matrix extractor as a vector
+            verb_space_tagger = Tagger(self.verb_space, self.tagset)
+            VV = verb_space_tagger.V
+
+            if self.composition_operator == 'relational':
+                verb_vectors = {v: VV(v) for v in verbs}
+            else:
+                length = self.space.matrix.shape[1]
+                assert (length ** 2) == VV(verbs[0]).shape[1]
+
+                def M(v):
+                    return csr_matrix(
+                        VV(v)
+                        .todense()
+                        .reshape((length, length))
+                    )
+
+                verb_vectors = {v: M(v) for v in verbs}
         else:
             verb_vectors = {v: V(v) for v in verbs}
 
         return verb_vectors
 
     def compose(self, subject, verb, object_):
+
+        def relational():
+            return verb.multiply(kron(subject, object_, format='bsr'))
+
+        def copy_object():
+            return subject.T.multiply(verb.dot(object_.T)).T
+
+        def copy_subject():
+            return subject.dot(verb).multiply(object_)
+
         Sentence = {
-            'verb': lambda subject, verb, object_: verb,
-            'add': lambda subject, verb, object_: verb + subject + object_,
-            'mult': lambda subject, verb, object_: verb.multiply(subject).multiply(object_),
-            'kron': lambda subject, verb, object_: verb.multiply(kron(subject, object_, format='bsr')),
+            'verb': lambda: verb,
+            'add': lambda: verb + subject + object_,
+            'mult': lambda: verb.multiply(subject).multiply(object_),
+            'kron': lambda: verb.multiply(kron(subject, object_, format='bsr')),
+            'relational': relational,
+            'copy-object': copy_object,
+            'copy-subject': copy_subject,
+            'frobenious-add': lambda: copy_object() + copy_subject(),
+            'frobenious-mult': lambda: copy_object().multiply(copy_subject()),
+            'frobenious-outer': lambda: kron(copy_object(), copy_subject()),
+
         }[self.composition_operator]
 
-        return Sentence(subject, verb, object_)
+        return Sentence()
 
 
 class Tagger:
@@ -149,8 +201,10 @@ class Tagger:
     def tag(self, w, tag):
 
         if (w, tag) == ('parish', 'J'):
+            logger.warning('Changing <parish, J> to <parish, N>')
             tag = 'N'
         if (w, tag) == ('raffle', 'J'):
+            logger.warning('Changing <raffle, J> to <parish, N>')
             tag = 'N'
 
         if self.with_tags:

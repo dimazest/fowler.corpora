@@ -3,6 +3,7 @@ import itertools
 import logging
 import multiprocessing
 import os
+import os.path
 import sys
 
 from logging.handlers import RotatingFileHandler
@@ -134,6 +135,7 @@ class Dispatcher(BaseDispatcher):
 
     @property
     def execnet_gateways(self):
+        execnet.set_execmodel("eventlet", "thread")
         gw = self.gateway
 
         if not gw:
@@ -314,6 +316,10 @@ class SpaceMixin:
     @Resource
     def space(self):
         return read_space_from_file(self.kwargs['space'])
+
+    @property
+    def space_file(self):
+        return os.path.abspath(self.kwargs['space'])
 
 
 class DictionaryMixin:

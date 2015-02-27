@@ -1,5 +1,6 @@
 """Categorical vector space creation."""
 import logging
+import pickle
 
 import pandas as pd
 
@@ -7,6 +8,8 @@ from progress.bar import Bar
 from scipy import sparse
 
 from fowler.corpora.dispatcher import Dispatcher, Resource, NewSpaceCreationMixin, SpaceMixin, DictionaryMixin
+from fowler.corpora.execnet import verb_space_builder
+from fowler.corpora.models import Space
 from fowler.corpora.space.util import read_tokens
 
 logger = logging.getLogger(__name__)
@@ -24,19 +27,30 @@ class CategoricalDispatcher(Dispatcher, NewSpaceCreationMixin, SpaceMixin, Dicti
     @Resource
     def transitive_verb_arguments(self):
         """Counted transitive verbs together with their subjects and objects."""
-        return (
-            self.read_vso_file(
+        df =self.read_vso_file(
                 self.kwargs['transitive_verb_arguments'],
                 self.dictionary_key,
-            )[
-                ['verb_stem', 'subj_stem', 'subj_tag', 'obj_stem', 'obj_tag', 'count']
-            ]
-            # Because we get rid of the verb, there might be multiple entries for a verb_stem!
-            .groupby(('verb_stem', 'subj_stem', 'subj_tag', 'obj_stem', 'obj_tag'), as_index=False).sum()
-            .set_index('verb_stem')
-            .loc[self.verbs]
-            .reset_index()
-        )
+            )
+
+        df.set_index('verb_stem', inplace=True)
+        df = df.loc[self.verbs]
+        df = df.reset_index()[
+            ['verb_stem', 'verb_tag', 'subj_stem', 'subj_tag', 'obj_stem', 'obj_tag', 'count']
+        ]
+
+        df = df.groupby(('verb_stem', 'verb_tag', 'subj_stem', 'subj_tag', 'obj_stem', 'obj_tag'), as_index=False).sum()
+
+        return df
+
+        #     [
+        #         ['verb_stem', 'verb_tag', 'subj_stem', 'subj_tag', 'obj_stem', 'obj_tag', 'count']
+        #     ]
+        #     # Because we get rid of the verb, there might be multiple entries for a verb_stem!
+        #     .groupby(('verb_stem', 'verb_tag', 'subj_stem', 'subj_tag', 'obj_stem', 'obj_tag'), as_index=False).sum()
+        #     .set_index('verb_stem')
+        #     .loc[self.verbs]
+        #     .reset_index()
+        # )
 
     @staticmethod
     def read_vso_file(path, key):
@@ -86,50 +100,83 @@ def extract_verb_arguments(
 
 @command()
 def transitive_verb_space(
-    space,
+    space_file,
     transitive_verb_arguments,
-    dictionary_key,
-    pool,
+    execnet_hub,
     output=('o', 'space.h5', 'Output verb vector space.'),
-    chunk_size=('', 10000, 'The length of the chunk.'),
+    chunk_size=('', 100, 'The length of a chunk.'),
 ):
+
+    data_to_send = (
+        'data',
+        pickle.dumps(
+            {
+                'space_file': space_file,
+            },
+        )
+    )
+
+    def init(channel):
+        channel.send(data_to_send)
+
     groups = transitive_verb_arguments.groupby(
-        ['subj_stem', 'subj_tag', 'obj_stem', 'obj_tag'],
+        # ['subj_stem', 'subj_tag', 'obj_stem', 'obj_tag'],
+        ['verb_stem', 'verb_tag']
     )
 
     groups = Bar(
         'Subject object Kronecker products',
-        max=1,
-        # max=len(transitive_verb_arguments[['subj_stem', 'subj_tag', 'obj_stem', 'obj_tag']]),
-        suffix='%(index)d/%(max)d, elapsed: %(elapsed_td)s',
-    ).iter(groups)
+        max=len(groups),
+        suffix='%(index)d/%(max)d',
+    ).iter(
+        pickle.dumps(g) for g in groups
+    )
 
-    verb_tensors = {}
+    results = execnet_hub.run(
+        remote_func=verb_space_builder,
+        iterable=groups,
+        init_func=init,
+        verbose=False,
+    )
 
-    for (subj_stem, subj_tag, obj_stem, obj_tag), group in groups:
-        # There have to be at most one identical subject, object tuple per verb.
-        assert len(group['verb_stem'].unique()) == len(group)
+    result = next(results)
 
-        subject_vector = space[subj_stem, subj_tag]
-        object_vector = space[obj_stem, obj_tag]
-
-        if not subject_vector.size:
-            logger.warning('Subject %s %s is empty!', subj_stem, subj_tag)
-            continue
-
-        if not object_vector.size:
-            logger.warning('Object %s %s is empty!', obj_stem, obj_tag)
-            continue
-
-        import ipdb; ipdb.set_trace()
-
-        subject_object_tensor = sparse.kron(subject_vector, object_vector)
-
-        for verb_stem, count in group[['verb_stem', 'count']].values:
-
-            t = subject_object_tensor * count
-
-            if verb_stem not in verb_tensors:
-                verb_tensors[verb_stem] = t
+    for r in results:
+        for k, v in r.items():
+            if k in result:
+                result[k] += v
             else:
-                verb_tensors[verb_stem] += t
+                result[k] = v
+
+    result = list(result.items())
+
+    verb_labels = [l for l, _ in result]
+    verb_vectors = [v for _, v in result]
+
+    del result
+
+    matrix = sparse.vstack(verb_vectors)
+    del verb_vectors
+
+    row_labels = pd.DataFrame(
+        {
+            'ngram': [l[0] for l in verb_labels],
+            'ngram_tag': [l[1] for l in verb_labels],
+            'id': [i for i, _ in enumerate(verb_labels)],
+        }
+    ).set_index(['ngram', 'ngram_tag'])
+
+    column_labels = pd.DataFrame(
+        {
+            'ngram': list(range(matrix.shape[1])),
+            'id': list(range(matrix.shape[1])),
+        }
+    ).set_index('ngram')
+
+    space = Space(
+        matrix,
+        row_labels=row_labels,
+        column_labels=column_labels,
+    )
+
+    space.write(output)
