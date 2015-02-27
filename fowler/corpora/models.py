@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 
 from scipy.sparse import csr_matrix, coo_matrix
-from sklearn.decomposition import NMF
+from sklearn.decomposition import NMF, TruncatedSVD
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.preprocessing import normalize
 
@@ -76,13 +76,34 @@ class Space(Mapping):
         tfidf_matrix = tfid.fit_transform(self.matrix)
         return Space(tfidf_matrix, self.row_labels, self.column_labels)
 
-    def nmf(self, **kwargs):
+    def nmf(self, n_components, **kwargs):
         """Perform dimensionality reduction using NMF."""
-        nmf = NMF(**kwargs)
+        nmf = NMF(n_components=n_components, **kwargs)
 
         reduced_matrix = nmf.fit_transform(self.matrix)
-        # TODO: it is incorrect to pass self.column_labels! There are not column labels.
-        return Space(reduced_matrix, self.row_labels, self.column_labels)
+
+        column_labels = pd.DataFrame(
+            {
+                'ngram': list(range(n_components)),
+                'id': list(range(n_components)),
+            }
+        ).set_index('ngram')
+
+        return Space(reduced_matrix, self.row_labels, column_labels)
+
+    def svd(self, n_components, **kwargs):
+        """Perform dimensionality reduction using SVD."""
+        svd = TruncatedSVD(n_components=n_components, **kwargs)
+        reduced_matrix = svd.fit_transform(self.matrix)
+
+        column_labels = pd.DataFrame(
+            {
+                'ngram': list(range(n_components)),
+                'id': list(range(n_components)),
+            }
+        ).set_index('ngram')
+
+        return Space(reduced_matrix, self.row_labels, column_labels)
 
     def __getitem__(self, key):
         """Retrive the vector for the key from the space.

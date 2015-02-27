@@ -1,10 +1,10 @@
-import  logging
+import logging
 
 import numpy as np
 import pandas as pd
 
 from fowler.corpora.dispatcher import Dispatcher, DictionaryMixin, SpaceMixin
-from fowler.corpora.models import read_space_from_file, Space
+from fowler.corpora.models import Space
 
 
 class SpaceDispatcher(Dispatcher, SpaceMixin, DictionaryMixin):
@@ -93,6 +93,22 @@ def nmf(
 
 
 @command()
+def svd(
+    space,
+    output,
+    n_components=('n', 300, 'Number of components.'),
+    n_iter=('', 5, 'Number of iterations for randomized SVD solver.'),
+    random_state=('', 0, 'Random number generator seed control. 0 for undefined.'),
+):
+    """SVD."""
+    space.svd(
+        n_components=n_components,
+        n_iter=n_iter,
+        random_state=random_state or None,
+    ).write(output)
+
+
+@command()
 def pmi(
     space,
     output,
@@ -100,7 +116,8 @@ def pmi(
     column_dictionary=('', '', 'The frequencies of column labels.'),
     column_dictionary_key=('', 'dictionary', 'An identifier for the group in the store.'),
     no_log=('', False, 'Do not take logarithm of the probability ratio.'),
-    remove_missing=('', False, 'Remove items that are not in the dictionary.')
+    remove_missing=('', False, 'Remove items that are not in the dictionary.'),
+    conditional_probability=('', False, 'Compute only P(c|t).'),
 ):
     """
     Weight elements using the positive PMI measure [3]. max(0, log(P(c|t) / P(c)))
@@ -163,12 +180,15 @@ def pmi(
     # The elements in the matrix are P(c|t)
     matrix /= row_totals
 
-    if not no_log:
-        # The elements in the matrix are log(P(c|t) / P(c))
-        new_matrix = np.log(matrix) - np.log(column_totals)
-        new_matrix[new_matrix < 0] = 0.0
+    if conditional_probability:
+        new_matrix = matrix
     else:
-        # The elements in the matrix are P(c|t) / P(c)
-        new_matrix = matrix / column_totals
+        if not no_log:
+            # The elements in the matrix are log(P(c|t) / P(c))
+            new_matrix = np.log(matrix) - np.log(column_totals)
+            new_matrix[new_matrix < 0] = 0.0
+        else:
+            # The elements in the matrix are P(c|t) / P(c)
+            new_matrix = matrix / column_totals
 
     Space(new_matrix, space.row_labels, space.column_labels).write(output)
