@@ -12,7 +12,7 @@ class PyTest(TestCommand):
         self.test_suite = True
 
     def run_tests(self):
-        #import here, cause outside the eggs aren't loaded
+        # import here, cause outside the eggs aren't loaded
         import pytest
         errno = pytest.main(self.test_args)
         sys.exit(errno)
@@ -55,6 +55,8 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
+        'colored',
+        'execnet',
         'fowler.switchboard',
         'gensim',
         'google-ngram-downloader',
@@ -66,21 +68,24 @@ setup(
         'nltk>=3.0.0',
         'numexpr',
         'numpy',
-        'openpyxl<1.9999',  # Pandas requires vresion < 2.0
+        'openpyxl',
         'opster',
         'pandas',
         'progress',
         'py',
+        'pygments',
         'raven',
         'scikit-learn',
         'scipy',
-        'seaborn<0.3.9999',  # Seaborn 0.4 setup is broken.
+        'seaborn',
         'setuptools',
         'six',
         'tables',
         'tornado',
+        'XlsxWriter',
         'xlwt-future',
         'zope.cachedescriptors',
+        'eventlet',
     ],
     entry_points={
         'console_scripts': [
