@@ -27,18 +27,23 @@ class CategoricalDispatcher(Dispatcher, NewSpaceCreationMixin, SpaceMixin, Dicti
     @Resource
     def transitive_verb_arguments(self):
         """Counted transitive verbs together with their subjects and objects."""
-        df =self.read_vso_file(
-                self.kwargs['transitive_verb_arguments'],
-                self.dictionary_key,
-            )
+        df = self.read_vso_file(
+            self.kwargs['transitive_verb_arguments'],
+            self.dictionary_key,
+        )
 
         df.set_index('verb_stem', inplace=True)
         df = df.loc[self.verbs]
+        df.index.names = 'verb_stem',  # index name should not be lost in the line above!
+
         df = df.reset_index()[
             ['verb_stem', 'verb_tag', 'subj_stem', 'subj_tag', 'obj_stem', 'obj_tag', 'count']
         ]
 
-        df = df.groupby(('verb_stem', 'verb_tag', 'subj_stem', 'subj_tag', 'obj_stem', 'obj_tag'), as_index=False).sum()
+        df = df.groupby(
+            ('verb_stem', 'verb_tag', 'subj_stem', 'subj_tag', 'obj_stem', 'obj_tag'),
+            as_index=False,
+        ).sum()
 
         return df
 

@@ -1,7 +1,6 @@
 import logging
 
 import pandas as pd
-import numpy as np
 from scipy.sparse import kron, csr_matrix
 
 from fowler.corpora.util import Worker
