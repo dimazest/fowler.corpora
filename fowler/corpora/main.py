@@ -21,7 +21,7 @@ import fowler.corpora.similarity.main as similarity_main
 import fowler.corpora.space.main as space_main
 import fowler.corpora.word2vec.main as word2vec_main
 import fowler.corpora.wsd.main as wsd_main
-
+from fowler.corpora import produce
 
 from fowler.corpora.io import readline_folder as io_readline_folder
 
@@ -95,6 +95,13 @@ dispatcher.nest(
     'word2vec',
     word2vec_main.dispatcher,
     word2vec_main.__doc__,
+)
+
+
+dispatcher.nest(
+    'produce',
+    produce.dispatcher,
+    produce.__doc__,
 )
 
 
