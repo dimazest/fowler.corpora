@@ -135,7 +135,8 @@ class Dispatcher(BaseDispatcher):
 
     @property
     def execnet_gateways(self):
-        execnet.set_execmodel("eventlet", "thread")
+        # TODO: Eventlet hangs on Mac OS X with popen.
+        # execnet.set_execmodel("eventlet", "thread")
         gw = self.gateway
 
         if not gw:
