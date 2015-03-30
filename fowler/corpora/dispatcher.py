@@ -140,7 +140,9 @@ class Dispatcher(BaseDispatcher):
 
         if not gw:
             for _ in range(self.job_num):
-                yield execnet.makegateway()
+                yield execnet.makegateway(
+                    '' if 'FOWLER_PYTHON' not in os.environ else 'popen//python={}'.format(os.environ['FOWLER_PYTHON'])
+                )
 
         for gateway_spec in gw:
             if '*' in gateway_spec:
