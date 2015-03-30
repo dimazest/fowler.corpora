@@ -56,6 +56,8 @@ setup(
     zip_safe=False,
     install_requires=[
         'colored',
+        'docutils',
+        'eventlet',
         'execnet',
         'fowler.switchboard',
         'gensim',
@@ -85,7 +87,6 @@ setup(
         'XlsxWriter',
         'xlwt-future',
         'zope.cachedescriptors',
-        'eventlet',
     ],
     entry_points={
         'console_scripts': [
