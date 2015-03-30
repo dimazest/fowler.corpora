@@ -55,6 +55,9 @@ class Corpus:
             )
         )
 
+        T = (lambda t: t) if isinstance(targets.index[0], tuple) else (lambda t: t[0])
+        C = (lambda c: c) if isinstance(context.index[0], tuple) else (lambda c: c[0])
+
         while target_contexts:
             some_target_contexts = islice(
                 target_contexts,
@@ -63,9 +66,9 @@ class Corpus:
 
             co_occurrence_pairs = list(
                 chain.from_iterable(
-                    (t + c for c in cs if c in context.index)
+                    (t + c for c in cs if C(c) in context.index)
                     for t, cs in some_target_contexts
-                    if t in targets.index
+                    if T(t) in targets.index
                 )
             )
 
