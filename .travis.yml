@@ -9,7 +9,7 @@ before_install:
   - chmod +x Miniconda3-latest-Linux-x86_64.sh
   - ./Miniconda3-latest-Linux-x86_64.sh -b
   - ~/miniconda3/bin/conda update -y conda
-  - ~/miniconda3/bin/conda create -n fowler.corpora python=3.4
+  - ~/miniconda3/bin/conda create -y -n fowler.corpora python=3.4
   - . ~/miniconda3/bin/activate fowler.corpora
 install:
   - conda install -y pip cffi cython gensim ipython lxml matplotlib numexpr numpy openpyxl pandas patsy psutil python-dateutil pyyaml scikit-learn scipy seaborn tables
