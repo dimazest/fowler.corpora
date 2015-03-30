@@ -138,12 +138,18 @@ def dictionary(
 ):
     """Count tokens."""
     def init(channel):
-        def send(x):
-            channel.send(pickle.dumps(x))
-
-        send({})
-        send(corpus)
-        send('words')
+        channel.send(
+            (
+                'data',
+                pickle.dumps(
+                    {
+                        'kwargs': {},
+                        'instance': corpus,
+                        'folder_name': 'words',
+                    },
+                )
+            )
+        )
 
     result = execnet_hub.run(
         remote_func=sum_folder,
