@@ -72,14 +72,17 @@ def select_entities(
         dictionary.set_index(['ngram', 'tag'], inplace=True)
 
         dataset = pd.read_csv(targets, encoding='utf-8')
-        verb_arguments = pd.read_csv(verb_arguments, encoding='utf-8').dropna()
+        if verb_arguments:
+            verb_arguments = pd.read_csv(verb_arguments, encoding='utf-8').dropna()
 
-        verb_argument_counts = dictionary.loc[[tuple(x) for x in verb_arguments.values]]
-        verb_argument_counts = verb_argument_counts[verb_argument_counts['count'] >= cutoff_size]
+            verb_argument_counts = dictionary.loc[[tuple(x) for x in verb_arguments.values]]
+            verb_argument_counts = verb_argument_counts[verb_argument_counts['count'] >= cutoff_size]
 
-        verb_arguments = verb_argument_counts.reset_index()[['ngram', 'tag']]
+            verb_arguments = verb_argument_counts.reset_index()[['ngram', 'tag']]
 
-        head = pd.concat([dataset, verb_arguments]).drop_duplicates()
+            head = pd.concat([dataset, verb_arguments]).drop_duplicates()
+        else:
+            head = dataset.drop_duplicates()
 
         if size_arg:
             head = pd.concat([head, nvaa.head(size_arg)[['ngram', 'tag']]]).drop_duplicates()
