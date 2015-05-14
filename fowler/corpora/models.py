@@ -18,12 +18,12 @@ logger = logging.getLogger(__name__)
 class Space(Mapping):
     """A vector space.
 
-    :param data:
+    :param data_ij:
     :param pandas.DataFrame row_lables: the row labels
     :param pandas.DataFrame column_labels: the column labels
 
     ``row_labels`` and ``column_labels`` contain at least two columns:
-    ````ngram`` and id``.
+    ``ngram`` and ``id``.
 
     """
     def __init__(self, data_ij, row_labels, column_labels):
