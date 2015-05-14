@@ -312,10 +312,18 @@ class NewSpaceCreationMixin:
 class SpaceMixin:
     """A mixin that provides access to the space object."""
     global__space = 's', 'space.h5', 'The vector space.'
+    global__allow_infinite_values = (
+        '',
+        False,
+        'Allow infinite values in the space.',
+    )
 
     @Resource
     def space(self):
-        return read_space_from_file(self.kwargs['space'])
+        return read_space_from_file(
+        self.kwargs['space'],
+        check_finite=not self.kwargs['allow_infinite_values'],
+        )
 
     @property
     def space_file(self):

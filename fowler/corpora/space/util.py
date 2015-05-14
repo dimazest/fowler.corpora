@@ -16,11 +16,12 @@ def read_tokens(f_name):
     )
 
 
-def write_space(f_name, context, targets, matrix):
+def write_space(f_name, context, targets, matrix, check_finite=True):
     """Write a vector space without creating it.
 
     :param pandas.DataFrame context: the column labels
     :param pandas.DataFrame targets: the row lables
+    :param bool check_finite: Check that the passed matrix values are finite.
 
     ``row_labels`` and ``column_labels`` contain two columns: ``ngram`` and
     ``id``. ``ngram`` is frame's index.
@@ -31,8 +32,9 @@ def write_space(f_name, context, targets, matrix):
         ``id_target`` and ``id_context`` is frame's index.
 
     """
-
-    assert np.isfinite(matrix['count']).all()
+    if check_finite:
+        assert np.isfinite(matrix['count']).all()
+    assert not np.isnan(matrix['count']).any()
 
     with pd.get_store(f_name, mode='w', complevel=9, complib='zlib') as store:
         if context is not None:

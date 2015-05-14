@@ -118,6 +118,7 @@ def pmi(
     no_log=('', False, 'Do not take logarithm of the probability ratio.'),
     remove_missing=('', False, 'Remove items that are not in the dictionary.'),
     conditional_probability=('', False, 'Compute only P(c|t).'),
+    keep_negative_values=('', False, 'Keep negative values.'),
 ):
     """
     Weight elements using the positive PMI measure [3]. max(0, log(P(c|t) / P(c)))
@@ -186,9 +187,19 @@ def pmi(
         if not no_log:
             # The elements in the matrix are log(P(c|t) / P(c))
             new_matrix = np.log(matrix) - np.log(column_totals)
-            new_matrix[new_matrix < 0] = 0.0
+            if not keep_negative_values:
+                new_matrix[new_matrix < 0] = 0.0
         else:
             # The elements in the matrix are P(c|t) / P(c)
             new_matrix = matrix / column_totals
 
-    Space(new_matrix, space.row_labels, space.column_labels).write(output)
+    # Allow infinite values for pmi:
+    #   * keep_negative_values is True
+    #   * conditional_probability is False
+    allow_inifinite = keep_negative_values and not conditional_probability
+    Space(
+        new_matrix,
+        space.row_labels,
+        space.column_labels,
+        check_finite=not allow_inifinite,
+    ).write(output)

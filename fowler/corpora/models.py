@@ -22,11 +22,13 @@ class Space(Mapping):
     :param pandas.DataFrame row_lables: the row labels
     :param pandas.DataFrame column_labels: the column labels
 
+    :param bool check_finite: Check that the passed matrix values are finite.
+
     ``row_labels`` and ``column_labels`` contain at least two columns:
     ````ngram`` and id``.
 
     """
-    def __init__(self, data_ij, row_labels, column_labels):
+    def __init__(self, data_ij, row_labels, column_labels, check_finite=True):
 
         self.row_labels = row_labels
         self.column_labels = column_labels
@@ -40,7 +42,10 @@ class Space(Mapping):
         else:
             self.matrix = data_ij
 
-        assert np.isfinite(self.matrix.data).all()
+        self.check_finite = check_finite
+        if check_finite:
+            assert np.isfinite(self.matrix.data).all()
+        assert not np.isnan(self.matrix.data).any()
 
     def __iter__(self):
         return iter(self.row_labels.index)
@@ -48,8 +53,14 @@ class Space(Mapping):
     def __len__(self):
         return self.matrix.shape[0]
 
-    def write(self, file_name):
-        """Write the vector space to a file."""
+    def write(self, file_name, check_finite=None):
+        """Write the vector space to a file.
+
+        :param bool check_finite: Check that the passed matrix values are finite.
+            By default the value passed at space creation is used. Can be
+            overwritten.
+
+        """
 
         coo = coo_matrix(self.matrix)
 
@@ -61,7 +72,13 @@ class Space(Mapping):
             }
         ).set_index(['id_target', 'id_context'])
 
-        write_space(file_name, self.column_labels, self.row_labels, matrix)
+        write_space(
+            file_name,
+            self.column_labels,
+            self.row_labels,
+            matrix,
+            check_finite=self.check_finite if check_finite is None else check_finite
+        )
 
     def line_normalize(self):
         """Normalize the matrix, so the sum of the values in each row is 1."""
@@ -158,7 +175,7 @@ class Space(Mapping):
         return result
 
 
-def read_space_from_file(f_name):
+def read_space_from_file(f_name, check_finite=True):
     """Read a space form a file.
 
     So far, this is the preffered way to read a space.
@@ -174,5 +191,6 @@ def read_space_from_file(f_name):
         return Space(
             (data, ij),
             row_labels=store['targets'],
-            column_labels=store['context']
+            column_labels=store['context'],
+            check_finite=check_finite,
         )
