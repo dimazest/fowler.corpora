@@ -118,16 +118,21 @@ def pmi(
     no_log=('', False, 'Do not take logarithm of the probability ratio.'),
     remove_missing=('', False, 'Remove items that are not in the dictionary.'),
     conditional_probability=('', False, 'Compute only P(c|t).'),
+    keep_negative_values=('', False, 'Keep negative values.'),
     times=('', ('n', 'logn'), 'Multiply the resulted values by n or logn.')
 ):
     """
     Weight elements using the positive PMI measure [3]. max(0, log(P(c|t) / P(c)))
 
     [1] and [2] use a measure similar to PMI, but without log, so it's just
-    P(c|t) / P(c).
+    P(c|t) / P(c), which is sometimes called likelihood ratio.
 
     `--dictionary` provides word frequencies for rows. In case columns are
     labelled differently, provide `--column-dictionary`.
+
+    `--keep-negative-values` keeps negative values but replaces negative
+    infinity with 0. This is equivalent to replacing P(c, t) with just P(c) when
+    P(c, t) is 0.
 
     [1] Mitchell, Jeff, and Mirella Lapata. "Vector-based Models of Semantic
     Composition." ACL. 2008.
@@ -186,7 +191,10 @@ def pmi(
         if not no_log:
             # The elements in the matrix are log(P(c|t) / P(c))
             matrix = np.log(matrix) - np.log(column_totals)
-            matrix[matrix < 0] = 0.0
+            if keep_negative_values:
+                matrix[matrix == -np.inf] = 0
+            else:
+                matrix[matrix < 0] = 0.0
         else:
             # The elements in the matrix are P(c|t) / P(c)
             matrix /= column_totals
