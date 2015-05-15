@@ -5,23 +5,20 @@ python:
 
 before_install:
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
-  - sudo apt-get update -qq
-  - sudo apt-get install -qq python-matplotlib python-pandas python-tables python-sklearn  python-yaml libhdf5-serial-dev
-  - which python
-  - deactivate
-  - export PATH=/opt/python/3.3.5/bin:$PATH
-  - curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo /opt/python/3.3.5/bin/python3.3
-  - ls /opt/python/3.3.5/bin
+  - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+  - chmod +x Miniconda3-latest-Linux-x86_64.sh
+  - ./Miniconda3-latest-Linux-x86_64.sh -b
+  - ~/miniconda3/bin/conda update -y conda
+  - ~/miniconda3/bin/conda create -y -n fowler.corpora python=3.4
+  - . ~/miniconda3/bin/activate fowler.corpora
 install:
-  - sudo /opt/python/3.3.5/bin/pip install wheel tox
-  - sudo /opt/python/3.3.5/bin/pip install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numpy scipy Cython
-  - sudo /opt/python/3.3.5/bin/pip-3.3 install --pre --extra-index-url https://dl.dropboxusercontent.com/u/50040986/index/index.html --use-wheel --use-mirrors numexpr
-
+  - conda install -y pip cffi cython gensim ipython lxml matplotlib numexpr numpy openpyxl pandas patsy psutil python-dateutil pyyaml scikit-learn scipy seaborn pytables
+  - pip install tox
 script:
   - tox
 
 after_success:
-  - sudo /opt/python/3.3.5/bin/pip install pytest-cov coveralls pytest
+  - pip install pytest-cov coveralls
   - tox -- --cov=fowler.corpora --cov-report=term-missing test
   - coveralls
-  - pip list -o
+  - conda list

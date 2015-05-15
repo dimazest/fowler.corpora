@@ -119,6 +119,7 @@ def pmi(
     remove_missing=('', False, 'Remove items that are not in the dictionary.'),
     conditional_probability=('', False, 'Compute only P(c|t).'),
     keep_negative_values=('', False, 'Keep negative values.'),
+    times=('', ('n', 'logn'), 'Multiply the resulted values by n or logn.'),
 ):
     """
     Weight elements using the positive PMI measure [3]. max(0, log(P(c|t) / P(c)))
@@ -167,38 +168,40 @@ def pmi(
 
     row_totals = row_totals.values[:, np.newaxis]
 
-    # This is the total number of words in the corpora
-    N = dictionary['count'].sum()
     # This are context probabilities in the whole Corpora P(c)
-    column_totals = column_dictionary.loc[space.column_labels.index].values.flatten() / N
+    column_totals = (
+        column_dictionary.loc[space.column_labels.index].values.flatten()
+         / dictionary['count'].sum()
+    )
 
     # Elements in the matrix are N(c, t): the co-occurrence counts
-    matrix = space.matrix.astype(float).todense()
+    n = space.matrix.astype(float).todense()
 
     if remove_missing:
-        matrix = matrix[~missing_rows.values]
+        n = n[~missing_rows.values]
 
     # The elements in the matrix are P(c|t)
-    matrix /= row_totals
+    matrix = n / row_totals
 
-    if conditional_probability:
-        new_matrix = matrix
-    else:
+    if not conditional_probability:
         if not no_log:
             # The elements in the matrix are log(P(c|t) / P(c))
-            new_matrix = np.log(matrix) - np.log(column_totals)
+            matrix = np.log(matrix) - np.log(column_totals)
             if not keep_negative_values:
-                new_matrix[new_matrix < 0] = 0.0
+                matrix[matrix < 0] = 0.0
         else:
             # The elements in the matrix are P(c|t) / P(c)
-            new_matrix = matrix / column_totals
+            matrix /= column_totals
+
+    if times == 'n':
+        matrix = np.multiply(n, matrix)
 
     # Allow infinite values for pmi:
     #   * keep_negative_values is True
     #   * conditional_probability is False
     allow_inifinite = keep_negative_values and not conditional_probability
     Space(
-        new_matrix,
+        matrix,
         space.row_labels,
         space.column_labels,
         check_finite=not allow_inifinite,
