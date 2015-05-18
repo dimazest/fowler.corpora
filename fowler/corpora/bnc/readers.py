@@ -239,7 +239,6 @@ class BNC_CCG(Corpus):
             yield word_tags(dependencies, tokens)
 
     def ccg_bnc_iter(self, f_name):
-        logger.debug('Processing %s', f_name)
 
         with open(f_name, 'rt', encoding='utf8') as f:
             # Get rid of trailing whitespace.
