@@ -96,6 +96,9 @@ def cooccurrence(
 ):
     """Build the co-occurrence matrix."""
 
+    targets.sortlevel(inplace=True)
+    context.sortlevel(inplace=True)
+
     def init(channel):
         channel.send(
             (
