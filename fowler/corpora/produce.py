@@ -90,3 +90,19 @@ def select_entities(
     assert head.set_index(['ngram', 'tag']).index.is_unique
 
     head.to_csv(target, index=False, encoding='utf-8')
+
+
+@command()
+def all_features(
+    target,
+    dictionary=('', '', 'Dictionary filename.'),
+    limit=('', 5, 'The minimal number of times a feature has to occur to be counted.')
+):
+    dictionary = pd.read_hdf(dictionary, 'dictionary')
+    dictionary.drop(dictionary[dictionary['count'] < limit].index, inplace=True)
+    dictionary.to_csv(
+        target,
+        columns=('ngram', 'tag'),
+        encoding='utf-8',
+        index=False,
+    )
