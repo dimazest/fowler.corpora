@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from fowler.corpora.dispatcher import Dispatcher, DictionaryMixin, SpaceMixin
-from fowler.corpora.models import Space
+from fowler.corpora.models import Space, read_space_from_file
 
 
 class SpaceDispatcher(Dispatcher, SpaceMixin, DictionaryMixin):
@@ -119,7 +119,7 @@ def pmi(
     remove_missing=('', False, 'Remove items that are not in the dictionary.'),
     conditional_probability=('', False, 'Compute only P(c|t).'),
     keep_negative_values=('', False, 'Keep negative values.'),
-    times=('', ('n', 'logn'), 'Multiply the resulted values by n or logn.')
+    times=('', ('n', ), 'Multiply the resulted values by n.')
 ):
     """
     Weight elements using the positive PMI measure [3]. max(0, log(P(c|t) / P(c)))
@@ -201,5 +201,29 @@ def pmi(
 
     if times == 'n':
         matrix = np.multiply(n, matrix)
+
+    Space(matrix, space.row_labels, space.column_labels).write(output)
+
+
+@command()
+def ittf(
+    space,
+    output,
+    ittf_space=('', '', 'Space with feature co-occurrence counts.'),
+    times=('', ('n', 'logn'), 'Multiply the resulted values by n or logn.'),
+):
+    ittf_space = read_space_from_file(ittf_space)
+    feature_cardinality = np.array(
+        [v.nnz for v in ittf_space.get_target_rows(*space.column_labels.index)]
+    )
+
+    n = space.matrix.todense()
+
+    ittf = np.log(feature_cardinality) - np.log(n + 1)
+
+    if times == 'n':
+        matrix = np.multiply(n, ittf)
+    elif times == 'logn':
+        matrix = np.multiply(np.log(n + 1), ittf)
 
     Space(matrix, space.row_labels, space.column_labels).write(output)
