@@ -119,7 +119,7 @@ def pmi(
     remove_missing=('', False, 'Remove items that are not in the dictionary.'),
     conditional_probability=('', False, 'Compute only P(c|t).'),
     keep_negative_values=('', False, 'Keep negative values.'),
-    times=('', ('n', ), 'Multiply the resulted values by n.')
+    times=('', ('', 'n', 'logn'), 'Multiply the resulted values by n or log(n+1).')
 ):
     """
     Weight elements using the positive PMI measure [3]. max(0, log(P(c|t) / P(c)))
@@ -192,7 +192,7 @@ def pmi(
             # The elements in the matrix are log(P(c|t) / P(c))
             matrix = np.log(matrix) - np.log(column_totals)
             if keep_negative_values:
-                matrix[matrix == -np.inf] = 0
+                matrix[matrix == -np.inf] = -np.log(dictionary['count'].sum())
             else:
                 matrix[matrix < 0] = 0.0
         else:
@@ -201,6 +201,8 @@ def pmi(
 
     if times == 'n':
         matrix = np.multiply(n, matrix)
+    if times == 'logn':
+        matrix = np.multiply(np.log(n + 1), matrix)
 
     Space(matrix, space.row_labels, space.column_labels).write(output)
 
