@@ -1,3 +1,5 @@
+import pandas as pd
+
 from colored import style
 from scipy import stats
 from sklearn.metrics import pairwise
@@ -9,15 +11,30 @@ def cosine_similarity(s1, s2):
     return pairwise.cosine_similarity(s1, s2)[0][0]
 
 
+def inner_product(s1, s2):
+    return s1.multiply(s2).sum()
+
+
 class SimilarityExperiment(Worker):
     def evaluate(self, dataset, composition_operator):
-        dataset.dataset['cos'] = list(
-            self.progressify(
-                (cosine_similarity(s1, s2) for s1, s2 in dataset.pairs()),
-                description='Cosine similarity',
-                max=len(dataset.dataset),
-            )
+
+        result = pd.DataFrame.from_records(
+            [
+                (
+                    cosine_similarity(s1, s2),
+                    inner_product(s1, s2),
+                )
+                for s1, s2 in self.progressify(
+                    dataset.pairs(),
+                    description='Similarity',
+                    max=len(dataset.dataset),
+                )
+            ],
+            columns=('cos', 'inner_product'),
         )
+
+        dataset.dataset['cos'] = result['cos']
+        dataset.dataset['inner_product'] = result['inner_product']
 
         comparison = dataset.dataset[[dataset.human_judgement_column, 'cos']]
         comparison = comparison[comparison[dataset.human_judgement_column].notnull()]
