@@ -106,3 +106,11 @@ def all_features(
         encoding='utf-8',
         index=False,
     )
+
+
+@command()
+def convert_results(
+    target,
+    experiment=('', '', 'An .h5 experiment results file.'),
+):
+    pd.read_hdf(experiment, key='dataset').to_csv(target)
