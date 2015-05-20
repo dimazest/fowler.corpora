@@ -104,7 +104,9 @@ class Corpus:
             yield counts
 
     def words_iter(self, path):
-        NONE = None, None
+        # It would be nice to use None instead, but Pandas doesn't like it
+        # in some cases.
+        NONE = '', ''
         before = [NONE] * self.window_size_before
         after = [NONE] * self.window_size_after
 
