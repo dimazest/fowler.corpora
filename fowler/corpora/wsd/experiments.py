@@ -16,7 +16,7 @@ def inner_product(s1, s2):
 
 
 class SimilarityExperiment(Worker):
-    def evaluate(self, dataset, composition_operator):
+    def evaluate(self, dataset):
 
         result = pd.DataFrame.from_records(
             [
@@ -41,13 +41,13 @@ class SimilarityExperiment(Worker):
 
         rho, p = stats.spearmanr(comparison)
         print(
-            'Spearman correlation ({style.BOLD}{co}{style.RESET}, cosine): '
+            'Spearman correlation{info}, cosine): '
             '{style.BOLD}rho={rho:.3f}{style.RESET}, p={p:.5f}, support={support}'
             .format(
                 rho=rho,
                 p=p,
                 style=style,
-                co=composition_operator,
+                info=dataset.info(),
                 support=len(comparison),
             )
         )

@@ -8,7 +8,7 @@ from fowler.corpora.models import read_space_from_file
 from fowler.corpora.util import display
 
 from .experiments import SimilarityExperiment
-from .datasets import KS13Dataset
+from .datasets import KS13Dataset, dataset_types
 
 
 logger = logging.getLogger(__name__)
@@ -35,6 +35,16 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
     )
     global__google_vectors = '', False, 'Get rid of certain words in the input data that are not in Google vectors.'
     global__verb_space = '', '', 'Separate transitive verb space.'
+    global__dataset_type=(
+        '',
+        tuple(dataset_types),
+        'The kind of dataset.'
+    )
+
+    @Resource
+    def dataset_class(self):
+        return dataset_types[self.dataset_type]
+
 
     @Resource
     def verb_space(self):
@@ -162,37 +172,40 @@ def gs11(
 
 
 @command()
-def sentence_similarity(
+def similarity(
         pool,
         no_p11n,
         composition_operator,
         space,
         verb_space,
+        dataset_class,
         dataset=('', 'downloads/compdistmeaning/emnlp2013_turk.txt', 'The KS2013 dataset.'),
         tagset=('', ('bnc', 'bnc+ccg', 'ukwac'), 'Space tagset'),
         output=('o', 'sentence_similarity.h5', 'Result output file.'),
-        no_group=('', False, "Don't calculate the mean of human judgments."),
-        human_judgement_column=('', 'score', 'Column name for human judgments.'),
 ):
-    common_kwargs = {
+    kwargs = {
         'show_progress_bar': not no_p11n,
         'pool': pool,
     }
 
-    experiment = SimilarityExperiment(**common_kwargs)
+    experiment = SimilarityExperiment(**kwargs)
+
+    # TODO: pass dataset as a uri, the same way as the path to the corpus is passed!
+    if dataset_class == KS13Dataset:
+        kwargs.update(
+            {
+                'composition_operator': composition_operator,
+                'verb_space': verb_space,
+            }
+        )
 
     experiment.evaluate(
-        KS13Dataset(
+        dataset_class(
             dataset_filename=dataset,
-            composition_operator=composition_operator,
             space=space,
-            verb_space=verb_space,
             tagset=tagset,
-            group=not no_group,
-            human_judgement_column=human_judgement_column,
-            **common_kwargs
+            **kwargs
         ),
-        composition_operator=composition_operator,
     ).to_hdf(output)
 
 
@@ -221,7 +234,7 @@ def gs12_similarity(args):
     )
 
 
-@command()
+
 def gs12(
     pool,
     space,
@@ -254,44 +267,17 @@ def gs12(
 
 
 @command()
-def ks13_targets(
+def targets(
+    dataset_class,
     dataset=('', 'downloads/compdistmeaning/emnlp2013_turk.txt', 'The KS2013 dataset.'),
     out=('o', 'targets.csv', 'KS targets'),
-    tagset=('', 'bnc', 'Tagset'),
+    tagset=('', '', 'Tagset'),
 ):
-    """Extract target words from the EMNLP2013_turk dataset."""
+    """Extract target words from a dataset."""
 
-    df = KS13Dataset.read(dataset)
-
-    tag_mappings = {
-        'bnc': {'N': 'SUBST', 'V': 'VERB'},
-        'bnc+ccg': {'N': 'N', 'V': 'V'},
-        'ukwac': {'N': 'N', 'V': 'V'},
-    }
-
-    def extract_tokens(frame, tag=None):
-        frame = frame.unique()
-        result = pd.DataFrame({'ngram': frame})
-
-        if tag is not None:
-            result['tag'] = tag
-
-        return result
-
-    tm = tag_mappings[tagset]
-
-
-    (
-       pd
-       .concat(
-           [
-               extract_tokens(df[c], t)
-               for c, t in (
-                   ('verb1', tm['V']), ('subject1', tm['N']), ('object1', tm['N']),
-                   ('verb2', tm['V']), ('subject2', tm['N']), ('object2', tm['N']),
-               )
-           ]
-        )
-       .drop_duplicates()
-       .to_csv(out, index=False)
+    tokens = dataset_class.tokens(
+        dataset_class.read(dataset),
+        tagset,
     )
+
+    tokens.drop_duplicates().to_csv(out, index=False)
