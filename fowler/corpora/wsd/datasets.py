@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 tag_mappings = {
-    'bnc': {'N': 'SUBST', 'V': 'VERB'},
+    'bnc': {'N': 'SUBST', 'V': 'VERB', 'J': 'ADJ'},
     'bnc+ccg': {'N': 'N', 'V': 'V', 'J': 'J'},
     'ukwac': {'N': 'N', 'V': 'V'},
 }
@@ -191,8 +191,7 @@ class KS13Dataset(SimilarityDataset):
     @classmethod
     def tokens(cls, df, tagset):
         def extract_tokens(series, tag=None):
-            series = frame.unique()
-            result = pd.DataFrame({'ngram': series})
+            result = pd.DataFrame({'ngram': series.unique()})
 
             if tag is not None:
                 result['tag'] = tag
@@ -223,6 +222,7 @@ class KS13Dataset(SimilarityDataset):
             style=style,
             co=self.composition_operator,
         )
+
 
 class SimLex999Dataset(SimilarityDataset):
     """SimLex-999 is a gold standard resource for the evaluation of models that

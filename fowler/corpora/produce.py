@@ -52,10 +52,10 @@ def select_entities(
     dictionary=('', '', 'Dictionary filename.'),
     corpus_arg=('', '', 'Corpus arg'),
     entity_arg=('', '', 'Entity arg'),
-    size_arg=('', int, 'Entity arg'),
+    size_arg=('', 2000, 'Entity arg'),
     verb_arguments=('', '', 'Entity arg'),
     targets=('', '', 'Targets filename.'),
-    cutoff_size=('', int, 'Targets filename.')
+    cutoff_size=('', 0, 'Targets filename.')
 ):
     dictionary = pd.read_hdf(dictionary, 'dictionary')
     assert dictionary.set_index(['ngram', 'tag']).index.is_unique
