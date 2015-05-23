@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 tag_mappings = {
     'bnc': {'N': 'SUBST', 'V': 'VERB', 'J': 'ADJ'},
     'bnc+ccg': {'N': 'N', 'V': 'V', 'J': 'J'},
-    'ukwac': {'N': 'N', 'V': 'V'},
+    'ukwac': {'N': 'N', 'V': 'V', 'J': 'J'},
 }
 
 
@@ -272,6 +272,43 @@ class SimLex999Dataset(SimilarityDataset):
         return word_vector_pairs
 
 
+class WordSim353Dataset(SimilarityDataset):
+    """The WordSimilarity-353 Test Collection contains two sets of English word
+       pairs along with human-assigned similarity judgements. [1].
+
+    [1] Lev Finkelstein, Evgeniy Gabrilovich, Yossi Matias, Ehud Rivlin, Zach
+        Solan, Gadi Wolfman, and Eytan Ruppin, "Placing Search in Context:
+        The Concept Revisited", ACM Transactions on Information Systems,
+        20(1):116-131, January 2002
+
+        http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/
+
+    """
+
+    dataset_sep = ','
+    group_columns = 'Word 1', 'Word 2'
+    human_judgement_column = 'Human (mean)'
+
+    @classmethod
+    def tokens(cls, df, tagset):
+        result = pd.concat(
+            [
+                df[['Word 1']].rename(columns={'Word 1': 'ngram'}),
+                df[['Word 2']].rename(columns={'Word 2': 'ngram'}),
+            ]
+        )
+
+        return result
+
+    def pairs(self):
+        word_vector_pairs = (
+            (w1, w2)
+            for w1, w2 in self.dataset[list(self.group_columns)].values
+        )
+
+        return word_vector_pairs
+
+
 class Tagger:
 
     def __init__(self, space, tagset):
@@ -310,4 +347,5 @@ class Tagger:
 dataset_types = {
     'ks13': KS13Dataset,
     'simlex999': SimLex999Dataset,
+    'wordsim353': WordSim353Dataset,
 }
