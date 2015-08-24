@@ -21,6 +21,8 @@ def co_occurrences(words, window_size_before, window_size_after):
     after = deque(islice(words, window_size_after))
 
     while True:
+        # TODO: Is there a reason to yiled t, (cs)?
+        # Yielding just co-occurrence pairse should be enough.
         yield target, tuple(chain(before, after))
 
         before.append(target)
