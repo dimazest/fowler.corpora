@@ -87,6 +87,7 @@ setup(
         'XlsxWriter',
         'xlwt-future',
         'zope.cachedescriptors',
+        'notebook',
     ],
     entry_points={
         'console_scripts': [

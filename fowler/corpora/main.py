@@ -8,8 +8,6 @@ import os
 import sys
 from itertools import islice
 
-from IPython.terminal.ipapp import launch_new_instance
-
 import fowler.corpora.bnc.main as bnc_main
 import fowler.corpora.categorical.main as categorical_main
 import fowler.corpora.dictionary.main as dictionary_main
@@ -127,11 +125,15 @@ def readline_folder(
 def ipython():
     """Start IPython."""
     os.environ['PYTHONPATH'] = ':'.join(sys.path)
+    from IPython.terminal.ipapp import launch_new_instance
+
     sys.exit(launch_new_instance(argv=[]))
 
 
 @command()
 def notebook():
     """Start IPython notebook."""
+    from notebook import notebookapp
+
     os.environ['PYTHONPATH'] = ':'.join(sys.path)
-    sys.exit(launch_new_instance(argv=['notebook']))
+    sys.exit(notebookapp.launch_new_instance(argv=['--no-browser']))
