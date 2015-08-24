@@ -9,7 +9,6 @@ import sys
 from itertools import islice
 
 from IPython.terminal.ipapp import launch_new_instance
-from IPython.parallel.apps import ipclusterapp
 
 import fowler.corpora.bnc.main as bnc_main
 import fowler.corpora.categorical.main as categorical_main
@@ -136,14 +135,3 @@ def notebook():
     """Start IPython notebook."""
     os.environ['PYTHONPATH'] = ':'.join(sys.path)
     sys.exit(launch_new_instance(argv=['notebook']))
-
-
-@command()
-def ipcluster():
-    """Start IPYthon cluster."""
-    import logging
-    logger = logging.getLogger()
-    logger.info('Hellow from ipcluster')
-
-    os.environ['PYTHONPATH'] = ':'.join(sys.path)
-    ipclusterapp.launch_new_instance(argv='start -n 10'.split())

@@ -21,9 +21,6 @@ import execnet
 from jinja2 import Environment, PackageLoader
 from zope.cachedescriptors.property import Lazy
 
-import joblib
-from IPython import parallel
-
 import fowler.corpora
 from fowler.corpora.execnet import ExecnetHub
 from fowler.corpora.models import read_space_from_file
@@ -232,6 +229,8 @@ class Dispatcher(BaseDispatcher):
     @Resource
     def ip_client(self):
         """IPython parallel infrastructure client."""
+        from IPython import parallel
+
         return parallel.Client()
 
     @Resource
@@ -242,6 +241,8 @@ class Dispatcher(BaseDispatcher):
     @Resource
     def parallel(self):
         """Joblib parallel pool."""
+        import joblib
+
         return joblib.Parallel(n_jobs=self.job_num)
 
     @Resource
