@@ -161,6 +161,12 @@ def sum_folder(channel):
                 if result is None:
                     result = next(intermediate_results)
 
+                # TODO: It would be nice to catch any exceptioin here,
+                # (especially, the one that happens inside of the folder() call
+                # and report it to the master.
+                # Same applies to the next() call above.
+                #
+                # TODO: Time and log execution time for each addition and in total.
                 for r in intermediate_results:
                     result = result.add(r, fill_value=0)
 
