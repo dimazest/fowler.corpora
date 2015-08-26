@@ -307,7 +307,7 @@ class BNC_CCG(Corpus):
 
         # Consider the whole file as one document!
         for dependencies, tokens in self.ccg_bnc_iter(path):
-            yield collect_dependencies(dependencies, tokens)
+            yield from collect_dependencies(dependencies, tokens)
 
     def parse_dependencies(self, dependencies):
         """Parse and filter out verb subject/object dependencies from a C&C parse."""

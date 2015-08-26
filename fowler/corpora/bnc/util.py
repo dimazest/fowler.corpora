@@ -24,5 +24,13 @@ def co_occurrences(words, window_size_before, window_size_after):
         yield target, tuple(chain(before, after))
 
         before.append(target)
-        after.append(next(words))
-        target = after.popleft()
+
+        try:
+            after.append(next(words))
+        except StopIteration:
+            pass
+
+        try:
+            target = after.popleft()
+        except IndexError:
+            break
