@@ -133,7 +133,8 @@ def ipython():
 @command()
 def notebook():
     """Start IPython notebook."""
-    from notebook import notebookapp
+    # from notebook import notebookapp
+    from IPython.terminal.ipapp import launch_new_instance
 
     os.environ['PYTHONPATH'] = ':'.join(sys.path)
-    sys.exit(notebookapp.launch_new_instance(argv=['--no-browser']))
+    sys.exit(launch_new_instance(argv=['notebook', '--no-browser']))
