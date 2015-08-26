@@ -12,13 +12,14 @@ before_install:
   - ~/miniconda3/bin/conda create -y -n fowler.corpora python=3.4
   - . ~/miniconda3/bin/activate fowler.corpora
 install:
-  - conda install -y pip cffi cython gensim ipython lxml matplotlib numexpr numpy openpyxl pandas patsy psutil python-dateutil pyyaml scikit-learn scipy seaborn pytables
-  - pip install tox
+  - conda install -y pip cffi cython gensim ipython lxml matplotlib numexpr numpy openpyxl pandas patsy psutil python-dateutil pyyaml scikit-learn scipy seaborn pytables nltk
+  - pip install pytest
+  - pip install -e .
 script:
-  - tox
+  - py.test test -vl
 
 after_success:
   - pip install pytest-cov coveralls
-  - tox -- --cov=fowler.corpora --cov-report=term-missing test
+  - py.test --cov=fowler.corpora --cov-report=term-missing test
   - coveralls
   - conda list
