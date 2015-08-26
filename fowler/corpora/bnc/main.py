@@ -17,7 +17,7 @@ from fowler.corpora.dispatcher import Dispatcher, NewSpaceCreationMixin, Diction
 from fowler.corpora.execnet import sum_folder
 from fowler.corpora.space.util import write_space
 
-from .readers import BNC, BNC_CCG, UKWAC
+from .readers import BNC, BNC_CCG, UKWAC, Corpus
 
 
 logger = logging.getLogger(__name__)
@@ -26,18 +26,19 @@ logger = logging.getLogger(__name__)
 class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
     """BNC dispatcher."""
     global__corpus = '', 'bnc://', 'The path to the corpus.'
-    global__stem = '', False, 'Use word stems instead of word strings.',
-    global__tag_first_letter = '', False, 'Extract only the first letter of the POS tags.'
+    # global__stem = '', False, 'Use word stems instead of word strings.',
+    # global__tag_first_letter = '', False, 'Extract only the first letter of the POS tags.'
     global__window_size_before = '', 5, 'Window before.'
     global__window_size_after = '', 5, 'Window after.'
 
     @property
     def corpus(self):
-        """Access to the corpus."""
+        """Access to a corpus."""
         corpus_uri = urlsplit(self.kwargs['corpus'])
         query = parse_qs(corpus_uri.query)
         query_dict = {k: v[0] for k, v in query.items()}
 
+        # TODO: Use entry points for corpus reader discovery.
         scheme_mapping = {
             'bnc': BNC,
             'bnc+ccg': BNC_CCG,
@@ -45,14 +46,14 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
         }
 
         try:
-            Corpus = scheme_mapping[corpus_uri.scheme]
+            CorpusReader = scheme_mapping[corpus_uri.scheme]
         except KeyError:
             raise NotImplementedError('The {0}:// scheme is not supported.'.format(corpus_uri.scheme))
 
-        if Corpus == UKWAC:
+        if CorpusReader == UKWAC:
             query_dict['workers_count'] = len(self.execnet_hub.gateways)
 
-        corpus_kwargs = Corpus.init_kwargs(
+        corpus_reader_kwargs = CorpusReader.init_kwargs(
             root=corpus_uri.path or None,
             **query_dict
         )
@@ -60,17 +61,19 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
         if self.limit:
             corpus_kwargs['paths'] = corpus_kwargs['paths'][:self.limit]
 
+        corpus_reader = CorpusReader(**corpus_reader_kwargs)
+
         return Corpus(
-            stem=self.stem,
-            tag_first_letter=self.tag_first_letter,
+            corpus_reader=corpus_reader,
+            # stem=self.stem,
+            # tag_first_letter=self.tag_first_letter,
             window_size_before=self.kwargs['window_size_before'],
             window_size_after=self.kwargs['window_size_after'],
-            **corpus_kwargs
         )
 
     @property
     def paths_progress_iter(self):
-        paths = self.corpus.paths
+        paths = self.corpus.corpus_reader.paths
 
         if not self.no_p11n:
             paths = Bar(

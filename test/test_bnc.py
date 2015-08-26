@@ -124,13 +124,12 @@ def test_bnc_dictionary(bnc_path, dispatcher, tmpdir, stem, tag_first_letter, ng
         '--corpus bnc://{corpus} '
         '-o {output} '
         '--no_p11n '
-        '{stem} '
         '{tag_first_letter} '
         ''.format(
             corpus=bnc_path,
             output=dictionary_path,
-            stem=stem,
-            tag_first_letter=tag_first_letter,
+            stem='stem=true&' if stem else '',
+            tag_first_letter='tag_first_letter=true&' if tag_first_letter else '',
         ).split()
     )
 
@@ -147,26 +146,24 @@ def test_bnc_dictionary(bnc_path, dispatcher, tmpdir, stem, tag_first_letter, ng
 @pytest.mark.parametrize(
     ('stem', 'tag_first_letter', 'ngrams', 'counts', 'dictionary_len'),
     (
-        ('', '', [('.', '.'), ('she', 'PRP'), (',', ','), ('to', 'TO'), ('and', 'CC')], [117, 1, 55, 39, 22], 675),
-        ('--stem', '', [('.', '.'), ('she', 'PRP'), (',', ','), ('to', 'TO'), ('and', 'CC')], [117, 1, 55, 39, 24], 621),
-        ('', '--tag_first_letter', [('.', '.'), ('she', 'P'), (',', ','), ('to', 'T'), ('and', 'C')], [117, 1, 55, 39, 22], 654),
-        ('--stem', '--tag_first_letter', [('.', '.'), ('she', 'P'), (',', ','), ('to', 'T'), ('and', 'C')], [117, 1, 55, 39, 24], 547),
+        (False, False, [('.', '.'), ('she', 'PRP'), (',', ','), ('to', 'TO'), ('and', 'CC')], [117, 1, 55, 39, 22], 675),
+        (True, False, [('.', '.'), ('she', 'PRP'), (',', ','), ('to', 'TO'), ('and', 'CC')], [117, 1, 55, 39, 24], 621),
+        (False, True, [('.', '.'), ('she', 'P'), (',', ','), ('to', 'T'), ('and', 'C')], [117, 1, 55, 39, 22], 654),
+        (True, True, [('.', '.'), ('she', 'P'), (',', ','), ('to', 'T'), ('and', 'C')], [117, 1, 55, 39, 24], 547),
     )
 )
 def test_bnc_ccg_dictionary(bnc_ccg_path, dispatcher, tmpdir, stem, tag_first_letter, ngrams, counts, dictionary_len):
     dictionary_path = str(tmpdir.join("dictionary.h5"))
     dispatcher.dispatch(
         'bnc dictionary '
-        '--corpus bnc+ccg://{corpus} '
+        '--corpus bnc+ccg://{corpus}?{stem}{tag_first_letter} '
         '-o {output} '
         '--no_p11n '
-        '{stem} '
-        '{tag_first_letter} '
         ''.format(
             corpus=bnc_ccg_path,
             output=dictionary_path,
-            stem=stem,
-            tag_first_letter=tag_first_letter,
+            stem='stem=true&' if stem else '',
+            tag_first_letter='tag_first_letter=true&' if tag_first_letter else '',
         ).split()
     )
 

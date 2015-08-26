@@ -37,10 +37,11 @@ class Corpus:
     #   * 3k target words
     chunk_size = 1 * 10 ** 6
 
-    def __init__(self, paths, stem, tag_first_letter, window_size_before, window_size_after):
-        self.paths = paths
-        self.stem = stem
-        self.tag_first_letter = tag_first_letter
+    def __init__(self, corpus_reader, window_size_before, window_size_after):
+        self.corpus_reader = corpus_reader
+
+        # self.stem = stem
+        # self.tag_first_letter = tag_first_letter
         self.window_size_before = window_size_before
         self.window_size_after = window_size_after
 
@@ -71,9 +72,9 @@ class Corpus:
         first_frame, first_name = targets, 'target'
         second_frame, second_name = context, 'context'
         if len(context) < len(targets):
-            first_frame, first_name, second_frame, second_name =(
+            first_frame, first_name, second_frame, second_name = (
                 second_frame, second_name, first_frame, first_name
-        )
+            )
 
         while target_contexts:
             some_target_contexts = islice(
@@ -151,7 +152,7 @@ class Corpus:
         before = [NONE] * self.window_size_before
         after = [NONE] * self.window_size_after
 
-        words_by_document = self.words_by_document(path)
+        words_by_document = self.corpus_reader.words_by_document(path)
         for document_words in words_by_document:
             yield from chain(before, document_words, after)
 
@@ -227,20 +228,26 @@ class Corpus:
             yield result.groupby(columns).sum()
 
 
-class BNC(Corpus):
-    def __init__(self, root, **kwargs):
-        super().__init__(**kwargs)
-
+class BNC:
+    def __init__(self, root, paths, stem, tag_first_letter):
         self.root = root
+        self.paths = paths
+        self.stem = stem
+        self.tag_first_letter = tag_first_letter
 
     @classmethod
-    def init_kwargs(cls, root=None, fileids=r'[A-K]/\w*/\w*\.xml'):
+    def init_kwargs(cls, root=None, stem=None, tag_first_letter=None, fileids=r'[A-K]/\w*/\w*\.xml'):
         if root is None:
-            root = os.path.join(getcwd(), 'corpora', 'BNC', 'Texts')
+            root = os.path.join(getcwd(), 'BNC', 'Texts')
+
+        stem = stem.lower() == 'true' if stem is not None else False
+        tag_first_letter = tag_first_letter.lower() == 'true' if tag_first_letter is not None else False
 
         return dict(
             root=root,
             paths=BNCCorpusReader(root=root, fileids=fileids).fileids(),
+            stem=stem,  # TODO: Steming should not be part of a reader!
+            tag_first_letter=tag_first_letter,  # TODO: Steming should not be part of a reader!
         )
 
     def words_by_document(self, path):
@@ -255,7 +262,7 @@ class BNC(Corpus):
         yield it()
 
 
-class BNC_CCG(Corpus):
+class BNC_CCG:
 
     @classmethod
     def init_kwargs(cls, root=None):
@@ -307,7 +314,6 @@ class BNC_CCG(Corpus):
                 dependencies = self.parse_dependencies(dependencies)
 
                 yield dependencies, tokens
-
 
     def verb_subject_object_iter(self, path):
         for dependencies, tokens in self.ccg_bnc_iter(path):
@@ -465,8 +471,7 @@ class UKWAC(Corpus):
 
             lines = peekable(
                 l for l in lines
-                if not l.startswith('<text')
-                and l != '<s>'
+                if not l.startswith('<text') and l != '<s>'
             )
 
             c = 0

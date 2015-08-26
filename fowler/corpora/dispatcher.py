@@ -176,7 +176,7 @@ class Dispatcher(BaseDispatcher):
 
     @property
     def job_num(self):
-        return self.kwargs['job_num'] or multiprocessing.cpu_count()
+        return self.kwargs['job_num'] or 1  # multiprocessing.cpu_count()
 
     @Resource
     def pool(self):
