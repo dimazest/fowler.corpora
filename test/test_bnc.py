@@ -1,6 +1,9 @@
+from itertools import chain
+from collections import Counter
+
 import pandas as pd
 
-from fowler.corpora.bnc.util import count_cooccurrence
+from fowler.corpora.bnc.util import co_occurrences
 from fowler.corpora.dispatcher import DictionaryMixin
 from fowler.corpora.categorical.main import CategoricalDispatcher
 
@@ -89,17 +92,21 @@ import pytest
     ),
 )
 def test_count_cooccurrence(sequence, window_size, expected_result):
-    sequence = ((e, 'N') for e in sequence)
+    try:
+        window_size_before, window_size_after = window_size
+    except TypeError:
+        window_size_before = window_size_after = window_size
 
-    result = count_cooccurrence(iter(sequence), window_size=window_size)
+    result = co_occurrences(sequence, window_size_before=window_size_before, window_size_after=window_size_after)
+    result = Counter(
+        chain.from_iterable(
+            ((t,  c) for c in cs) for t, cs in result
+        )
+    )
 
-    expected_result = pd.DataFrame(expected_result, columns=('target', 'context', 'count'))
-    expected_result['target_tag'] = 'N'
-    expected_result['context_tag'] = 'N'
-    expected_result = expected_result.reindex_axis(['target', 'target_tag', 'context', 'context_tag', 'count'], axis=1)
+    expected_result = Counter({(c, t): n for c, t, n in expected_result})
 
-    assert (result == expected_result).all().all()
-
+    assert result == expected_result
 
 @pytest.mark.parametrize(
     ('stem', 'tag_first_letter', 'ngrams', 'counts', 'dictionary_len'),
@@ -132,8 +139,9 @@ def test_bnc_dictionary(bnc_path, dispatcher, tmpdir, stem, tag_first_letter, ng
     dictionary.set_index(['ngram', 'tag'], inplace=True)
     assert (dictionary.loc[ngrams]['count'] == counts).all()
 
-    assert dictionary['count'].sum() == 151
-    assert len(dictionary) == dictionary_len
+    # Extra counts are because of added ('', '') tokens before and after the sentences.
+    assert dictionary['count'].sum() == 151 + dictionary.loc[('', ''), 'count']
+    assert len(dictionary) == dictionary_len + 1
 
 
 @pytest.mark.parametrize(
@@ -168,8 +176,9 @@ def test_bnc_ccg_dictionary(bnc_ccg_path, dispatcher, tmpdir, stem, tag_first_le
 
     assert (dictionary.loc[ngrams]['count'] == counts).all()
 
-    assert dictionary['count'].sum() == 1781
-    assert len(dictionary) == dictionary_len
+    # Extra counts are because of added ('', '') tokens before and after the sentences.
+    assert dictionary['count'].sum() == 1781 + dictionary.loc[('', ''), 'count']
+    assert len(dictionary) == dictionary_len + 1
 
 
 def test_bnc_cooccurrence(space):

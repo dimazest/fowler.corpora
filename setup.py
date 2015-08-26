@@ -55,6 +55,7 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=[
+        'chrono',
         'colored',
         'docutils',
         'eventlet',
@@ -67,7 +68,7 @@ setup(
         'joblib',
         'matplotlib',
         'more-itertools',
-        'nltk>=3.0.0',
+        'notebook',
         'numexpr',
         'numpy',
         'openpyxl',
@@ -87,7 +88,9 @@ setup(
         'XlsxWriter',
         'xlwt-future',
         'zope.cachedescriptors',
-        'notebook',
+
+        'nltk>=3.0.0',  # and it's dependencies
+        'twython',
     ],
     entry_points={
         'console_scripts': [
