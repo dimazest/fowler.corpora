@@ -8,6 +8,7 @@ from os import getcwd
 
 import pandas as pd
 
+from chrono import Timer
 from more_itertools import peekable
 from nltk.corpus.reader.bnc import BNCCorpusReader
 from nltk.parse.dependencygraph import DependencyGraph, DependencyGraphError
@@ -25,7 +26,16 @@ CCGDependency = namedtuple('CCGDependency', 'head, relation, dependant')
 
 class Corpus:
 
-    chunk_size = 1 * 10 ** 7
+    # The peak memory usage per worker is about:
+    #
+    # * 3GB on the sentence similarity task based on ukWaC
+    #   * 3k most frequent words as context
+    #   * 185 target words
+    #
+    # * 4GB ITTF space based on ukWaC
+    #   * 175154 context words!
+    #   * 3k target words
+    chunk_size = 1 * 10 ** 6
 
     def __init__(self, paths, stem, tag_first_letter, window_size_before, window_size_after):
         self.paths = paths
@@ -58,50 +68,81 @@ class Corpus:
         T = (lambda t: t) if isinstance(targets.index[0], tuple) else (lambda t: t[0])
         C = (lambda c: c) if isinstance(context.index[0], tuple) else (lambda c: c[0])
 
+        first_frame, first_name = targets, 'target'
+        second_frame, second_name = context, 'context'
+        if len(context) < len(targets):
+            first_frame, first_name, second_frame, second_name =(
+                second_frame, second_name, first_frame, first_name
+        )
+
         while target_contexts:
             some_target_contexts = islice(
                 target_contexts,
                 self.chunk_size,
             )
 
-            co_occurrence_pairs = list(
-                chain.from_iterable(
-                    (t + c for c in cs if C(c) in context.index)
-                    for t, cs in some_target_contexts
-                    if T(t) in targets.index
+            with Timer() as timed:
+                co_occurrence_pairs = [
+                    t + c
+                    for t, cs in some_target_contexts for c in cs
+                ]
+
+                if not co_occurrence_pairs:
+                    continue
+
+            logger.debug(
+                'All co-occurrence pairs: %.2f seconds',
+                timed.elapsed,
+            )
+
+            pairs = pd.DataFrame(
+                co_occurrence_pairs,
+                columns=columns,
+            )
+
+            def merge(pairs, what_frame, what_name, time, suffixes=None):
+                kwargs = {'suffixes': suffixes} if suffixes else {}
+                with Timer() as timed:
+                    result = pairs.merge(
+                        what_frame,
+                        left_on=join_columns(what_frame, what_name),
+                        right_index=True,
+                        how='inner',
+                        **kwargs
+                    )
+                logger.debug(
+                    '%s merge (%s): %.2f seconds',
+                    time,
+                    what_name,
+                    timed.elapsed,
                 )
+
+                return result
+
+            pairs = merge(pairs, first_frame, first_name, 'First')
+            pairs = merge(
+                pairs,
+                second_frame,
+                second_name,
+                'Second',
+                suffixes=('_' + first_name, '_' + second_name),
             )
 
-            if not co_occurrence_pairs:
-                continue
-
-            counts = pd.DataFrame(co_occurrence_pairs, columns=columns)
-            counts['count'] = 1
-
-            logger.debug('Merging contexts.')
-            counts = counts.merge(
-                context,
-                left_on=join_columns(context, 'context'),
-                right_index=True,
-                how='inner',
+            with Timer() as timed:
+                counts = pairs.groupby(['id_target', 'id_context']).size()
+            logger.debug(
+                'Summing up: %.2f seconds',
+                timed.elapsed,
             )
 
-            logger.debug('Merging targets.')
-            counts = counts.merge(
-                targets,
-                left_on=join_columns(targets, 'target'),
-                right_index=True,
-                how='inner',
-                suffixes=('_context', '_target'),
-            )[['id_target', 'id_context', 'count']]
-
-            counts = counts.groupby(['id_target', 'id_context']).sum()
             logger.debug(
                 '%s unique co-occurrence pairs are collected. %s in total.',
                 len(counts),
-                counts['count'].sum(),
+                counts.sum(),
             )
-            yield counts
+
+            # TODO: it would be nice to return Series instead of DataFrame
+            yield counts.to_frame('count')
 
     def words_iter(self, path):
         # It would be nice to use None instead, but Pandas doesn't like it
@@ -267,6 +308,7 @@ class BNC_CCG(Corpus):
 
                 yield dependencies, tokens
 
+
     def verb_subject_object_iter(self, path):
         for dependencies, tokens in self.ccg_bnc_iter(path):
             yield from self._collect_verb_subject_object(dependencies, tokens)
@@ -431,9 +473,11 @@ class UKWAC(Corpus):
             while lines:
                 if (c % (10 ** 4)) == 0:
                     logger.debug(
-                        '%s text elements are read, every %s is processed.',
+                        '%s text elements are read, every %s is processed. '
+                        'It\'s about %.2f of the file.',
                         c,
                         self.file_passes,
+                        c / 550000,  # An approximate number of texts in a file.
                     )
 
                 if (self.limit is not None) and (c > self.limit):
