@@ -23,7 +23,6 @@ class Dataset(Worker):
     def to_hdf(self, file_path, key='dataset'):
         self.dataset.to_hdf(file_path, key=key)
 
-
     @classmethod
     def read(cls, dataset_filename):
         df = pd.read_csv(
