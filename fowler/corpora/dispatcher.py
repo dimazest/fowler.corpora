@@ -176,7 +176,9 @@ class Dispatcher(BaseDispatcher):
 
     @property
     def job_num(self):
-        return self.kwargs['job_num'] or 1  # multiprocessing.cpu_count()
+        if self.no_p11n:
+            return 1
+        return self.kwargs['job_num'] or multiprocessing.cpu_count()
 
     @Resource
     def pool(self):
@@ -258,27 +260,6 @@ class Dispatcher(BaseDispatcher):
             handler = SentryHandler(self.sentry_client)
             setup_logging(handler)
             return handler
-
-
-class SpaceCreationMixin:
-    """A mixin that defines common arguments for space creation commands."""
-
-    global__context = 'c', 'context.csv', 'The file with context words.'
-    global__targets = 't', 'targets.csv', 'The file with target words.'
-
-    @Resource
-    def targets(self):
-        context = read_tokens(self.kwargs['context'])
-        context['id'] = pd.Series(np.arange(len(context)), index=context.index)
-
-        return context
-
-    @Resource
-    def context(self):
-        targets = read_tokens(self.kwargs['targets'])
-        targets['id'] = pd.Series(np.arange(len(targets)), index=targets.index)
-
-        return targets
 
 
 class NewSpaceCreationMixin:

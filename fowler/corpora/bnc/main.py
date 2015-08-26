@@ -26,8 +26,8 @@ logger = logging.getLogger(__name__)
 class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
     """BNC dispatcher."""
     global__corpus = '', 'bnc://', 'The path to the corpus.'
-    # global__stem = '', False, 'Use word stems instead of word strings.',
-    # global__tag_first_letter = '', False, 'Extract only the first letter of the POS tags.'
+    global__stem = '', False, 'Use word stems instead of word strings.',
+    global__tag_first_letter = '', False, 'Extract only the first letter of the POS tags.'
     global__window_size_before = '', 5, 'Window before.'
     global__window_size_after = '', 5, 'Window after.'
 
@@ -65,8 +65,8 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
 
         return Corpus(
             corpus_reader=corpus_reader,
-            # stem=self.stem,
-            # tag_first_letter=self.tag_first_letter,
+            stem=self.stem,
+            tag_first_letter=self.tag_first_letter,
             window_size_before=self.kwargs['window_size_before'],
             window_size_after=self.kwargs['window_size_after'],
         )

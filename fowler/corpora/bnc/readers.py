@@ -37,11 +37,11 @@ class Corpus:
     #   * 3k target words
     chunk_size = 1 * 10 ** 6
 
-    def __init__(self, corpus_reader, window_size_before, window_size_after):
+    def __init__(self, corpus_reader, stem, tag_first_letter, window_size_before, window_size_after):
         self.corpus_reader = corpus_reader
 
-        # self.stem = stem
-        # self.tag_first_letter = tag_first_letter
+        self.stem = stem
+        self.tag_first_letter = tag_first_letter
         self.window_size_before = window_size_before
         self.window_size_after = window_size_after
 
@@ -153,8 +153,17 @@ class Corpus:
         after = [NONE] * self.window_size_after
 
         words_by_document = self.corpus_reader.words_by_document(path)
-        for document_words in words_by_document:
-            yield from chain(before, document_words, after)
+        for words in words_by_document:
+
+            if self.stem:
+                words = ((s, t) for _, s, t in words)
+            else:
+                words = ((w, t) for w, _, t in words)
+
+            if self.tag_first_letter:
+                words = ((n, t[0]) for n, t in words)
+
+            yield from chain(before, words, after)
 
     def words(self, path):
         """Count all the words from a corpus file."""
@@ -163,11 +172,13 @@ class Corpus:
         words = peekable(self.words_iter(path))
         iteration = count()
         while words:
-            some_words = islice(words, self.chunk_size)
+            some_words = list(islice(words, self.chunk_size))
 
             logger.info('Computing frame #%s', next(iteration))
+
+            # TODO: store all three values: ngram, stem and tag
             result = pd.DataFrame(
-                (x for x in some_words),
+                some_words,
                 columns=('ngram', 'tag'),
             )
             result['count'] = 1
@@ -185,7 +196,7 @@ class Corpus:
         result = pd.DataFrame(
             (
                 (h.word, h.stem, h.tag, r, d.word, d.stem, d.tag)
-                for h, r, d in self.dependencies_iter(path)
+                for h, r, d in self.corpus_reader.dependencies_iter(path)
             ),
             columns=(
                 'head_word',
@@ -213,7 +224,7 @@ class Corpus:
     def verb_subject_object(self, path):
         columns = 'verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'
 
-        result = list(self.verb_subject_object_iter(path))
+        result = list(self.corpus_reader.verb_subject_object_iter(path))
         if result:
             result = pd.DataFrame(
                 result,
@@ -229,40 +240,37 @@ class Corpus:
 
 
 class BNC:
-    def __init__(self, root, paths, stem, tag_first_letter):
+    def __init__(self, root, paths):
         self.root = root
         self.paths = paths
-        self.stem = stem
-        self.tag_first_letter = tag_first_letter
 
     @classmethod
-    def init_kwargs(cls, root=None, stem=None, tag_first_letter=None, fileids=r'[A-K]/\w*/\w*\.xml'):
+    def init_kwargs(cls, root=None, fileids=r'[A-K]/\w*/\w*\.xml'):
         if root is None:
             root = os.path.join(getcwd(), 'BNC', 'Texts')
-
-        stem = stem.lower() == 'true' if stem is not None else False
-        tag_first_letter = tag_first_letter.lower() == 'true' if tag_first_letter is not None else False
 
         return dict(
             root=root,
             paths=BNCCorpusReader(root=root, fileids=fileids).fileids(),
-            stem=stem,  # TODO: Steming should not be part of a reader!
-            tag_first_letter=tag_first_letter,  # TODO: Steming should not be part of a reader!
         )
 
     def words_by_document(self, path):
         def it():
-            for word, tag in BNCCorpusReader(fileids=path, root=self.root).tagged_words(stem=self.stem):
-                if self.tag_first_letter:
-                    tag = tag[0]
+            reader = BNCCorpusReader(fileids=path, root=self.root)
+            words_tags = reader.tagged_words(stem=False)
+            stems = (s for s, _ in reader.tagged_words(stem=True))
 
-                yield word, tag
+            for (word, tag), stem in zip(words_tags, stems):
+                # TODO: should it be a class?
+                yield word, stem, tag
 
         # Consider the whole file as one document!
         yield it()
 
 
 class BNC_CCG:
+    def __init__(self, paths):
+        self.paths = paths
 
     @classmethod
     def init_kwargs(cls, root=None):
@@ -276,13 +284,8 @@ class BNC_CCG:
     def words_by_document(self, path):
         def word_tags(dependencies, tokens):
             for token in tokens.values():
-
-                tag = token.tag[0] if self.tag_first_letter else token.tag
-
-                if self.stem:
-                    yield token.stem, tag
-                else:
-                    yield token.word, tag
+                # TODO: return a namedtuple?
+                yield token.word, token.stem, token.tag
 
         # Consider the whole file as one document!
         for dependencies, tokens in self.ccg_bnc_iter(path):

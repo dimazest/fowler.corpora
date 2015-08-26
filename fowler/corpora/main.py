@@ -11,7 +11,6 @@ from itertools import islice
 import fowler.corpora.bnc.main as bnc_main
 import fowler.corpora.categorical.main as categorical_main
 import fowler.corpora.dictionary.main as dictionary_main
-import fowler.corpora.google_ngrams.main as google_ngrams_main
 import fowler.corpora.ms_paraphrase.main as ms_paraphrase_main
 import fowler.corpora.serafin03.main as serafin03_main
 import fowler.corpora.similarity.main as similarity_main
@@ -35,13 +34,6 @@ dispatcher.nest(
     serafin03_main.dispatcher,
     serafin03_main.__doc__,
 )
-
-dispatcher.nest(
-    'google-ngrams',
-    google_ngrams_main.dispatcher,
-    google_ngrams_main.__doc__,
-)
-
 
 dispatcher.nest(
     'dictionary',
