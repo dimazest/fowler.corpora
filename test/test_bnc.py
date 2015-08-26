@@ -1,6 +1,7 @@
 from itertools import chain
-
 from collections import Counter
+
+import pandas as pd
 
 from fowler.corpora.bnc.util import co_occurrences
 from fowler.corpora.dispatcher import DictionaryMixin
