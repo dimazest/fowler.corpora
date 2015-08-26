@@ -67,7 +67,6 @@ setup(
         'joblib',
         'matplotlib',
         'more-itertools',
-        'nltk>=3.0.0',
         'numexpr',
         'numpy',
         'openpyxl',
@@ -87,6 +86,10 @@ setup(
         'XlsxWriter',
         'xlwt-future',
         'zope.cachedescriptors',
+
+        'nltk>=3.0.0',  # and it's dependencies
+        'twython',
+
     ],
     entry_points={
         'console_scripts': [
