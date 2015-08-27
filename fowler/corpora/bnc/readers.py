@@ -41,6 +41,7 @@ class Corpus:
         self.corpus_reader = corpus_reader
 
         self.stem = stem
+        # TODO: `tag_first_letter` should become `shorten_tags`.
         self.tag_first_letter = tag_first_letter
         self.window_size_before = window_size_before
         self.window_size_after = window_size_after
@@ -418,10 +419,10 @@ def ukwac_cell_extractor(cells):
     return word, lemma, tag, tag, feats, head, rel
 
 
-class UKWAC(Corpus):
+class UKWAC:
 
-    def __init__(self, file_passes, lowercase_stem, limit, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, paths, file_passes, lowercase_stem, limit):
+        self.paths = paths
 
         self.file_passes = int(file_passes)
         self.lowercase_stem = lowercase_stem
@@ -436,7 +437,7 @@ class UKWAC(Corpus):
         limit=None,
     ):
         if root is None:
-            root = os.path.join(getcwd(), 'corpora', 'WaCky', 'dep_parsed_ukwac')
+            root = os.path.join(getcwd(), 'dep_parsed_ukwac')
 
         paths = [
             str(n) for n in local(root).visit()
@@ -452,7 +453,7 @@ class UKWAC(Corpus):
             )
         )
 
-        assert lowercase_stem in ('', 'y', False)
+        assert lowercase_stem in ('', 'y', False, True)
         lowercase_stem = bool(lowercase_stem)
 
         return dict(
@@ -503,10 +504,9 @@ class UKWAC(Corpus):
         for dg in self.document_dependency_graphs(document):
             # Make sure that nodes are sorted by the position in the sentence.
             for _, node in sorted(dg.nodes.items()):
-                ngram = node['lemma'] if self.stem else node['word']
 
-                if ngram is not None:
-                    yield ngram, node['tag']
+                if node['word'] is not None:
+                    yield node['word'], node['lemma'], node['tag']
 
     def verb_subject_object_iter(self, path):
         for document in self.documents(path):
@@ -567,8 +567,5 @@ class UKWAC(Corpus):
 
                     if self.lowercase_stem and node['lemma']:
                         node['lemma'] = node['lemma'].lower()
-
-                    if self.tag_first_letter:
-                        node['tag'] = node['tag'][0]
 
                 yield dg

@@ -21,6 +21,11 @@ def bnc_ccg_path(datadir):
 
 
 @pytest.fixture
+def ukwac_path(datadir):
+    return datadir.join('WaCky')
+
+
+@pytest.fixture
 def dispatcher():
     from fowler.corpora.main import dispatcher
 

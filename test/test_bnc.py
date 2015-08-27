@@ -109,6 +109,7 @@ def test_count_cooccurrence(sequence, window_size, expected_result):
 
     assert result == expected_result
 
+
 @pytest.mark.parametrize(
     ('stem', 'tag_first_letter', 'ngrams', 'counts', 'dictionary_len'),
     (
@@ -179,6 +180,102 @@ def test_bnc_ccg_dictionary(bnc_ccg_path, dispatcher, tmpdir, stem, tag_first_le
 
     # Extra counts are because of added ('', '') tokens before and after the sentences.
     assert dictionary['count'].sum() == 1781 + dictionary.loc[('', ''), 'count']
+    assert len(dictionary) == dictionary_len + 1
+
+
+@pytest.mark.parametrize(
+    ('stem', 'tag_first_letter', 'ngrams', 'counts', 'dictionary_len'),
+    (
+        (
+            '', '',
+            [
+                ('.', 'SENT'),
+                ('she', 'PP'),
+                (',', ','),
+                ('To', 'TO'),
+                ('to', 'TO'),
+                ('And', 'CC'),
+                ('AND', 'CC'),
+                ('and', 'CC'),
+                ('Hooligans', 'NNS'),
+                ('hooligans', 'NNS'),
+                ('hooligan', 'NN'),
+            ],
+            [323, 1, 395, 3, 250, 8, 1, 191, 1, 1, 2], 2816,
+        ),
+
+        (
+            '--stem', '',
+            [
+                ('.', 'SENT'),
+                ('she', 'PP'),
+                (',', ','),
+                ('to', 'TO'),
+                ('and', 'CC'),
+                ('hooligan', 'NNS'),
+                ('hooligan', 'NN'),
+            ],
+            [323, 1, 395, 253, 200, 2, 2], 2612,
+        ),
+
+        (
+            '', '--tag_first_letter',
+            [
+                ('.', 'S'),
+                ('she', 'P'),
+                (',', ','),
+                ('To', 'T'),
+                ('to', 'T'),
+                ('And', 'C'),
+                ('AND', 'C'),
+                ('and', 'C'),
+                ('Hooligans', 'N'),
+                ('hooligans', 'N'),
+                ('hooligan', 'N'),
+            ],
+            [323, 1, 395, 3, 250, 8, 1, 191, 1, 1, 2], 2759,
+        ),
+
+        (
+            '--stem', '--tag_first_letter',
+            [
+                ('.', 'S'),
+                ('she', 'P'),
+                (',', ','),
+                ('to', 'T'),
+                ('and', 'C'),
+                ('hooligan', 'N'),
+            ],
+            [323, 1, 395, 253, 200, 4], 2232,
+        ),
+
+    )
+)
+def test_ukwac_dictionary(ukwac_path, dispatcher, tmpdir, stem, tag_first_letter, ngrams, counts, dictionary_len):
+    dictionary_path = str(tmpdir.join("dictionary.h5"))
+    dispatcher.dispatch(
+        'bnc dictionary '
+        '--corpus dep-parsed-ukwac://{corpus}?lowercase_stem=y '
+        '-o {output} '
+        '--no_p11n '
+        '{tag_first_letter} '
+        '{stem} '
+        ''.format(
+            corpus=ukwac_path,
+            output=dictionary_path,
+            stem=stem,
+            tag_first_letter=tag_first_letter
+        ).split()
+    )
+
+    dictionary = DictionaryMixin.get_dictionary(dictionary_path, 'dictionary')
+
+    dictionary.set_index(['ngram', 'tag'], inplace=True)
+    assert (dictionary.loc[ngrams]['count'] == counts).all()
+
+    # Extra counts are because of added ('', '') tokens before and after the sentences.
+    assert dictionary.loc[('', ''), 'count'] == 90
+    assert dictionary['count'].sum() == 9239 + dictionary.loc[('', ''), 'count']
     assert len(dictionary) == dictionary_len + 1
 
 
