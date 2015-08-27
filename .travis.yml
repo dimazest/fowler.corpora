@@ -5,7 +5,7 @@ python:
   - "3.3"
 
 env:
-  - PYTEST_ADDOPT = "--cov=fowler.corpora --cov-report=term-missing"
+  - PYTEST_ADDOPT = "--cov=fowler.corpora --cov-report=xml"
 
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
