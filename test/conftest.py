@@ -1,8 +1,15 @@
-import py
+import sys
+import os
 
 from fowler.corpora.models import read_space_from_file
 
+import py
 import pytest
+
+
+@pytest.fixture(autouse=True, scope='session')
+def pythonpath():
+    os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
 
 @pytest.fixture
