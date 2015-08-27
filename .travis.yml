@@ -16,5 +16,6 @@ script:
   - PYTEST_ADDOPTS="--cov=fowler.corpora --cov-report=xml" ~/miniconda3/bin/python setup.py test
 
 after_success:
-  - coveralls
+  - coveralls -v
+  - ls -hl .coveragerc
   - ~/miniconda3/bin/conda list
