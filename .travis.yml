@@ -14,7 +14,7 @@ before_install:
 install:
   - ~/miniconda3/bin/conda install -y pip cffi cython gensim ipython lxml matplotlib numexpr numpy openpyxl pandas patsy psutil python-dateutil pyyaml scikit-learn scipy seaborn pytables nltk
 script:
-  - ~/miniconda3/bin/python setyp.py test
+  - ~/miniconda3/bin/python setup.py test
 
 after_success:
   # - pip install pytest-cov coveralls
