@@ -20,8 +20,8 @@ from .util import co_occurrences
 logger = logging.getLogger(__name__)
 
 
-CCGToken = namedtuple('CCGToken', 'word, stem, tag')
-CCGDependency = namedtuple('CCGDependency', 'head, relation, dependant')
+Token = namedtuple('Token', 'word, stem, tag')
+Dependency = namedtuple('Dependency', 'head, relation, dependant')
 
 
 class Corpus:
@@ -263,7 +263,7 @@ class BNC:
 
             for (word, tag), stem in zip(words_tags, stems):
                 # TODO: should it be a class?
-                yield word, stem, tag
+                yield Token(word, stem, tag)
 
         # Consider the whole file as one document!
         yield it()
@@ -355,7 +355,7 @@ class BNC_CCG:
     def dependencies_iter(self, path):
         def collect_dependencies(dependencies, tokens):
             for d in dependencies:
-                yield CCGDependency(tokens[d.head], d.relation, tokens[d.dependant])
+                yield Dependency(tokens[d.head], d.relation, tokens[d.dependant])
 
         # Consider the whole file as one document!
         for dependencies, tokens in self.ccg_bnc_iter(path):
@@ -401,7 +401,7 @@ class BNC_CCG:
                 logger.debug('Could not extract dependency argument: %s', dependency)
                 continue
 
-            yield CCGDependency(head_id, relation, dependant_id)
+            yield Dependency(head_id, relation, dependant_id)
 
     def parse_tokens(self, c):
         """Parse and retrieve token position, word, stem and tag from a C&C parse."""
@@ -411,7 +411,7 @@ class BNC_CCG:
         for position, token in enumerate(c.split()):
             word, stem, tag, *_ = token.split('|')
 
-            yield position, CCGToken(word, stem, tag)
+            yield position, Token(word, stem, tag)
 
 
 def ukwac_cell_extractor(cells):
@@ -506,7 +506,7 @@ class UKWAC:
             for _, node in sorted(dg.nodes.items()):
 
                 if node['word'] is not None:
-                    yield node['word'], node['lemma'], node['tag']
+                    yield self.node_to_token(node)
 
     def verb_subject_object_iter(self, path):
         for document in self.documents(path):
@@ -569,3 +569,27 @@ class UKWAC:
                         node['lemma'] = node['lemma'].lower()
 
                 yield dg
+
+    def node_to_token(self, node):
+        return Token(node['word'], node['lemma'], node['tag'])
+
+    def dependencies_iter(self, path):
+        # def collect_dependencies(dependencies, tokens):
+        #     for d in dependencies:
+        #         yield CCGDependency(tokens[d.head], d.relation, tokens[d.dependant])
+        #
+        # # Consider the whole file as one document!
+        # for dependencies, tokens in self.ccg_bnc_iter(path):
+        #     yield from collect_dependencies(dependencies, tokens)
+
+        # Consider everything t obe one document!
+
+        for document in self.documents(path):
+            for dg in self.document_dependency_graphs(document):
+                for node in dg.nodes.values():
+                    if node['head'] is not None:
+                        yield Dependency(
+                            self.node_to_token(dg.nodes[node['head']]),
+                            node['rel'],
+                            self.node_to_token(node)
+                        )

@@ -305,6 +305,28 @@ def test_bnc_ccg_transitive_verbs(bnc_ccg_path, dispatcher, tmpdir):
     assert len(vso) == 74
 
 
+def test_ukwac_transitive_verbs(ukwac_path, dispatcher, tmpdir):
+    vso_path = str(tmpdir.join("dictionary.h5"))
+    dispatcher.dispatch(
+        'bnc transitive-verbs '
+        '--corpus dep-parsed-ukwac://{corpus}?lowercase_stem=y '
+        '-o {output} '
+        '--no_p11n '
+        ''.format(
+            corpus=ukwac_path,
+            output=vso_path,
+        ).split()
+    )
+
+    vso = CategoricalDispatcher.read_vso_file(vso_path, 'dictionary')
+
+    vso.set_index(
+        ['verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'],
+        inplace=True,
+    )
+    assert len(vso) == 177
+
+
 def test_bnc_ccg_dependencies(bnc_ccg_path, dispatcher, tmpdir):
     path = str(tmpdir.join("dependencies.h5"))
     dispatcher.dispatch(
@@ -339,4 +361,48 @@ def test_bnc_ccg_dependencies(bnc_ccg_path, dispatcher, tmpdir):
         'obj2',
         'xcomp',
         'xmod',
+    }
+
+
+def test_ukwac_dependencies(ukwac_path, dispatcher, tmpdir):
+    path = str(tmpdir.join("dependencies.h5"))
+    dispatcher.dispatch(
+        'bnc dependencies '
+        '--corpus dep-parsed-ukwac://{corpus}?lowercase_stem=y '
+        '-o {output} '
+        '--no_p11n '
+        ''.format(
+            corpus=ukwac_path,
+            output=path,
+        ).split()
+    )
+
+    result = pd.read_hdf(path, 'dictionary')
+
+    assert result.index.is_unique
+    assert len(result) == 6930
+    assert result['count'].sum() == 8397
+
+    assert len(set(result.index.levels[2])) == len(result.index.levels[2])
+
+    assert set(result.index.levels[2]) == {
+        'ADV',
+        'AMOD',
+        'CC',
+        'CLF',
+        'COORD',
+        'DEP',
+        'EXP',
+        'IOBJ',
+        'LGS',
+        'NMOD',
+        'OBJ',
+        'P',
+        'PMOD',
+        'PRD',
+        'PRN',
+        'PRT',
+        'SBJ',
+        'VC',
+        'VMOD',
     }
