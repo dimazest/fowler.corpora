@@ -4,9 +4,6 @@ sudo: false
 python:
   - "3.3"
 
-env:
-  - PYTEST_ADDOPT = "--cov=fowler.corpora --cov-report=xml"
-
 before_install:
   - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
   - chmod +x Miniconda3-latest-Linux-x86_64.sh
@@ -16,7 +13,7 @@ install:
   - ~/miniconda3/bin/conda install -y pip cffi cython gensim ipython lxml matplotlib numexpr numpy openpyxl pandas patsy psutil python-dateutil pyyaml scikit-learn scipy seaborn pytables nltk pyzmq
   - pip install coveralls
 script:
-  - ~/miniconda3/bin/python setup.py test
+  - PYTEST_ADDOPT="--cov=fowler.corpora --cov-report=xml" ~/miniconda3/bin/python setup.py test
 
 after_success:
   - coveralls
