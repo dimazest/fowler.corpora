@@ -13,7 +13,7 @@ install:
   - ~/miniconda3/bin/conda install -y pip cffi cython gensim ipython lxml matplotlib numexpr numpy openpyxl pandas patsy psutil python-dateutil pyyaml scikit-learn scipy seaborn pytables nltk pyzmq docutils
   - pip install coveralls
 script:
-  - PYTEST_ADDOPT="--cov=fowler.corpora --cov-report=xml" ~/miniconda3/bin/python setup.py test
+  - PYTEST_ADDOPTS="--cov=fowler.corpora --cov-report=xml" ~/miniconda3/bin/python setup.py test
 
 after_success:
   - coveralls
