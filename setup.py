@@ -97,7 +97,7 @@ setup(
             'corpora = fowler.corpora.main:dispatch',
         ],
     },
-    tests_require=['pytest>=2.4.2', 'pytest-bdd'],
+    tests_require=['pytest>=2.4.2', 'pytest-bdd', 'pytest-cov'],
     cmdclass={'test': PyTest},
 
 )

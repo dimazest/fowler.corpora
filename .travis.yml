@@ -14,10 +14,10 @@ before_install:
   - ~/miniconda3/bin/conda update -y conda
 install:
   - ~/miniconda3/bin/conda install -y pip cffi cython gensim ipython lxml matplotlib numexpr numpy openpyxl pandas patsy psutil python-dateutil pyyaml scikit-learn scipy seaborn pytables nltk pyzmq
-  - ~/miniconda3/bin/pip install pytest-cov coveralls
+  - pip install coveralls
 script:
   - ~/miniconda3/bin/python setup.py test
 
 after_success:
-  - ~/miniconda3/bin/coveralls
+  - coveralls
   - ~/miniconda3/bin/conda list
