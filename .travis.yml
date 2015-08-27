@@ -12,7 +12,7 @@ before_install:
   - ~/miniconda3/bin/conda create -y -n fowler.corpora python=3.4
   # - . ~/miniconda3/bin/activate fowler.corpora
 install:
-  - ~/miniconda3/bin/conda install -y pip cffi cython gensim ipython lxml matplotlib numexpr numpy openpyxl pandas patsy psutil python-dateutil pyyaml scikit-learn scipy seaborn pytables nltk
+  - ~/miniconda3/bin/conda install -y pip cffi cython gensim ipython lxml matplotlib numexpr numpy openpyxl pandas patsy psutil python-dateutil pyyaml scikit-learn scipy seaborn pytables nltk pyzmq
 script:
   - ~/miniconda3/bin/python setup.py test
 
