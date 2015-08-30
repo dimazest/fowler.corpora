@@ -574,16 +574,6 @@ class UKWAC:
         return Token(node['word'], node['lemma'], node['tag'])
 
     def dependencies_iter(self, path):
-        # def collect_dependencies(dependencies, tokens):
-        #     for d in dependencies:
-        #         yield CCGDependency(tokens[d.head], d.relation, tokens[d.dependant])
-        #
-        # # Consider the whole file as one document!
-        # for dependencies, tokens in self.ccg_bnc_iter(path):
-        #     yield from collect_dependencies(dependencies, tokens)
-
-        # Consider everything t obe one document!
-
         for document in self.documents(path):
             for dg in self.document_dependency_graphs(document):
                 for node in dg.nodes.values():
