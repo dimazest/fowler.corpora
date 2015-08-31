@@ -11,13 +11,14 @@ from urllib.parse import urlsplit, parse_qs
 
 import pandas as pd
 
+from pkg_resources import iter_entry_points
 from progress.bar import Bar
 
 from fowler.corpora.dispatcher import Dispatcher, NewSpaceCreationMixin, DictionaryMixin
 from fowler.corpora.execnet import sum_folder
 from fowler.corpora.space.util import write_space
 
-from .readers import BNC, BNC_CCG, UKWAC, Corpus
+from .readers import Corpus
 
 
 logger = logging.getLogger(__name__)
@@ -38,11 +39,9 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
         query = parse_qs(corpus_uri.query)
         query_dict = {k: v[0] for k, v in query.items()}
 
-        # TODO: Use entry points for corpus reader discovery.
         scheme_mapping = {
-            'bnc': BNC,
-            'bnc+ccg': BNC_CCG,
-            'dep-parsed-ukwac': UKWAC,
+            ep.name: ep.load()
+            for ep in iter_entry_points(group='fowler.corpus_readers', name=None)
         }
 
         try:
@@ -50,7 +49,7 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
         except KeyError:
             raise NotImplementedError('The {0}:// scheme is not supported.'.format(corpus_uri.scheme))
 
-        if CorpusReader == UKWAC:
+        if corpus_uri.scheme == 'ukwac':
             query_dict['workers_count'] = len(self.execnet_hub.gateways)
 
         corpus_reader_kwargs = CorpusReader.init_kwargs(

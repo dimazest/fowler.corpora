@@ -96,6 +96,11 @@ setup(
         'console_scripts': [
             'corpora = fowler.corpora.main:dispatch',
         ],
+        'fowler.corpus_readers': [
+            'bnc = fowler.corpora.bnc.readers:BNC',
+            'bnc+ccg = fowler.corpora.bnc.readers:BNC_CCG',
+            'dep-parsed-ukwac = fowler.corpora.bnc.readers:UKWAC',
+        ],
     },
     tests_require=['pytest>=2.4.2', 'pytest-bdd', 'pytest-cov'],
     cmdclass={'test': PyTest},
