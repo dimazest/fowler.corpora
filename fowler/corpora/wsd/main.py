@@ -35,7 +35,7 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
     )
     global__google_vectors = '', False, 'Get rid of certain words in the input data that are not in Google vectors.'
     global__verb_space = '', '', 'Separate transitive verb space.'
-    global__dataset_type=(
+    global__dataset_type = (
         '',
         tuple(dataset_types),
         'The kind of dataset.'
@@ -44,7 +44,6 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
     @Resource
     def dataset_class(self):
         return dataset_types[self.dataset_type]
-
 
     @Resource
     def verb_space(self):
@@ -232,7 +231,6 @@ def gs12_similarity(args):
             (v, verb), (s, compose(adj_subj, subj)), (o, compose(adj_obj, obj)), (l, landmark), composition_operator,
         )
     )
-
 
 
 def gs12(
