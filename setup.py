@@ -98,8 +98,9 @@ setup(
         ],
         'fowler.corpus_readers': [
             'bnc = fowler.corpora.bnc.readers:BNC',
-            'bnc+ccg = fowler.corpora.bnc.readers:BNC_CCG',
+            'bnc-ccg = fowler.corpora.bnc.readers:BNC_CCG',
             'dep-parsed-ukwac = fowler.corpora.bnc.readers:UKWAC',
+            'ks13 = fowler.corpora.bnc.readers:KS13',
         ],
     },
     tests_require=['pytest>=2.4.2', 'pytest-bdd', 'pytest-cov'],
