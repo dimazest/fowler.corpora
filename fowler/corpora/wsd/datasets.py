@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 tag_mappings = {
     'bnc': {'N': 'SUBST', 'V': 'VERB', 'J': 'ADJ'},
-    'bnc+ccg': {'N': 'N', 'V': 'V', 'J': 'J'},
+    'bnc-ccg': {'N': 'N', 'V': 'V', 'J': 'J'},
     'ukwac': {'N': 'N', 'V': 'V', 'J': 'J'},
 }
 
@@ -186,35 +186,6 @@ class KS13Dataset(SimilarityDataset):
         }[self.composition_operator]
 
         return Sentence()
-
-    @classmethod
-    def tokens(cls, df, tagset):
-        def extract_tokens(series, tag=None):
-            result = pd.DataFrame({'ngram': series.unique()})
-
-            if tag is not None:
-                result['tag'] = tag
-
-            return result
-
-        tm = tag_mappings[tagset]
-
-        return (
-           pd
-           .concat(
-               [
-                   extract_tokens(df[c], t)
-                   for c, t in (
-                       ('verb1', tm['V']),
-                       ('subject1', tm['N']),
-                       ('object1', tm['N']),
-                       ('verb2', tm['V']),
-                       ('subject2', tm['N']),
-                       ('object2', tm['N']),
-                   )
-               ]
-            )
-        )
 
     def info(self):
         return ' ({style.BOLD}{co}{style.RESET})'.format(

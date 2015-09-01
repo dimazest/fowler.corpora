@@ -47,45 +47,33 @@ def filter_verbs(
 
 
 @command()
-def select_entities(
+def select_targets(
     target,
-    dictionary=('', '', 'Dictionary filename.'),
-    corpus_arg=('', '', 'Corpus arg'),
-    entity_arg=('', '', 'Entity arg'),
-    size_arg=('', 2000, 'Entity arg'),
-    verb_arguments=('', '', 'Entity arg'),
-    targets=('', '', 'Targets filename.'),
-    cutoff_size=('', 0, 'Targets filename.')
+    dataset_dictionary=('', '', 'Dataset dictionary filename.'),
+
 ):
-    dictionary = pd.read_hdf(dictionary, 'dictionary')
-    assert dictionary.set_index(['ngram', 'tag']).index.is_unique
+    target_dictionary = pd.read_hdf(dataset_dictionary, 'dictionary')
+    assert target_dictionary.set_index(['ngram', 'tag']).index.is_unique
 
-    if corpus_arg == 'bnc':
-        nvaa = dictionary[dictionary['tag'].isin(['SUBST', 'VERB', 'ADJ', 'ADV'])]
+    target_dictionary[['ngram', 'tag']].to_csv(target, index=False, encoding='utf-8')
+
+
+@command()
+def select_context(
+    target,
+    corpus_dictionary=('', '', 'Dictionary filename.'),
+    corpus_type=('', '', 'Corpus arg'),
+    size=('', 2000, 'Size arg'),
+):
+    corpus_dictionary = pd.read_hdf(corpus_dictionary, 'dictionary')
+    assert corpus_dictionary.set_index(['ngram', 'tag']).index.is_unique
+
+    if corpus_type == 'bnc':
+        nvaa = corpus_dictionary[corpus_dictionary['tag'].isin(['SUBST', 'VERB', 'ADJ', 'ADV'])]
     else:
-        nvaa = dictionary[dictionary['tag'].isin(['N', 'V', 'J', 'R'])]
+        nvaa = corpus_dictionary[corpus_dictionary['tag'].isin(['N', 'V', 'J', 'R'])]
 
-    if entity_arg == 'context':
-        head = nvaa.head(size_arg)[['ngram', 'tag']]
-
-    elif entity_arg == 'targets':
-        dictionary.set_index(['ngram', 'tag'], inplace=True)
-
-        dataset = pd.read_csv(targets, encoding='utf-8')
-        if verb_arguments:
-            verb_arguments = pd.read_csv(verb_arguments, encoding='utf-8').dropna()
-
-            verb_argument_counts = dictionary.loc[[tuple(x) for x in verb_arguments.values]]
-            verb_argument_counts = verb_argument_counts[verb_argument_counts['count'] >= cutoff_size]
-
-            verb_arguments = verb_argument_counts.reset_index()[['ngram', 'tag']]
-
-            head = pd.concat([dataset, verb_arguments]).drop_duplicates()
-        else:
-            head = dataset.drop_duplicates()
-
-        if size_arg:
-            head = pd.concat([head, nvaa.head(size_arg)[['ngram', 'tag']]]).drop_duplicates()
+    head = nvaa.head(size)[['ngram', 'tag']]
 
     assert head.set_index(['ngram', 'tag']).index.is_unique
 

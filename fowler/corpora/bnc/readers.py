@@ -583,3 +583,52 @@ class UKWAC:
                             node['rel'],
                             self.node_to_token(node)
                         )
+
+
+class KS13:
+    # TODO: Corpus readers should define tag mapping!
+
+    def __init__(self, paths, tagset):
+        self.paths = paths
+        self.tagset = tagset
+
+    @classmethod
+    def init_kwargs(cls, root=None, tagset='ukwac'):
+
+        if root is None:
+            root = os.path.join(getcwd(), 'emnlp2013_turk.txt')
+
+        return {
+            'paths': [root],
+            'tagset': tagset,
+        }
+
+    def words_by_document(self, path):
+        # TODO: should be moved away from there.
+        from fowler.corpora.wsd.datasets import tag_mappings
+
+        df = pd.read_csv(
+            path,
+            sep=' ',
+            usecols=(
+                'subject1', 'verb1', 'object1',
+                'subject2', 'verb2', 'object2',
+                'score',
+            ),
+        )
+
+        def words_iter(rows):
+            for _, row in rows:
+                for item, tag in (
+                    ('subject1', 'N'),
+                    ('verb1', 'V'),
+                    ('object1', 'N'),
+                    ('subject2', 'N'),
+                    ('verb2', 'V'),
+                    ('object2', 'N'),
+                ):
+                    word = stem = row[item]
+                    t = tag_mappings[self.tagset][tag]
+                    yield word, stem, t
+
+        yield words_iter(df.iterrows())
