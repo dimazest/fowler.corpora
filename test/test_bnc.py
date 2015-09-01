@@ -159,7 +159,7 @@ def test_bnc_ccg_dictionary(bnc_ccg_path, dispatcher, tmpdir, stem, tag_first_le
     dictionary_path = str(tmpdir.join("dictionary.h5"))
     dispatcher.dispatch(
         'bnc dictionary '
-        '--corpus bnc+ccg://{corpus} '
+        '--corpus bnc-ccg://{corpus} '
         '-o {output} '
         '--no_p11n '
         '{tag_first_letter} '
@@ -287,7 +287,7 @@ def test_bnc_ccg_transitive_verbs(bnc_ccg_path, dispatcher, tmpdir):
     vso_path = str(tmpdir.join("dictionary.h5"))
     dispatcher.dispatch(
         'bnc transitive-verbs '
-        '--corpus bnc+ccg://{corpus} '
+        '--corpus bnc-ccg://{corpus} '
         '-o {output} '
         '--no_p11n '
         ''.format(
@@ -331,7 +331,7 @@ def test_bnc_ccg_dependencies(bnc_ccg_path, dispatcher, tmpdir):
     path = str(tmpdir.join("dependencies.h5"))
     dispatcher.dispatch(
         'bnc dependencies '
-        '--corpus bnc+ccg://{corpus} '
+        '--corpus bnc-ccg://{corpus} '
         '-o {output} '
         '--no_p11n '
         ''.format(
