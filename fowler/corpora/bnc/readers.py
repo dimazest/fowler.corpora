@@ -603,12 +603,12 @@ class KS13:
             'tagset': tagset,
         }
 
-    def words_by_document(self, path):
-        # TODO: should be moved away from there.
+    def read_file(self, group=False):
+        # TODO: should be moved away from here.
         from fowler.corpora.wsd.datasets import tag_mappings
 
         df = pd.read_csv(
-            path,
+            self.paths[0],
             sep=' ',
             usecols=(
                 'subject1', 'verb1', 'object1',
@@ -617,18 +617,59 @@ class KS13:
             ),
         )
 
+        for item, tag in (
+            ('subject1', 'N'),
+            ('verb1', 'V'),
+            ('object1', 'N'),
+            ('subject2', 'N'),
+            ('verb2', 'V'),
+            ('object2', 'N'),
+        ):
+            df['{}_tag'.format(item)] = tag_mappings[self.tagset][tag]
+
+        if group:
+            df = df.groupby(
+                [
+                    'subject1', 'subject1_tag', 'verb1', 'verb1_tag', 'object1', 'object1_tag',
+                    'subject2', 'subject2_tag', 'verb2', 'verb2_tag', 'object2', 'object2_tag',
+                ],
+                as_index=False,
+            ).mean()
+
+        return df
+
+    def words_by_document(self, path):
+        # Part of CorpusReader
+        df = self.read_file()
+
         def words_iter(rows):
             for _, row in rows:
-                for item, tag in (
-                    ('subject1', 'N'),
-                    ('verb1', 'V'),
-                    ('object1', 'N'),
-                    ('subject2', 'N'),
-                    ('verb2', 'V'),
-                    ('object2', 'N'),
+                for item in (
+                    'subject1', 'verb1', 'object1',
+                    'subject2', 'verb2', 'object2',
                 ):
                     word = stem = row[item]
-                    t = tag_mappings[self.tagset][tag]
+                    t = row['{}_tag'.format(item)]
                     yield word, stem, t
 
         yield words_iter(df.iterrows())
+
+    def sentence_similarity_pairs(self):
+        # Part of Dataset
+        df = self.read_file(group=True)
+
+        # TODO: return sentences as DependencyGraoh?
+        for _, row in df.iterrows():
+            yield (
+                (
+                    (row['subject1'], row['subject1_tag']),
+                    (row['verb1'], row['verb1_tag']),
+                    (row['object1'], row['object1_tag']),
+                ),
+                (
+                    (row['subject2'], row['subject2_tag']),
+                    (row['verb2'], row['verb2_tag']),
+                    (row['object2'], row['object2_tag']),
+                ),
+                row['score']
+            )

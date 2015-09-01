@@ -1,14 +1,18 @@
 """Implementation of common word sense disambiguation methods."""
 import logging
 
+import colored
 import pandas as pd
+
+from fowler.corpora.bnc.main import uri_to_corpus_reader
+from fowler.corpora.bnc.readers import KS13
 
 from fowler.corpora.dispatcher import Dispatcher, Resource, SpaceMixin
 from fowler.corpora.models import read_space_from_file
 from fowler.corpora.util import display
 
+from .datasets import dataset_types
 from .experiments import SimilarityExperiment
-from .datasets import KS13Dataset, dataset_types
 
 
 logger = logging.getLogger(__name__)
@@ -35,15 +39,11 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
     )
     global__google_vectors = '', False, 'Get rid of certain words in the input data that are not in Google vectors.'
     global__verb_space = '', '', 'Separate transitive verb space.'
-    global__dataset_type = (
-        '',
-        tuple(dataset_types),
-        'The kind of dataset.'
-    )
+    global__dataset = ('', '', 'The kind of dataset.')
 
     @Resource
-    def dataset_class(self):
-        return dataset_types[self.dataset_type]
+    def dataset(self):
+        return uri_to_corpus_reader(self.kwargs['dataset'])
 
     @Resource
     def verb_space(self):
@@ -170,42 +170,68 @@ def gs11(
     display(gs11_data.groupby('hilo').mean())
 
 
+class Composer:
+    # TODO: Rename, as *Vectorizer
+    def __init__(self, space, operator):
+        self.space = space
+        self.operator = operator  # TODO: should be differenct classes!
+
+    def compose(self, sentence):
+        subject = self.space[sentence[0]]
+        verb = self.space[sentence[1]]
+        object_ = self.space[sentence[2]]
+
+        def relational():
+            return verb.multiply(kron(subject, object_, format='bsr'))
+
+        def copy_object():
+            return subject.T.multiply(verb.dot(object_.T)).T
+
+        def copy_subject():
+            return subject.dot(verb).multiply(object_)
+
+        Sentence = {
+            'verb': lambda: verb,
+            'add': lambda: verb + subject + object_,
+            'mult': lambda: verb.multiply(subject).multiply(object_),
+            'kron': lambda: verb.multiply(kron(subject, object_, format='bsr')),
+            'relational': relational,
+            'copy-object': copy_object,
+            'copy-subject': copy_subject,
+            'frobenious-add': lambda: copy_object() + copy_subject(),
+            'frobenious-mult': lambda: copy_object().multiply(copy_subject()),
+            'frobenious-outer': lambda: kron(copy_object(), copy_subject()),
+
+        }[self.operator]
+
+        return Sentence()
+
+    def info(self):
+        return ' ({s.BOLD}{co}{s.RESET})'.format(
+            s=colored.style,
+            co=self.operator,
+        )
+
+
 @command()
 def similarity(
         pool,
+        dataset,
         no_p11n,
         composition_operator,
         space,
         verb_space,
-        dataset_class,
-        dataset=('', 'downloads/compdistmeaning/emnlp2013_turk.txt', 'The KS2013 dataset.'),
-        tagset=('', ('bnc', 'bnc+ccg', 'ukwac'), 'Space tagset'),
         output=('o', 'sentence_similarity.h5', 'Result output file.'),
+        key=('', 'dataset', 'The key of the result in the output file.')
 ):
-    kwargs = {
-        'show_progress_bar': not no_p11n,
-        'pool': pool,
-    }
 
-    experiment = SimilarityExperiment(**kwargs)
-
-    # TODO: pass dataset as a uri, the same way as the path to the corpus is passed!
-    if dataset_class == KS13Dataset:
-        kwargs.update(
-            {
-                'composition_operator': composition_operator,
-                'verb_space': verb_space,
-            }
-        )
+    composer = Composer(space, composition_operator)
+    experiment = SimilarityExperiment(show_progress_bar=not no_p11n, pool=pool)
 
     experiment.evaluate(
-        dataset_class(
-            dataset_filename=dataset,
-            space=space,
-            tagset=tagset,
-            **kwargs
-        ),
-    ).to_hdf(output)
+        dataset=dataset,
+        composer=composer,
+    ).to_hdf(output, key=key)
 
 
 def gs12_similarity(args):

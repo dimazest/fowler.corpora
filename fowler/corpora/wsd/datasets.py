@@ -2,7 +2,6 @@ import logging
 
 import pandas as pd
 
-from colored import style
 from scipy.sparse import kron, csr_matrix
 
 from fowler.corpora.util import Worker
@@ -19,9 +18,6 @@ tag_mappings = {
 
 
 class Dataset(Worker):
-
-    def to_hdf(self, file_path, key='dataset'):
-        self.dataset.to_hdf(file_path, key=key)
 
     @classmethod
     def read(cls, dataset_filename):
@@ -159,39 +155,6 @@ class KS13Dataset(SimilarityDataset):
             verb_vectors = {v: V(v) for v in verbs}
 
         return verb_vectors
-
-    def compose(self, subject, verb, object_):
-
-        def relational():
-            return verb.multiply(kron(subject, object_, format='bsr'))
-
-        def copy_object():
-            return subject.T.multiply(verb.dot(object_.T)).T
-
-        def copy_subject():
-            return subject.dot(verb).multiply(object_)
-
-        Sentence = {
-            'verb': lambda: verb,
-            'add': lambda: verb + subject + object_,
-            'mult': lambda: verb.multiply(subject).multiply(object_),
-            'kron': lambda: verb.multiply(kron(subject, object_, format='bsr')),
-            'relational': relational,
-            'copy-object': copy_object,
-            'copy-subject': copy_subject,
-            'frobenious-add': lambda: copy_object() + copy_subject(),
-            'frobenious-mult': lambda: copy_object().multiply(copy_subject()),
-            'frobenious-outer': lambda: kron(copy_object(), copy_subject()),
-
-        }[self.composition_operator]
-
-        return Sentence()
-
-    def info(self):
-        return ' ({style.BOLD}{co}{style.RESET})'.format(
-            style=style,
-            co=self.composition_operator,
-        )
 
 
 class SimLex999Dataset(SimilarityDataset):

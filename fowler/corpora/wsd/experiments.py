@@ -12,34 +12,42 @@ def cosine_similarity(s1, s2):
 
 
 def inner_product(s1, s2):
+    # TODO: use numpy.
     return s1.multiply(s2).sum()
 
 
 class SimilarityExperiment(Worker):
-    def evaluate(self, dataset):
+    def evaluate(self, dataset, composer):
+        pairs = list(dataset.sentence_similarity_pairs())
+
+        sent_vectors = (
+            (s1, composer.compose(s1), s2, composer.compose(s2), score)
+            for s1, s2, score in pairs
+        )
 
         result = pd.DataFrame.from_records(
             [
                 (
-                    cosine_similarity(s1, s2),
-                    inner_product(s1, s2),
+                    s1[0][0], s1[1][0], s1[2][0],
+                    s2[0][0], s2[1][0], s2[2][0],
+                    cosine_similarity(s1_vect, s2_vect),
+                    inner_product(s1_vect, s2_vect),
+                    score,
                 )
-                for s1, s2 in self.progressify(
-                    dataset.pairs(),
+                for s1, s1_vect, s2, s2_vect, score in self.progressify(
+                    sent_vectors,
                     description='Similarity',
-                    max=len(dataset.dataset),
+                    max=len(pairs)
                 )
             ],
-            columns=('cos', 'inner_product'),
+            columns=(
+                'subject1', 'verb1', 'object1',
+                'subject2', 'verb2', 'object2',
+                'cos', 'inner_product', 'score',
+            ),
         )
 
-        dataset.dataset['cos'] = result['cos']
-        dataset.dataset['inner_product'] = result['inner_product']
-
-        comparison = dataset.dataset[[dataset.human_judgement_column, 'cos']]
-        comparison = comparison[comparison[dataset.human_judgement_column].notnull()]
-
-        rho, p = stats.spearmanr(comparison)
+        rho, p = stats.spearmanr(result[['cos', 'score']])
         print(
             'Spearman correlation{info}, cosine): '
             '{style.BOLD}rho={rho:.3f}{style.RESET}, p={p:.5f}, support={support}'
@@ -47,9 +55,9 @@ class SimilarityExperiment(Worker):
                 rho=rho,
                 p=p,
                 style=style,
-                info=dataset.info(),
-                support=len(comparison),
+                info=composer.info(),
+                support=len(result),
             )
         )
 
-        return dataset
+        return result

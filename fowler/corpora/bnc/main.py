@@ -24,6 +24,35 @@ from .readers import Corpus
 logger = logging.getLogger(__name__)
 
 
+def uri_to_corpus_reader(uri, workers_count=None, limit=None):
+    corpus_uri = urlsplit(uri)
+    query = parse_qs(corpus_uri.query)
+    query_dict = {k: v[0] for k, v in query.items()}
+
+    scheme_mapping = {
+        ep.name: ep.load()
+        for ep in iter_entry_points(group='fowler.corpus_readers', name=None)
+    }
+
+    try:
+        CorpusReader = scheme_mapping[corpus_uri.scheme]
+    except KeyError:
+        raise NotImplementedError('The {0}:// scheme is not supported.'.format(corpus_uri.scheme))
+
+    if corpus_uri.scheme == 'ukwac':
+        query_dict['workers_count'] = workers_count
+
+    corpus_reader_kwargs = CorpusReader.init_kwargs(
+        root=corpus_uri.path or None,
+        **query_dict
+    )
+
+    if limit:
+        corpus_kwargs['paths'] = corpus_kwargs['paths'][:limit]
+
+    return CorpusReader(**corpus_reader_kwargs)
+
+
 class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
     """BNC dispatcher."""
     global__corpus = '', 'bnc://', 'The path to the corpus.'
@@ -35,32 +64,11 @@ class BNCDispatcher(Dispatcher, NewSpaceCreationMixin, DictionaryMixin):
     @property
     def corpus(self):
         """Access to a corpus."""
-        corpus_uri = urlsplit(self.kwargs['corpus'])
-        query = parse_qs(corpus_uri.query)
-        query_dict = {k: v[0] for k, v in query.items()}
-
-        scheme_mapping = {
-            ep.name: ep.load()
-            for ep in iter_entry_points(group='fowler.corpus_readers', name=None)
-        }
-
-        try:
-            CorpusReader = scheme_mapping[corpus_uri.scheme]
-        except KeyError:
-            raise NotImplementedError('The {0}:// scheme is not supported.'.format(corpus_uri.scheme))
-
-        if corpus_uri.scheme == 'ukwac':
-            query_dict['workers_count'] = len(self.execnet_hub.gateways)
-
-        corpus_reader_kwargs = CorpusReader.init_kwargs(
-            root=corpus_uri.path or None,
-            **query_dict
+        corpus_reader = uri_to_corpus_reader(
+            uri=self.kwargs['corpus'],
+            workers_count=len(self.execnet_hub.gateways),
+            limit=self.limit
         )
-
-        if self.limit:
-            corpus_kwargs['paths'] = corpus_kwargs['paths'][:self.limit]
-
-        corpus_reader = CorpusReader(**corpus_reader_kwargs)
 
         return Corpus(
             corpus_reader=corpus_reader,
