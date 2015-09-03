@@ -59,11 +59,13 @@ class Corpus:
 
         columns = 'target', 'target_tag', 'context', 'context_tag'
 
-        target_contexts = peekable(
-            co_occurrences(
-                self.words_iter(path),
-                window_size_before=self.window_size_before,
-                window_size_after=self.window_size_after,
+        target_contexts = peekable(chain.from_iterable(
+                co_occurrences(
+                    document_words,
+                    window_size_before=self.window_size_before,
+                    window_size_after=self.window_size_after,
+                )
+                for document_words in self.words_by_document(path)
             )
         )
 
@@ -146,14 +148,9 @@ class Corpus:
             # TODO: it would be nice to return Series instead of DataFrame
             yield counts.to_frame('count')
 
-    def words_iter(self, path):
-        # It would be nice to use None instead, but Pandas doesn't like it
-        # in some cases.
-        NONE = '', ''
-        before = [NONE] * self.window_size_before
-        after = [NONE] * self.window_size_after
-
+    def words_by_document(self, path):
         words_by_document = self.corpus_reader.words_by_document(path)
+
         for words in words_by_document:
 
             if self.stem:
@@ -164,7 +161,11 @@ class Corpus:
             if self.tag_first_letter:
                 words = ((n, t[0]) for n, t in words)
 
-            yield from chain(before, words, after)
+            yield words
+
+    def words_iter(self, path):
+        for document_words in self.words_by_document(path):
+            yield from document_words
 
     def words(self, path):
         """Count all the words from a corpus file."""

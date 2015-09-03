@@ -141,9 +141,8 @@ def test_bnc_dictionary(bnc_path, dispatcher, tmpdir, stem, tag_first_letter, ng
     dictionary.set_index(['ngram', 'tag'], inplace=True)
     assert (dictionary.loc[ngrams]['count'] == counts).all()
 
-    # Extra counts are because of added ('', '') tokens before and after the sentences.
-    assert dictionary['count'].sum() == 151 + dictionary.loc[('', ''), 'count']
-    assert len(dictionary) == dictionary_len + 1
+    assert dictionary['count'].sum() == 151
+    assert len(dictionary) == dictionary_len
 
 
 @pytest.mark.parametrize(
@@ -178,9 +177,8 @@ def test_bnc_ccg_dictionary(bnc_ccg_path, dispatcher, tmpdir, stem, tag_first_le
 
     assert (dictionary.loc[ngrams]['count'] == counts).all()
 
-    # Extra counts are because of added ('', '') tokens before and after the sentences.
-    assert dictionary['count'].sum() == 1781 + dictionary.loc[('', ''), 'count']
-    assert len(dictionary) == dictionary_len + 1
+    assert dictionary['count'].sum() == 1781
+    assert len(dictionary) == dictionary_len
 
 
 @pytest.mark.parametrize(
@@ -273,10 +271,10 @@ def test_ukwac_dictionary(ukwac_path, dispatcher, tmpdir, stem, tag_first_letter
     dictionary.set_index(['ngram', 'tag'], inplace=True)
     assert (dictionary.loc[ngrams]['count'] == counts).all()
 
-    # Extra counts are because of added ('', '') tokens before and after the sentences.
-    assert dictionary.loc[('', ''), 'count'] == 90
-    assert dictionary['count'].sum() == 9239 + dictionary.loc[('', ''), 'count']
-    assert len(dictionary) == dictionary_len + 1
+    assert dictionary['count'].sum() == 9239
+    assert len(dictionary) == dictionary_len
+
+    assert ('', '') not in dictionary
 
 
 def test_bnc_cooccurrence(space):
