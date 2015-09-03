@@ -17,19 +17,20 @@ def inner_product(s1, s2):
 
 
 class SimilarityExperiment(Worker):
-    def evaluate(self, dataset, composer):
-        pairs = list(dataset.sentence_similarity_pairs())
+    def evaluate(self, dataset, vectorizer):
+        pairs = list(dataset.dependency_graphs_pairs())
 
+        # TODO: Refactor to mimic scikit-learn pipeline.
         sent_vectors = (
-            (s1, composer.compose(s1), s2, composer.compose(s2), score)
-            for s1, s2, score in pairs
+            (g1, vectorizer.vectorize(g1), g2, vectorizer.vectorize(g2), score)
+            for g1, g2, score in pairs
         )
 
         result = pd.DataFrame.from_records(
             [
                 (
-                    s1[0][0], s1[1][0], s1[2][0],
-                    s2[0][0], s2[1][0], s2[2][0],
+                    str(s1.tree()),
+                    str(s2.tree()),
                     cosine_similarity(s1_vect, s2_vect),
                     inner_product(s1_vect, s2_vect),
                     score,
@@ -41,21 +42,20 @@ class SimilarityExperiment(Worker):
                 )
             ],
             columns=(
-                'subject1', 'verb1', 'object1',
-                'subject2', 'verb2', 'object2',
+                'unit1', 'unit2',
                 'cos', 'inner_product', 'score',
             ),
         )
 
         rho, p = stats.spearmanr(result[['cos', 'score']])
         print(
-            'Spearman correlation{info}, cosine): '
+            'Spearman correlation {info}, cosine): '
             '{style.BOLD}rho={rho:.3f}{style.RESET}, p={p:.5f}, support={support}'
             .format(
                 rho=rho,
                 p=p,
                 style=style,
-                info=composer.info(),
+                info=vectorizer.info(),
                 support=len(result),
             )
         )

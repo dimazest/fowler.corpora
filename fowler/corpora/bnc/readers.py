@@ -589,6 +589,8 @@ class UKWAC:
 class KS13:
     # TODO: Corpus readers should define tag mapping!
 
+    vectorizer = 'compositional'
+
     def __init__(self, paths, tagset):
         self.paths = paths
         self.tagset = tagset
@@ -655,22 +657,107 @@ class KS13:
 
         yield words_iter(df.iterrows())
 
-    def sentence_similarity_pairs(self):
+    def dependency_graphs_pairs(self):
         # Part of Dataset
         df = self.read_file(group=True)
 
-        # TODO: return sentences as DependencyGraoh?
         for _, row in df.iterrows():
             yield (
-                (
-                    (row['subject1'], row['subject1_tag']),
-                    (row['verb1'], row['verb1_tag']),
-                    (row['object1'], row['object1_tag']),
+                self.sentence_to_graph(
+                    row['subject1'], row['subject1_tag'],
+                    row['verb1'], row['verb1_tag'],
+                    row['object1'], row['object1_tag'],
                 ),
-                (
-                    (row['subject2'], row['subject2_tag']),
-                    (row['verb2'], row['verb2_tag']),
-                    (row['object2'], row['object2_tag']),
+                self.sentence_to_graph(
+                    row['subject2'], row['subject2_tag'],
+                    row['verb2'], row['verb2_tag'],
+                    row['object2'], row['object2_tag'],
                 ),
                 row['score']
             )
+
+    def sentence_to_graph(self, s, s_t, v, v_t, o, o_t):
+        template = (
+            '{s}\t{s_t}\t2\tSBJ\n'
+            '{v}\t{v_t}\t0\tROOT\n'
+            '{o}\t{o_t}\t2\tOBJ\n'
+        )
+
+        return DependencyGraph(
+            template.format(
+                s=s, s_t=s_t,
+                v=v, v_t=v_t,
+                o=o, o_t=o_t,
+            )
+        )
+
+
+class SimLex999:
+    # TODO: Corpus readers should define tag mapping!
+
+    vectorizer = 'lexical'
+
+    def __init__(self, paths, tagset):
+        self.paths = paths
+        self.tagset = tagset
+
+    @classmethod
+    def init_kwargs(cls, root=None, tagset='ukwac'):
+
+        if root is None:
+            root = os.path.join(getcwd(), 'SimLex-999.txt')
+
+        return {
+            'paths': [root],
+            'tagset': tagset,
+        }
+
+    def read_file(self):
+        # TODO: should be moved away from here.
+        from fowler.corpora.wsd.datasets import tag_mappings
+
+        df = pd.read_csv(
+            self.paths[0],
+            sep='\t',
+            usecols=('word1', 'word2', 'POS', 'SimLex999'),
+        )
+
+        df.loc[df['POS'] == 'N', 'POS'] = tag_mappings[self.tagset]['N']
+        df.loc[df['POS'] == 'V', 'POS'] = tag_mappings[self.tagset]['V']
+        df.loc[df['POS'] == 'A', 'POS'] = tag_mappings[self.tagset]['J']
+
+        return df
+
+    def words_by_document(self, path):
+        # Part of CorpusReader
+
+        def words_iter(rows):
+            for _, row in rows:
+                for item in ('word1', 'word2'):
+                    word = stem = row[item]
+                    t = row['POS']
+                    yield word, stem, t
+
+        yield words_iter(self.read_file().iterrows())
+
+    def dependency_graphs_pairs(self):
+        # Part of Dataset
+        df = self.read_file()
+
+        for _, row in df.iterrows():
+            yield (
+                self.sentence_to_graph(
+                    row['word1'], row['POS'],
+                ),
+                self.sentence_to_graph(
+                    row['word2'], row['POS'],
+                ),
+                row['SimLex999']
+            )
+
+    def sentence_to_graph(self, w, t):
+        template = (
+            '{w}\t{t}\t0\tROOT\n'
+        )
+
+        return DependencyGraph(template.format(w=w, t=t))

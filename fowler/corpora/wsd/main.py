@@ -1,8 +1,11 @@
 """Implementation of common word sense disambiguation methods."""
 import logging
+from itertools import chain
 
 import colored
 import pandas as pd
+
+from scipy import sparse
 
 from fowler.corpora.bnc.main import uri_to_corpus_reader
 from fowler.corpora.bnc.readers import KS13
@@ -170,16 +173,60 @@ def gs11(
     display(gs11_data.groupby('hilo').mean())
 
 
-class Composer:
-    # TODO: Rename, as *Vectorizer
-    def __init__(self, space, operator):
-        self.space = space
-        self.operator = operator  # TODO: should be differenct classes!
+def transitive_sentence(tagset):
+    from .datasets import tag_mappings
 
-    def compose(self, sentence):
-        subject = self.space[sentence[0]]
-        verb = self.space[sentence[1]]
-        object_ = self.space[sentence[2]]
+    return (
+        ('TOP', 'TOP'),
+        (
+            (
+                (tag_mappings[tagset]['V'], 'ROOT'),
+                (
+                    ((tag_mappings[tagset]['N'], 'SBJ'), ()),
+                    ((tag_mappings[tagset]['N'], 'OBJ'), ()),
+                ),
+            ),
+        ),
+    )
+
+
+def graph_signature(dg, node=0):
+    result = tuple()
+
+    for dep_address in sorted(chain.from_iterable(dg.nodes[node]['deps'].values())):
+        result += graph_signature(dg, dep_address),
+
+    return (dg.nodes[node]['tag'], dg.nodes[node]['rel']), result
+
+
+class LexicalVectorizer:
+    def __init__(self, space):
+        self.space = space
+
+    def vectorize(self, dependency_graph):
+        node = dependency_graph.nodes[1]
+        token = node['lemma'], node['tag']
+
+        return self.space[token]
+
+    def info(self):
+        return ''
+
+
+class CompositionalVectorizer:
+
+    def __init__(self, space, operator, tagset):
+        self.space = space
+        self.operator = operator  # TODO: should be differenct classes and register using entrypoints.
+        self.tagset = tagset
+
+    def vectorize(self, dependency_graph):
+        assert graph_signature(dependency_graph) == transitive_sentence(self.tagset)
+
+        n = dependency_graph.nodes
+        subject = self.space[n[1]['lemma'], n[1]['tag']]
+        verb = self.space[n[2]['lemma'], n[2]['tag']]
+        object_ = self.space[n[3]['lemma'], n[3]['tag']]
 
         def relational():
             return verb.multiply(kron(subject, object_, format='bsr'))
@@ -195,21 +242,21 @@ class Composer:
             'add': lambda: verb + subject + object_,
             'mult': lambda: verb.multiply(subject).multiply(object_),
             'kron': lambda: verb.multiply(kron(subject, object_, format='bsr')),
-            'relational': relational,
-            'copy-object': copy_object,
-            'copy-subject': copy_subject,
-            'frobenious-add': lambda: copy_object() + copy_subject(),
-            'frobenious-mult': lambda: copy_object().multiply(copy_subject()),
-            'frobenious-outer': lambda: kron(copy_object(), copy_subject()),
+            # 'relational': relational,
+            # 'copy-object': copy_object,
+            # 'copy-subject': copy_subject,
+            # 'frobenious-add': lambda: copy_object() + copy_subject(),
+            # 'frobenious-mult': lambda: copy_object().multiply(copy_subject()),
+            # 'frobenious-outer': lambda: kron(copy_object(), copy_subject()),
 
         }[self.operator]
 
         return Sentence()
 
     def info(self):
-        return ' ({s.BOLD}{co}{s.RESET})'.format(
+        return '({s.BOLD}{operator}{s.RESET})'.format(
             s=colored.style,
-            co=self.operator,
+            operator=self.operator,
         )
 
 
@@ -225,12 +272,20 @@ def similarity(
         key=('', 'dataset', 'The key of the result in the output file.')
 ):
 
-    composer = Composer(space, composition_operator)
+    if dataset.vectorizer == 'lexical':
+        vectorizer = LexicalVectorizer(space)
+    else:
+        vectorizer = CompositionalVectorizer(
+            space,
+            composition_operator,
+            tagset=dataset.tagset,
+        )
+
     experiment = SimilarityExperiment(show_progress_bar=not no_p11n, pool=pool)
 
     experiment.evaluate(
         dataset=dataset,
-        composer=composer,
+        vectorizer=vectorizer,
     ).to_hdf(output, key=key)
 
 
@@ -288,20 +343,3 @@ def gs12(
         input_column='annotator_score',
         composition_operator=composition_operator,
     )
-
-
-@command()
-def targets(
-    dataset_class,
-    dataset=('', 'downloads/compdistmeaning/emnlp2013_turk.txt', 'The KS2013 dataset.'),
-    out=('o', 'targets.csv', 'KS targets'),
-    tagset=('', '', 'Tagset'),
-):
-    """Extract target words from a dataset."""
-
-    tokens = dataset_class.tokens(
-        dataset_class.read(dataset),
-        tagset,
-    )
-
-    tokens.drop_duplicates().to_csv(out, index=False)
