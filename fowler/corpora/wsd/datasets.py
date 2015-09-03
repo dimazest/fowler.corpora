@@ -193,8 +193,7 @@ class Tagger:
         return self.tag(v, 'J')
 
 
+# TODO: remove
 dataset_types = {
     'ks13': KS13Dataset,
-    'simlex999': SimLex999Dataset,
-    'wordsim353': WordSim353Dataset,
 }
