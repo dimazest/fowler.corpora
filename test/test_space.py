@@ -2,9 +2,9 @@ import pytest
 
 from fowler.corpora.models import read_space_from_file
 
+
 def test_line_normalize(space_path, tmpdir, dispatcher):
     path = str(tmpdir.join('line-normalized.h5'))
-
 
     dispatcher.dispatch(
         'space line-normalize '
