@@ -174,8 +174,8 @@ def pmi(
 
     # This are context probabilities in the whole Corpora P(c)
     column_totals = (
-        column_dictionary.loc[space.column_labels.index].values.flatten()
-         / dictionary['count'].sum()
+        column_dictionary.loc[space.column_labels.index].values.flatten() /
+        dictionary['count'].sum()
     )
 
     # Elements in the matrix are N(c, t): the co-occurrence counts
