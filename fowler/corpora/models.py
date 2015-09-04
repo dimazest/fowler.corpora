@@ -147,7 +147,7 @@ class Space(Mapping):
         vectors = self.get_target_rows(*targets)
         return csr_matrix(vectors.sum(axis=0))
 
-    def multiply(self, *targets):
+    def mult(self, *targets):
         """Multiply vectors of the row labels (target words) element-wise."""
         vectors = self.get_target_rows(*targets)
 

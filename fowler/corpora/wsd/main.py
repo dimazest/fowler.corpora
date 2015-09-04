@@ -27,7 +27,7 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
     global__composition_operator = (
         '',
         (
-            'verb',
+            'head',
             'add',
             'mult',
             'kron',
@@ -199,21 +199,12 @@ def graph_signature(dg, node=0):
     return (dg.nodes[node]['tag'], dg.nodes[node]['rel']), result
 
 
-class LexicalVectorizer:
-    def __init__(self, space):
-        self.space = space
-
-    def vectorize(self, dependency_graph):
-        node = dependency_graph.nodes[1]
-        token = node['lemma'], node['tag']
-
-        return self.space[token]
-
-    def info(self):
-        return ''
-
-
 class CompositionalVectorizer:
+
+    transitive_operators = {
+        'kron', 'relational', 'copy-object', 'copy-subject',
+        'frobenious-add', 'frobenious-mult', 'frobenious-outer',
+    }
 
     def __init__(self, space, operator, tagset):
         self.space = space
@@ -221,43 +212,57 @@ class CompositionalVectorizer:
         self.tagset = tagset
 
     def vectorize(self, dependency_graph):
-        assert graph_signature(dependency_graph) == transitive_sentence(self.tagset)
+        nodes = dependency_graph.nodes
 
-        n = dependency_graph.nodes
-        subject = self.space[n[1]['lemma'], n[1]['tag']]
-        verb = self.space[n[2]['lemma'], n[2]['tag']]
-        object_ = self.space[n[3]['lemma'], n[3]['tag']]
+        if self.operator == 'head':
+            assert len(nodes[0]['deps']) == 1
 
-        def relational():
-            return verb.multiply(kron(subject, object_, format='bsr'))
+            head_address, = nodes[0]['deps']['ROOT']
+            return self.node_to_vector(nodes[head_address])
 
-        def copy_object():
-            return subject.T.multiply(verb.dot(object_.T)).T
+        elif self.operator in ('add', 'mult'):
+            tokens = tuple((node['lemma'], node['tag']) for node in nodes.values() if node['address'])
+            return getattr(self.space, self.operator)(*tokens)
 
-        def copy_subject():
-            return subject.dot(verb).multiply(object_)
+        elif self.operator in self.transitive_operators:
+            assert graph_signature(dependency_graph) == transitive_sentence(self.tagset)
 
-        Sentence = {
-            'verb': lambda: verb,
-            'add': lambda: verb + subject + object_,
-            'mult': lambda: verb.multiply(subject).multiply(object_),
-            'kron': lambda: verb.multiply(kron(subject, object_, format='bsr')),
-            # 'relational': relational,
-            # 'copy-object': copy_object,
-            # 'copy-subject': copy_subject,
-            # 'frobenious-add': lambda: copy_object() + copy_subject(),
-            # 'frobenious-mult': lambda: copy_object().multiply(copy_subject()),
-            # 'frobenious-outer': lambda: kron(copy_object(), copy_subject()),
+            subject = self.node_to_vector(node[1])
+            verb = self.node_to_vector(node[2])
+            object_ = self.node_to_vector(node[3])
 
-        }[self.operator]
+            def relational():
+                return verb.multiply(kron(subject, object_, format='bsr'))
 
-        return Sentence()
+            def copy_object():
+                return subject.T.multiply(verb.dot(object_.T)).T
+
+            def copy_subject():
+                return subject.dot(verb).multiply(object_)
+
+            Sentence = {
+                'kron': lambda: verb.multiply(kron(subject, object_, format='bsr')),
+                # 'relational': relational,
+                # 'copy-object': copy_object,
+                # 'copy-subject': copy_subject,
+                # 'frobenious-add': lambda: copy_object() + copy_subject(),
+                # 'frobenious-mult': lambda: copy_object().multiply(copy_subject()),
+                # 'frobenious-outer': lambda: kron(copy_object(), copy_subject()),
+
+            }
+
+            return Sentence[self.operator]()
+        else:
+            raise ValueError('Operator {} is not supported'.format(self.operator))
 
     def info(self):
         return '({s.BOLD}{operator}{s.RESET})'.format(
             s=colored.style,
             operator=self.operator,
         )
+
+    def node_to_vector(self, node):
+        return self.space[node['lemma'], node['tag']]
 
 
 @command()
@@ -273,13 +278,13 @@ def similarity(
 ):
 
     if dataset.vectorizer == 'lexical':
-        vectorizer = LexicalVectorizer(space)
-    else:
-        vectorizer = CompositionalVectorizer(
-            space,
-            composition_operator,
-            tagset=dataset.tagset,
-        )
+        assert composition_operator == 'head'
+
+    vectorizer = CompositionalVectorizer(
+        space,
+        composition_operator,
+        tagset=dataset.tagset,
+    )
 
     experiment = SimilarityExperiment(show_progress_bar=not no_p11n, pool=pool)
 
