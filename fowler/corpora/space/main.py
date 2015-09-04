@@ -17,6 +17,24 @@ command = dispatcher.command
 
 
 @command()
+def truncate(
+    space,
+    output,
+    size=('', 2000, 'New vector length.')
+):
+    """Normalize the matrix, so the sum of values in a row is equal to 1."""
+    assert space.matrix.shape[1] >= size
+
+    new_space = Space(
+        space.matrix[:, :size],
+        row_labels=space.row_labels,
+        column_labels=space.column_labels.head(size)
+    )
+
+    new_space.write(output)
+
+
+@command()
 def line_normalize(space, output):
     """Normalize the matrix, so the sum of values in a row is equal to 1."""
     space.line_normalize().write(output)
@@ -145,6 +163,7 @@ def pmi(
     [3] http://en.wikipedia.org/wiki/Pointwise_mutual_information
 
     """
+
     def set_index(dictionary):
         dictionary.set_index(
             [c for c in dictionary.columns if c != 'count'],
