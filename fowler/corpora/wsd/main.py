@@ -5,6 +5,7 @@ from itertools import chain
 import colored
 import pandas as pd
 
+from chrono import Timer
 from scipy import sparse
 
 from fowler.corpora.bnc.main import uri_to_corpus_reader
@@ -227,31 +228,28 @@ class CompositionalVectorizer:
         elif self.operator in self.transitive_operators:
             assert graph_signature(dependency_graph) == transitive_sentence(self.tagset)
 
-            subject = self.node_to_vector(node[1])
-            verb = self.node_to_vector(node[2])
-            object_ = self.node_to_vector(node[3])
+            subject = self.node_to_vector(nodes[1])
+            object_ = self.node_to_vector(nodes[3])
 
-            def relational():
-                return verb.multiply(kron(subject, object_, format='bsr'))
+            if self.operator == 'kron':
+                with Timer() as timed:
+                    verb = sparse.kron(
+                        self.node_to_vector(nodes[2]),
+                        self.node_to_vector(nodes[2]),
+                        format='csr',
+                    )
+                logger.debug(
+                    'Verb "%s" matrix construction using Kronecker: %.2f seconds, %d dimensions',
+                    nodes[2]['lemma'],
+                    timed.elapsed,
+                    object_.shape[1],
+                )
+                # import ipdb; ipdb.set_trace()
 
-            def copy_object():
-                return subject.T.multiply(verb.dot(object_.T)).T
+                return verb.multiply(sparse.kron(subject, object_, format='csr'))
 
-            def copy_subject():
-                return subject.dot(verb).multiply(object_)
-
-            Sentence = {
-                'kron': lambda: verb.multiply(kron(subject, object_, format='bsr')),
-                # 'relational': relational,
-                # 'copy-object': copy_object,
-                # 'copy-subject': copy_subject,
-                # 'frobenious-add': lambda: copy_object() + copy_subject(),
-                # 'frobenious-mult': lambda: copy_object().multiply(copy_subject()),
-                # 'frobenious-outer': lambda: kron(copy_object(), copy_subject()),
-
-            }
-
-            return Sentence[self.operator]()
+            else:
+                raise NotImplemented('Operator {} is not implemented'.format(self.operator))
         else:
             raise ValueError('Operator {} is not supported'.format(self.operator))
 
