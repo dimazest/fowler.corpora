@@ -101,6 +101,7 @@ setup(
             'bnc-ccg = fowler.corpora.bnc.readers:BNC_CCG',
             'dep-parsed-ukwac = fowler.corpora.bnc.readers:UKWAC',
             'ks13 = fowler.corpora.bnc.readers:KS13',
+            'gs11 = fowler.corpora.bnc.readers:GS11',
             'simlex999 = fowler.corpora.bnc.readers:SimLex999',
         ],
     },

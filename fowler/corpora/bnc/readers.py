@@ -663,12 +663,12 @@ class KS13:
 
         for _, row in df.iterrows():
             yield (
-                self.sentence_to_graph(
+                transitive_sentence_to_graph(
                     row['subject1'], row['subject1_tag'],
                     row['verb1'], row['verb1_tag'],
                     row['object1'], row['object1_tag'],
                 ),
-                self.sentence_to_graph(
+                transitive_sentence_to_graph(
                     row['subject2'], row['subject2_tag'],
                     row['verb2'], row['verb2_tag'],
                     row['object2'], row['object2_tag'],
@@ -676,20 +676,119 @@ class KS13:
                 row['score']
             )
 
-    def sentence_to_graph(self, s, s_t, v, v_t, o, o_t):
-        template = (
-            '{s}\t{s_t}\t2\tSBJ\n'
-            '{v}\t{v_t}\t0\tROOT\n'
-            '{o}\t{o_t}\t2\tOBJ\n'
+
+def transitive_sentence_to_graph(s, s_t, v, v_t, o, o_t):
+    template = (
+        '{s}\t{s_t}\t2\tSBJ\n'
+        '{v}\t{v_t}\t0\tROOT\n'
+        '{o}\t{o_t}\t2\tOBJ\n'
+    )
+
+    return DependencyGraph(
+        template.format(
+            s=s, s_t=s_t,
+            v=v, v_t=v_t,
+            o=o, o_t=o_t,
+        )
+    )
+
+
+class GS11:
+    """Transitive sentence disambiguation dataset described in [1].
+
+    The data is available at [2].
+
+    [1] Grefenstette, Edward, and Mehrnoosh Sadrzadeh. "Experimental support
+    for a categorical compositional distributional model of meaning."
+    Proceedings of the Conference on Empirical Methods in Natural Language
+    Processing. Association for Computational Linguistics, 2011.
+
+    [2] http://www.cs.ox.ac.uk/activities/compdistmeaning/GS2011data.txt
+
+    """
+    # TODO: Corpus readers should define tag mapping!
+
+    vectorizer = 'compositional'
+
+    def __init__(self, paths, tagset):
+        self.paths = paths
+        self.tagset = tagset
+
+    @classmethod
+    def init_kwargs(cls, root=None, tagset='ukwac'):
+
+        if root is None:
+            root = os.path.join(getcwd(), 'GS2011data.txt')
+
+        return {
+            'paths': [root],
+            'tagset': tagset,
+        }
+
+    def read_file(self, group=False):
+        # TODO: should be moved away from here.
+        from fowler.corpora.wsd.datasets import tag_mappings
+
+        df = pd.read_csv(
+            self.paths[0],
+            sep=' ',
+            usecols=(
+                'verb', 'subject', 'object', 'landmark', 'input',
+            ),
         )
 
-        return DependencyGraph(
-            template.format(
-                s=s, s_t=s_t,
-                v=v, v_t=v_t,
-                o=o, o_t=o_t,
+        for item, tag in (
+            ('subject', 'N'),
+            ('verb', 'V'),
+            ('object', 'N'),
+            ('landmark', 'V'),
+        ):
+            df['{}_tag'.format(item)] = tag_mappings[self.tagset][tag]
+
+        if group:
+            df = df.groupby(
+                [
+                    'subject', 'subject_tag', 'verb', 'verb_tag', 'object', 'object_tag',
+                    'landmark', 'landmark_tag'
+                ],
+                as_index=False,
+            ).mean()
+
+        return df
+
+    def words_by_document(self, path):
+        # Part of CorpusReader
+        df = self.read_file()
+
+        def words_iter(rows):
+            for _, row in rows:
+                for item in (
+                    'subject', 'verb', 'object', 'landmark'
+                ):
+                    word = stem = row[item]
+                    t = row['{}_tag'.format(item)]
+                    yield word, stem, t
+
+        yield words_iter(df.iterrows())
+
+    def dependency_graphs_pairs(self):
+        # Part of Dataset
+        df = self.read_file(group=True)
+
+        for _, row in df.iterrows():
+            yield (
+                transitive_sentence_to_graph(
+                    row['subject'], row['subject_tag'],
+                    row['verb'], row['verb_tag'],
+                    row['object'], row['object_tag'],
+                ),
+                transitive_sentence_to_graph(
+                    row['subject'], row['subject_tag'],
+                    row['landmark'], row['landmark_tag'],
+                    row['object'], row['object_tag'],
+                ),
+                row['input']
             )
-        )
 
 
 class SimLex999:
