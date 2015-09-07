@@ -860,3 +860,83 @@ class SimLex999:
         )
 
         return DependencyGraph(template.format(w=w, t=t))
+
+
+class MEN:
+    # TODO: Corpus readers should define tag mapping!
+
+    vectorizer = 'lexical'
+
+    def __init__(self, paths, tagset):
+        self.paths = paths
+        self.tagset = tagset
+
+    @classmethod
+    def init_kwargs(cls, root=None, tagset='ukwac'):
+
+        if root is None:
+            root = os.path.join(getcwd(), 'MEN_dataset_lemma_form_full')
+
+        return {
+            'paths': [root],
+            'tagset': tagset,
+        }
+
+    def read_file(self):
+        # TODO: should be moved away from here.
+        from fowler.corpora.wsd.datasets import tag_mappings
+
+        df = pd.read_csv(
+            self.paths[0],
+            sep=' ',
+            names=('token1', 'token2', 'score'),
+        )
+
+        def split(item):
+            tag = 'tag{}'.format(item)
+            word_token = df['token{}'.format(item)].str.split('-', expand=True)
+            df['word{}'.format(item)] = word_token[0]
+            df[tag] = word_token[1]
+
+            df.loc[df[tag] == 'n', tag] = tag_mappings[self.tagset]['N']
+            df.loc[df[tag] == 'v', tag] = tag_mappings[self.tagset]['V']
+            df.loc[df[tag] == 'j', tag] = tag_mappings[self.tagset]['J']
+
+        split('1')
+        split('2')
+
+        return df
+
+    def words_by_document(self, path):
+        # Part of CorpusReader
+
+        def words_iter(rows):
+            for _, row in rows:
+                for item in ('1', '2'):
+                    word = stem = row['word{}'.format(item)]
+                    t = row['tag{}'.format(item)]
+                    yield word, stem, t
+
+        yield words_iter(self.read_file().iterrows())
+
+    def dependency_graphs_pairs(self):
+        # Part of Dataset
+        df = self.read_file()
+
+        for _, row in df.iterrows():
+            yield (
+                self.sentence_to_graph(
+                    row['word1'], row['tag1'],
+                ),
+                self.sentence_to_graph(
+                    row['word2'], row['tag2'],
+                ),
+                row['score']
+            )
+
+    def sentence_to_graph(self, w, t):
+        template = (
+            '{w}\t{t}\t0\tROOT\n'
+        )
+
+        return DependencyGraph(template.format(w=w, t=t))
