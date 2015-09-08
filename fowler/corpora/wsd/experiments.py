@@ -22,8 +22,8 @@ class SimilarityExperiment(Worker):
 
         # TODO: Refactor to mimic scikit-learn pipeline.
         sent_vectors = (
-            (g1, vectorizer.vectorize(g1), g2, vectorizer.vectorize(g2), score)
-            for g1, g2, score in pairs
+            (g1, vectorizer.vectorize(g1), g2, vectorizer.vectorize(g2), score) + tuple(extra)
+            for g1, g2, score, *extra in pairs
         )
 
         result = pd.DataFrame.from_records(
@@ -34,8 +34,8 @@ class SimilarityExperiment(Worker):
                     cosine_similarity(s1_vect, s2_vect),
                     inner_product(s1_vect, s2_vect),
                     score,
-                )
-                for s1, s1_vect, s2, s2_vect, score in self.progressify(
+                ) + tuple(extra)
+                for s1, s1_vect, s2, s2_vect, score, *extra in self.progressify(
                     sent_vectors,
                     description='Similarity',
                     max=len(pairs)
@@ -44,7 +44,7 @@ class SimilarityExperiment(Worker):
             columns=(
                 'unit1', 'unit2',
                 'cos', 'inner_product', 'score',
-            ),
+            ) + getattr(dataset, 'extra_fields', tuple()),
         )
 
         rho, p = stats.spearmanr(result[['cos', 'score']])

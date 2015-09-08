@@ -677,6 +677,90 @@ class KS13:
             )
 
 
+class PhraseRel:
+    # TODO: Corpus readers should define tag mapping!
+
+    vectorizer = 'compositional'
+    extra_fields = 'relevance_type',
+
+    def __init__(self, paths, tagset):
+        self.paths = paths
+        self.tagset = tagset
+
+    @classmethod
+    def init_kwargs(cls, root=None, tagset='ukwac'):
+
+        if root is None:
+            root = os.path.join(getcwd(), 'phraserel.csv')
+
+        return {
+            'paths': [root],
+            'tagset': tagset,
+        }
+
+    def read_file(self):
+        # TODO: should be moved away from here.
+        from fowler.corpora.wsd.datasets import tag_mappings
+
+        df = pd.read_csv(
+            self.paths[0],
+            sep=',',
+            usecols=(
+                'query_subject', 'query_verb', 'query_object',
+                'document_subject', 'document_verb', 'document_object',
+                'relevance_type', 'relevance_mean',
+            ),
+        )
+
+        for item, tag in (
+            ('query_subject', 'N'),
+            ('query_verb', 'V'),
+            ('query_object', 'N'),
+            ('document_subject', 'N'),
+            ('document_verb', 'V'),
+            ('document_object', 'N'),
+        ):
+            df['{}_tag'.format(item)] = tag_mappings[self.tagset][tag]
+
+        return df
+
+    def words_by_document(self, path):
+        # Part of CorpusReader
+        df = self.read_file()
+
+        def words_iter(rows):
+            for _, row in rows:
+                for item in (
+                    'query_subject', 'query_verb', 'query_object',
+                    'document_subject', 'document_verb', 'document_object',
+                ):
+                    word = stem = row[item]
+                    t = row['{}_tag'.format(item)]
+                    yield word, stem, t
+
+        yield words_iter(df.iterrows())
+
+    def dependency_graphs_pairs(self):
+        # Part of Dataset
+        df = self.read_file()
+
+        for _, row in df.iterrows():
+            yield (
+                transitive_sentence_to_graph(
+                    row['query_subject'], row['query_subject_tag'],
+                    row['query_verb'], row['query_verb_tag'],
+                    row['query_object'], row['query_object_tag'],
+                ),
+                transitive_sentence_to_graph(
+                    row['document_subject'], row['document_subject_tag'],
+                    row['document_verb'], row['document_verb_tag'],
+                    row['document_object'], row['document_object_tag'],
+                ),
+                row['relevance_mean'],
+                row['relevance_type'],
+            )
+
+
 def transitive_sentence_to_graph(s, s_t, v, v_t, o, o_t):
     template = (
         '{s}\t{s_t}\t2\tSBJ\n'
@@ -789,6 +873,121 @@ class GS11:
                 ),
                 row['input']
             )
+
+
+class GS12:
+    # TODO: Corpus readers should define tag mapping!
+
+    vectorizer = 'compositional'
+
+    def __init__(self, paths, tagset):
+        self.paths = paths
+        self.tagset = tagset
+
+    @classmethod
+    def init_kwargs(cls, root=None, tagset='ukwac'):
+
+        if root is None:
+            root = os.path.join(getcwd(), 'GS2011data.txt')
+
+        return {
+            'paths': [root],
+            'tagset': tagset,
+        }
+
+    def read_file(self, group=False):
+        # TODO: should be moved away from here.
+        from fowler.corpora.wsd.datasets import tag_mappings
+
+        df = pd.read_csv(
+            self.paths[0],
+            sep=' ',
+            usecols=(
+                'adj_subj', 'subj', 'verb', 'landmark', 'adj_obj', 'obj', 'annotator_score'
+            ),
+        )
+
+        for item, tag in (
+            ('adj_subj', 'J'),
+            ('subj', 'N'),
+            ('verb', 'V'),
+            ('adj_obj', 'J'),
+            ('obj', 'N'),
+            ('landmark', 'V'),
+        ):
+            df['{}_tag'.format(item)] = tag_mappings[self.tagset][tag]
+
+        if group:
+            df = df.groupby(
+                [
+                    'adj_subj', 'adj_subj_tag',
+                    'subj', 'subj_tag',
+                    'verb', 'verb_tag',
+                    'adj_obj', 'adj_obj_tag',
+                    'obj', 'obj_tag',
+                    'landmark', 'landmark_tag'
+                ],
+                as_index=False,
+            ).mean()
+
+        return df
+
+    def words_by_document(self, path):
+        # Part of CorpusReader
+        df = self.read_file()
+
+        def words_iter(rows):
+            for _, row in rows:
+                for item in (
+                    'adj_subj', 'subj', 'verb', 'adj_obj', 'obj', 'landmark'
+                ):
+                    word = stem = row[item]
+                    t = row['{}_tag'.format(item)]
+                    yield word, stem, t
+
+        yield words_iter(df.iterrows())
+
+    def dependency_graphs_pairs(self):
+        # Part of Dataset
+        df = self.read_file(group=True)
+
+        for _, row in df.iterrows():
+            yield (
+                self.sentence_to_graph(
+                    row['adj_subj'], row['adj_subj_tag'],
+                    row['subj'], row['subj_tag'],
+                    row['verb'], row['verb_tag'],
+                    row['adj_obj'], row['adj_obj_tag'],
+                    row['obj'], row['obj_tag'],
+                ),
+                self.sentence_to_graph(
+                    row['adj_subj'], row['adj_subj_tag'],
+                    row['subj'], row['subj_tag'],
+                    row['landmark'], row['landmark_tag'],
+                    row['adj_obj'], row['adj_obj_tag'],
+                    row['obj'], row['obj_tag'],
+                ),
+                row['annotator_score']
+            )
+
+    def sentence_to_graph(self, sa, sa_t, s, s_t, v, v_t, oa, oa_t, o, o_t):
+        template = (
+            '{sa}\t{sa_t}\t2\tamod\n'
+            '{s}\t{s_t}\t3\tSBJ\n'
+            '{v}\t{v_t}\t0\tROOT\n'
+            '{oa}\t{oa_t}\t2\tamod\n'
+            '{o}\t{o_t}\t3\tOBJ\n'
+        )
+
+        return DependencyGraph(
+            template.format(
+                sa=sa, sa_t=sa_t,
+                s=s, s_t=s_t,
+                v=v, v_t=v_t,
+                oa=oa, oa_t=oa_t,
+                o=o, o_t=o_t,
+            )
+        )
 
 
 class SimLex999:
