@@ -55,31 +55,6 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
             return read_space_from_file(self.kwargs['verb_space'])
 
     @Resource
-    def gs11_data(self):
-        """The data set grouped by verb, subject, object and landmark.
-
-        The mean of the input values per group is calculated.
-
-        """
-        data = pd.read_csv(self.kwargs['gs11_data'], sep=' ')
-        grouped = data.groupby(
-            ('verb', 'subject', 'object', 'landmark', 'hilo'),
-            as_index=False,
-        ).mean()
-
-        if self.google_vectors:
-            grouped = grouped[grouped['landmark'] != 'mope']
-            grouped = grouped[grouped['object'] != 'behaviour']
-            grouped = grouped[grouped['object'] != 'favour']
-            grouped = grouped[grouped['object'] != 'offence']
-            grouped = grouped[grouped['object'] != 'paper']
-
-        if self.limit:
-            grouped = grouped.head(self.limit)
-
-        return grouped
-
-    @Resource
     def gs12_data(self):
         """The data set grouped by 'adj_subj', 'subj', 'verb', 'landmark', 'adj_obj', 'obj'.
 
@@ -109,69 +84,6 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
 
 dispatcher = WSDDispatcher()
 command = dispatcher.command
-
-
-def gs11_similarity(args):
-    (v, verb), (s, subject), (o, object_), (l, landmark), composition_operator = args
-
-    if composition_operator == 'kron':
-        subject_object = compose(subject, object_)
-
-        sentence_verb = verb.multiply(subject_object)
-        sentence_landmark = landmark.multiply(subject_object)
-    elif composition_operator == 'mult':
-        sentence_verb = verb.multiply(subject).multiply(object_)
-        sentence_landmark = landmark.multiply(subject).multiply(object_)
-    elif composition_operator == 'add':
-        sentence_verb = verb + subject + object_
-        sentence_landmark = landmark + subject + object_
-    elif composition_operator == 'verb':
-        sentence_verb = verb
-        sentence_landmark = landmark
-
-    return pairwise.cosine_similarity(sentence_verb, sentence_landmark)[0][0]
-
-
-@command()
-def gs11(
-    pool,
-    space,
-    composition_operator,
-    gs11_data=('', 'downloads/compdistmeaning/GS2011data.txt', 'The GS2011 dataset.'),
-):
-    """Categorical compositional distributional model for transitive verb disambiguation.
-
-    Implements method described in [1]. The data is available at [2].
-
-    [1] Grefenstette, Edward, and Mehrnoosh Sadrzadeh. "Experimental support
-    for a categorical compositional distributional model of meaning."
-    Proceedings of the Conference on Empirical Methods in Natural Language
-    Processing. Association for Computational Linguistics, 2011.
-
-    [2] http://www.cs.ox.ac.uk/activities/compdistmeaning/GS2011data.txt
-
-    """
-    similarity_experiment(
-        space,
-        pool,
-        gs11_data,
-        verb_columns=('verb', 'landmark'),
-        similarity_input=lambda verb_vectors, t: (
-            (
-                (v, verb_vectors[v]),
-                (s, space[t.S(s)]),
-                (o, space[t.S(o)]),
-                (l, verb_vectors[l]),
-                composition_operator,
-            )
-            for v, s, o, l in gs11_data[['verb', 'subject', 'object', 'landmark']].values
-        ),
-        similarity_function=gs11_similarity,
-        input_column='input',
-        composition_operator=composition_operator,
-    )
-
-    display(gs11_data.groupby('hilo').mean())
 
 
 def transitive_sentence(tagset):
