@@ -13,7 +13,6 @@ import fowler.corpora.categorical.main as categorical_main
 import fowler.corpora.dictionary.main as dictionary_main
 import fowler.corpora.ms_paraphrase.main as ms_paraphrase_main
 import fowler.corpora.serafin03.main as serafin03_main
-import fowler.corpora.similarity.main as similarity_main
 import fowler.corpora.space.main as space_main
 import fowler.corpora.word2vec.main as word2vec_main
 import fowler.corpora.wsd.main as wsd_main
@@ -70,13 +69,6 @@ dispatcher.nest(
     'categorical',
     categorical_main.dispatcher,
     categorical_main.__doc__,
-)
-
-
-dispatcher.nest(
-    'similarity',
-    similarity_main.dispatcher,
-    similarity_main.__doc__,
 )
 
 
