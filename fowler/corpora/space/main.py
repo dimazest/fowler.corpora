@@ -28,7 +28,8 @@ def truncate(
     new_space = Space(
         space.matrix[:, :size],
         row_labels=space.row_labels,
-        column_labels=space.column_labels.head(size)
+        # It's important to sort by id to make sure that the most frequent features are selected.
+        column_labels=space.column_labels.sort('id').head(size),
     )
 
     new_space.write(output)
