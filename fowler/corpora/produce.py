@@ -81,13 +81,14 @@ def select_context(
 
 
 @command()
-def all_features(
+def features(
     target,
     dictionary=('', '', 'Dictionary filename.'),
-    limit=('', 5, 'The minimal number of times a feature has to occur to be counted.')
+    mintf=('', 1000, 'The minimal number of times a feature has to occur to be counted.')
 ):
     dictionary = pd.read_hdf(dictionary, 'dictionary')
-    dictionary.drop(dictionary[dictionary['count'] < limit].index, inplace=True)
+
+    dictionary.drop(dictionary[dictionary['count'] < mintf].index, inplace=True)
     dictionary.to_csv(
         target,
         columns=('ngram', 'tag'),
