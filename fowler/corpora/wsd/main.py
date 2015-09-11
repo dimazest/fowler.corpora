@@ -7,6 +7,7 @@ import pandas as pd
 
 from chrono import Timer
 from scipy import sparse
+from zope.cachedescriptors import method
 
 from fowler.corpora.bnc.main import uri_to_corpus_reader
 from fowler.corpora.bnc.readers import KS13
@@ -145,25 +146,32 @@ class CompositionalVectorizer:
 
             if self.operator == 'kron':
                 with Timer() as timed:
-                    verb = sparse.kron(
-                        self.node_to_vector(nodes[2]),
-                        self.node_to_vector(nodes[2]),
-                        format='csr',
-                    )
+                    verb = self.cached_kron(nodes[2]['lemma'], nodes[2]['tag'])
                 logger.debug(
-                    'Verb "%s" matrix construction using Kronecker: %.2f seconds, %d dimensions',
+                    'Verb "%s" matrix (%d dimensions) construction using Kronecker: %.2f seconds',
                     nodes[2]['lemma'],
-                    timed.elapsed,
                     object_.shape[1],
+                    timed.elapsed,
                 )
-                # import ipdb; ipdb.set_trace()
 
-                return verb.multiply(sparse.kron(subject, object_, format='csr'))
+                with Timer() as timed:
+                    subject_object = sparse.kron(subject, object_, format='csr')
+                logger.debug(
+                    'Subject-object matrix construction using Kronecker: %.2f seconds',
+                    timed.elapsed,
+                )
+
+                return verb.multiply(subject_object)
 
             else:
                 raise NotImplemented('Operator {} is not implemented'.format(self.operator))
         else:
             raise ValueError('Operator {} is not supported'.format(self.operator))
+
+    @method.cachedIn('_cached_kron_cache')
+    def cached_kron(self, lemma, tag):
+        verb = self.space[lemma, tag]
+        return sparse.kron(verb, verb, format='csr')
 
     def info(self):
         return '({s.BOLD}{operator}{s.RESET})'.format(
