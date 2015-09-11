@@ -12,8 +12,7 @@ def cosine_similarity(s1, s2):
 
 
 def inner_product(s1, s2):
-    # TODO: use numpy.
-    return s1.multiply(s2).sum()
+    return s1.dot(s2.T)[0, 0]
 
 
 class SimilarityExperiment(Worker):
