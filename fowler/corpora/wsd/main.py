@@ -5,7 +5,6 @@ from itertools import chain
 import colored
 import pandas as pd
 
-from chrono import Timer
 from scipy import sparse
 from zope.cachedescriptors import method
 
@@ -145,21 +144,8 @@ class CompositionalVectorizer:
             object_ = self.node_to_vector(nodes[3])
 
             if self.operator == 'kron':
-                with Timer() as timed:
-                    verb = self.cached_kron(nodes[2]['lemma'], nodes[2]['tag'])
-                logger.debug(
-                    'Verb "%s" matrix (%d dimensions) construction using Kronecker: %.2f seconds',
-                    nodes[2]['lemma'],
-                    object_.shape[1],
-                    timed.elapsed,
-                )
-
-                with Timer() as timed:
-                    subject_object = sparse.kron(subject, object_, format='csr')
-                logger.debug(
-                    'Subject-object matrix construction using Kronecker: %.2f seconds',
-                    timed.elapsed,
-                )
+                verb = self.cached_kron(nodes[2]['lemma'], nodes[2]['tag'])
+                subject_object = sparse.kron(subject, object_, format='csr')
 
                 return verb.multiply(subject_object)
 

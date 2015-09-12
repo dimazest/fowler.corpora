@@ -2,7 +2,6 @@ import logging
 
 import pandas as pd
 
-from chrono import Timer
 from colored import style
 from scipy import stats
 from sklearn.metrics import pairwise
@@ -14,27 +13,11 @@ logger = logging.getLogger(__name__)
 
 
 def cosine_similarity(s1, s2):
-    with Timer() as timed:
-        result = pairwise.cosine_similarity(s1, s2)[0][0]
-
-    logger.debug(
-        'cosine_similarity: %.2f seconds',
-        timed.elapsed,
-    )
-
-    return result
+    return pairwise.cosine_similarity(s1, s2)[0][0]
 
 
 def inner_product(s1, s2):
-    with Timer() as timed:
-        result = s1.dot(s2.T)[0, 0]
-
-    logger.debug(
-        'Inner product: %.2f seconds',
-        timed.elapsed,
-    )
-
-    return result
+    return s1.dot(s2.T)[0, 0]
 
 
 class SimilarityExperiment(Worker):
