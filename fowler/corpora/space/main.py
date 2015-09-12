@@ -3,6 +3,8 @@ import logging
 import numpy as np
 import pandas as pd
 
+from scipy import sparse
+
 from fowler.corpora.dispatcher import Dispatcher, DictionaryMixin, SpaceMixin
 from fowler.corpora.models import Space, read_space_from_file
 
@@ -20,16 +22,28 @@ command = dispatcher.command
 def truncate(
     space,
     output,
-    size=('', 2000, 'New vector length.')
+    size=('', 2000, 'New vector length.'),
+    nvaa=('', False, 'Use only nouns, verbs, adjectives and adverbs'),
+    tagset=('', '', 'Tagset'),
 ):
     """Normalize the matrix, so the sum of values in a row is equal to 1."""
     assert space.matrix.shape[1] >= size
 
+    features = space.column_labels
+    if nvaa:
+        if tagset == 'bnc':
+            features = features[features.index.get_level_values('tag').isin(['SUBST', 'VERB', 'ADJ', 'ADV'])]
+        else:
+            features = features[features.index.get_level_values('tag').isin(['N', 'V', 'J', 'R'])]
+
+    # It's important to sort by id to make sure that the most frequent features are selected.
+    features = features.sort('id').head(size)
+    matrix = sparse.csc_matrix(space.matrix)[:, features['id']]
+
     new_space = Space(
-        space.matrix[:, :size],
+        matrix,
         row_labels=space.row_labels,
-        # It's important to sort by id to make sure that the most frequent features are selected.
-        column_labels=space.column_labels.sort('id').head(size),
+        column_labels=features,
     )
 
     new_space.write(output)
@@ -231,12 +245,14 @@ def pmi(
 def ittf(
     space,
     output,
-    ittf_space=('', '', 'Space with feature co-occurrence counts.'),
+    raw_space=('', '', 'Space with feature co-occurrence counts.'),
     times=('', ('n', 'logn'), 'Multiply the resulted values by n or logn.'),
 ):
-    ittf_space = read_space_from_file(ittf_space)
+    raw_space = read_space_from_file(raw_space)
+    import ipdb; ipdb.set_trace()
+
     feature_cardinality = np.array(
-        [v.nnz for v in ittf_space.get_target_rows(*space.column_labels.index)]
+        [v.nnz for v in raw_space.get_target_rows(*space.column_labels.index)]
     )
 
     n = space.matrix.todense()

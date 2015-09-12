@@ -59,28 +59,6 @@ def select_targets(
 
 
 @command()
-def select_context(
-    target,
-    corpus_dictionary=('', '', 'Dictionary filename.'),
-    corpus_type=('', '', 'Corpus arg'),
-    size=('', 2000, 'Size arg'),
-):
-    corpus_dictionary = pd.read_hdf(corpus_dictionary, 'dictionary')
-    assert corpus_dictionary.set_index(['ngram', 'tag']).index.is_unique
-
-    if corpus_type == 'bnc':
-        nvaa = corpus_dictionary[corpus_dictionary['tag'].isin(['SUBST', 'VERB', 'ADJ', 'ADV'])]
-    else:
-        nvaa = corpus_dictionary[corpus_dictionary['tag'].isin(['N', 'V', 'J', 'R'])]
-
-    head = nvaa.head(size)[['ngram', 'tag']]
-
-    assert head.set_index(['ngram', 'tag']).index.is_unique
-
-    head.to_csv(target, index=False, encoding='utf-8')
-
-
-@command()
 def features(
     target,
     dictionary=('', '', 'Dictionary filename.'),
@@ -90,6 +68,25 @@ def features(
 
     dictionary.drop(dictionary[dictionary['count'] < mintf].index, inplace=True)
     dictionary.to_csv(
+        target,
+        columns=('ngram', 'tag'),
+        encoding='utf-8',
+        index=False,
+    )
+
+
+@command()
+def combine(
+    target,
+    dataset_targets=('', '', ''),
+    corpus_contexts=('', '', ''),
+):
+    dataset_targets = pd.read_csv(dataset_targets, encoding='utf-8')
+    corpus_contexts = pd.read_csv(corpus_contexts, encoding='utf-8')
+
+    pd.concat(
+        [corpus_contexts, dataset_targets]
+    ).drop_duplicates().to_csv(
         target,
         columns=('ngram', 'tag'),
         encoding='utf-8',
