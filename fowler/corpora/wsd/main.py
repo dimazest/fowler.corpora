@@ -6,7 +6,6 @@ import colored
 import pandas as pd
 
 from scipy import sparse
-from zope.cachedescriptors import method
 
 from fowler.corpora.bnc.main import uri_to_corpus_reader
 from fowler.corpora.bnc.readers import KS13
@@ -141,23 +140,19 @@ class CompositionalVectorizer:
             assert graph_signature(dependency_graph) == transitive_sentence(self.tagset)
 
             subject = self.node_to_vector(nodes[1])
+            verb = self.node_to_vector(nodes[2])
             object_ = self.node_to_vector(nodes[3])
 
             if self.operator == 'kron':
-                verb = self.cached_kron(nodes[2]['lemma'], nodes[2]['tag'])
+                verb_matrix = sparse.kron(verb, verb, format='csr')
                 subject_object = sparse.kron(subject, object_, format='csr')
 
-                return verb.multiply(subject_object)
+                return verb_matrix.multiply(subject_object)
 
             else:
                 raise NotImplemented('Operator {} is not implemented'.format(self.operator))
         else:
             raise ValueError('Operator {} is not supported'.format(self.operator))
-
-    @method.cachedIn('_cached_kron_cache')
-    def cached_kron(self, lemma, tag):
-        verb = self.space[lemma, tag]
-        return sparse.kron(verb, verb, format='csr')
 
     def info(self):
         return '({s.BOLD}{operator}{s.RESET})'.format(
