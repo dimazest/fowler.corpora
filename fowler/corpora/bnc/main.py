@@ -39,7 +39,6 @@ def uri_to_corpus_reader(uri, workers_count=None, limit=None):
     except KeyError:
         raise NotImplementedError('The {0}:// scheme is not supported.'.format(corpus_uri.scheme))
 
-
     if corpus_uri.scheme == 'dep-parsed-ukwac':
         query_dict['workers_count'] = workers_count
 
