@@ -249,7 +249,6 @@ def ittf(
     times=('', ('n', 'logn'), 'Multiply the resulted values by n or logn.'),
 ):
     raw_space = read_space_from_file(raw_space)
-    import ipdb; ipdb.set_trace()
 
     feature_cardinality = np.array(
         [v.nnz for v in raw_space.get_target_rows(*space.column_labels.index)]
