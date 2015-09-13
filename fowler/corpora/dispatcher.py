@@ -255,7 +255,7 @@ class Dispatcher(BaseDispatcher):
     @Resource
     def sentry_client(self):
         """Setntry client."""
-        if 'SENTRY_DSN' in os.environ:
+        if os.environ.get('SENTRY_DSN', ''):
             return raven.Client()
 
     @Resource
