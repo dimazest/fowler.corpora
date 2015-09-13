@@ -88,7 +88,12 @@ class BaseDispatcher(opster.Dispatcher):
             # pr = cProfile.Profile()
             # pr.enable()
 
-            result = func(**f_kwargs)
+            try:
+                result = func(**f_kwargs)
+            except:
+                if self.sentry_client:
+                    self.sentry_client.captureException()
+                raise
 
             # pr.disable()
             # pr.dump_stats('profile')
