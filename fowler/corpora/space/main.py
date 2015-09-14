@@ -26,7 +26,6 @@ def truncate(
     nvaa=('', False, 'Use only nouns, verbs, adjectives and adverbs'),
     tagset=('', '', 'Tagset'),
 ):
-    """Normalize the matrix, so the sum of values in a row is equal to 1."""
     assert space.matrix.shape[1] >= size
 
     features = space.column_labels
