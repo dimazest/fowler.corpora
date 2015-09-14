@@ -34,7 +34,7 @@ def write_space(f_name, context, targets, matrix):
 
     assert np.isfinite(matrix['count']).all()
 
-    with pd.get_store(f_name, mode='w', complevel=9, complib='zlib') as store:
+    with pd.get_store(f_name, mode='w', complevel=9, complib='blosc') as store:
         if context is not None:
             store['context'] = context
         store['targets'] = targets
