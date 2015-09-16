@@ -93,6 +93,7 @@ class ExecnetHub:
                 initialized.append(channel)
 
             if item[0] == 'result':
+                # TODO: log a message
                 type_, result = item
                 result = pickle.loads(result)
                 yield result
@@ -133,11 +134,14 @@ def initialize_channel(channel):
 
 def sum_folder(channel):
     import pickle
+    import logging
     from more_itertools import peekable
 
     from fowler.corpora.execnet import initialize_channel
 
     _, data = initialize_channel(channel)
+
+    logger = logging.getLogger('execnet.fum_folder')
 
     kwargs = data.get('kwargs', {})
     instance = data['instance']
@@ -149,26 +153,36 @@ def sum_folder(channel):
 
         if item == ('message', 'terminate'):
             if result is not None:
+                logger.debug('Sending the final result, size: %s', len(result))
                 channel.send(('result', pickle.dumps(result.reset_index())))
             break
 
         type_, data = item
         if type_ == 'task':
 
-            intermediate_results = peekable(folder(data, **kwargs))
+            intermediate_results = peekable(enumerate(folder(data, **kwargs)))
 
             if intermediate_results:
                 if result is None:
-                    result = next(intermediate_results)
+                    _, result = next(intermediate_results)
 
                 # TODO: It would be nice to catch any exceptioin here,
                 # (especially, the one that happens inside of the folder() call
                 # and report it to the master.
                 # Same applies to the next() call above.
-                #
-                # TODO: Time and log execution time for each addition and in total.
-                for r in intermediate_results:
+                for i, r in intermediate_results:
+                    if (i % 10) == 9:
+
+                        result.sort('count', inplace=True, ascending=False)
+
+                        half = len(result) // 2
+                        logger.debug('Sending a result. Result size: %s', half)
+                        channel.send(('result', pickle.dumps(result.tail(half).reset_index())))
+                        result = result.head(-half)
+
                     result = result.add(r, fill_value=0)
+
+                    logger.debug('Iteration: %s, result size: %s', i, len(result))
 
         channel.send(('message', 'send_next'))
 

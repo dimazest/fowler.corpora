@@ -11,6 +11,8 @@ from urllib.parse import urlsplit, parse_qs
 
 import pandas as pd
 
+from chrono import Timer
+from more_itertools import chunked
 from pkg_resources import iter_entry_points
 from progress.bar import Bar
 
@@ -128,16 +130,32 @@ def cooccurrence(
             )
         )
 
-    result = execnet_hub.run(
+    results = execnet_hub.run(
         remote_func=sum_folder,
         iterable=paths_progress_iter,
         init_func=init,
     )
 
-    result = [r for r in result if r is not None]
+    results = ([r.set_index(['id_target', 'id_context'])] for r in results if r is not None)
+    result = next(results)[0]
 
-    result = pd.concat(result)
-    result = result.groupby(['id_target', 'id_context']).sum()
+    # TODO: should the chunks be equal to the number of workers?
+    for i, chunk in enumerate(chunked(results, 100)):
+        logger.info('Received result chunk #%s.', i)
+        chunked_result = [c[0] for c in chunk]
+
+        with Timer() as timed:
+            result = pd.concat(
+                chunked_result + [result],
+                copy=False,
+            ).groupby(level=['id_target', 'id_context']).sum()
+
+        logger.info(
+            'Computed the result by merging a chunk of received results and the result in %.2f seconds.',
+            timed.elapsed,
+        )
+
+    result.reset_index(inplace=True)
 
     write_space(output, context, targets, result)
 
