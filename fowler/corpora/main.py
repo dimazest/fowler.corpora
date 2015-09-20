@@ -116,9 +116,11 @@ def ipython():
 
 @command()
 def notebook():
-    """Start IPython notebook."""
-    # from notebook import notebookapp
-    from IPython.terminal.ipapp import launch_new_instance
+    """Start Jupyter notebook."""
+    import sys
+    from notebook import notebookapp
+
+    sys.argv[:] = ['fake']
 
     os.environ['PYTHONPATH'] = ':'.join(sys.path)
-    sys.exit(launch_new_instance(argv=['notebook', '--no-browser']))
+    sys.exit(notebookapp.launch_new_instance())
