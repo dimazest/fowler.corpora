@@ -39,6 +39,11 @@ def truncate(
     features = features.sort('id').head(size)
     matrix = sparse.csc_matrix(space.matrix)[:, features['id']]
 
+    assert len(features) == size
+
+    # Reindex features
+    features['id'] = list(range(size))
+
     new_space = Space(
         matrix,
         row_labels=space.row_labels,
@@ -193,7 +198,7 @@ def pmi(
         column_dictionary = dictionary
 
     # This are target frequency counts in the whole Corpora N(t)
-    row_totals = dictionary.loc[space.row_labels.index]['count']
+    row_totals = dictionary.loc[space.row_labels.sort('id').index]['count']
 
     missing_rows = ~np.isfinite(row_totals)
     if missing_rows.any():
@@ -207,7 +212,7 @@ def pmi(
 
     # This are context probabilities in the whole Corpora P(c)
     column_totals = (
-        column_dictionary.loc[space.column_labels.index].values.flatten() /
+        column_dictionary.loc[space.column_labels.sort('id').index].values.flatten() /
         dictionary['count'].sum()
     )
 
@@ -219,6 +224,9 @@ def pmi(
 
     # The elements in the matrix are P(c|t)
     matrix = n / row_totals
+
+    # TODO: fix counts!
+    # assert matrix.max() <= 1
 
     if not conditional_probability:
         if not no_log:
