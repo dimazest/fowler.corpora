@@ -227,6 +227,7 @@ def pmi(
 
     # TODO: fix counts!
     # assert matrix.max() <= 1
+    logger.info('There are %s elements > 1!', matrix[matrix > 1].shape)
 
     if not conditional_probability:
         if not no_log:
