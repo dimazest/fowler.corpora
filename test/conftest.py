@@ -1,6 +1,7 @@
 import sys
 import os
 
+import pandas as pd
 from fowler.corpora.models import read_space_from_file
 
 import py
@@ -19,17 +20,22 @@ def datadir():
 
 @pytest.fixture
 def bnc_path(datadir):
-    return datadir.join('BNC', 'Texts')
+    return 'bnc://{}'.format(datadir.join('BNC', 'Texts'))
 
 
 @pytest.fixture
 def bnc_ccg_path(datadir):
-    return datadir.join('CCG_BNC_v1')
+    return 'bnc-ccg://{}'.format(datadir.join('CCG_BNC_v1'))
 
 
 @pytest.fixture
 def ukwac_path(datadir):
-    return datadir.join('WaCky')
+    return 'ukwac://{}'.format(datadir.join('WaCky'))
+
+
+@pytest.fixture
+def brown_path(datadir):
+    return 'brown://'
 
 
 @pytest.fixture
@@ -40,35 +46,76 @@ def dispatcher():
 
 
 @pytest.fixture
-def wordsim_base_path(datadir):
-    return datadir.join('wordsim353')
+def dictionary_path(tmpdir, dispatcher, corpus):
+    path = str(tmpdir.join('dictinary.h5'))
+    dispatcher.dispatch(
+        'bnc dictionary '
+        '--corpus {corpus} '
+        '{tfl} '
+        '--stem '
+        '-o {output} '
+        ''.format(
+            corpus=corpus,
+            output=path,
+            tfl='' if corpus.startswith('bnc') else '--tag_first_letter',
+        ).split()
+    )
+
+    return path
 
 
 @pytest.fixture
-def wordsim_target_path(wordsim_base_path):
-    return wordsim_base_path.join('targets_wordsim353.csv')
+def dictionary(dictionary_path):
+    df = pd.read_hdf(dictionary_path, key='dictionary')
+    return df
 
 
 @pytest.fixture
-def wordsim_context_path(wordsim_base_path):
-    return wordsim_base_path.join('contexts_bnc_pos_1000.csv')
+def mintf():
+    """The minimal term probability to be included to the space."""
+    return 100
 
 
 @pytest.fixture
-def space_path(tmpdir, dispatcher, bnc_path, wordsim_target_path, wordsim_context_path):
-    path = str(tmpdir.join("space.h5"))
+def tokens_path(dictionary, tmpdir, mintf):
+    path = str(tmpdir.join('tokens.csv'))
+
+    dictionary[dictionary['count'] >= mintf][['ngram', 'tag']].to_csv(
+        path,
+        index=False,
+        encoding='utf-8',
+    )
+
+    return path
+
+
+@pytest.fixture
+def context_path(tokens_path):
+    return tokens_path
+
+
+@pytest.fixture
+def target_path(tokens_path):
+    return tokens_path
+
+
+@pytest.fixture
+def space_path(tmpdir, dispatcher, corpus, context_path, target_path):
+    path = str(tmpdir.join('space.h5'))
     dispatcher.dispatch(
         'bnc cooccurrence '
-        '--corpus bnc://{corpus} '
+        '--corpus {corpus} '
         '-t {target} '
         '-c {context} '
         '-o {output} '
-        '--no_p11n'
+        '--no_p11n '
+        '{tfl} '
         ''.format(
-            corpus=bnc_path,
-            target=wordsim_target_path,
-            context=wordsim_context_path,
+            corpus=corpus,
+            target=target_path,
+            context=context_path,
             output=path,
+            tfl='' if corpus.startswith('bnc') else '--tag_first_letter',
         ).split()
     )
 

@@ -98,6 +98,7 @@ setup(
             'corpora = fowler.corpora.main:dispatch',
         ],
         'fowler.corpus_readers': [
+            'brown = fowler.corpora.bnc.readers:Brown',
             'bnc = fowler.corpora.bnc.readers:BNC',
             'bnc-ccg = fowler.corpora.bnc.readers:BNC_CCG',
             'dep-parsed-ukwac = fowler.corpora.bnc.readers:UKWAC',

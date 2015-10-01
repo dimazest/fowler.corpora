@@ -277,6 +277,12 @@ def test_ukwac_dictionary(ukwac_path, dispatcher, tmpdir, stem, tag_first_letter
     assert ('', '') not in dictionary
 
 
+@pytest.fixture
+def corpus(bnc_path):
+    return bnc_path
+
+
+@pytest.mark.xfail(reason='BNC reader is wrongly setup.')
 def test_bnc_cooccurrence(space):
     assert space.matrix.sum() == 29
 

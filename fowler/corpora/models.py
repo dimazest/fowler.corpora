@@ -116,6 +116,13 @@ class Space(Mapping):
 
         return self.matrix[vector_id]
 
+    def value(self, target, feature):
+        """Retrive the scalar value for the target-feature pair."""
+        vector = self[target]
+        feature_id, = self.column_labels.loc[feature].values
+
+        return vector[0, feature_id]
+
     def get_target_rows(self, *labels, strict=False):
         """Return vectors for the labels.
 

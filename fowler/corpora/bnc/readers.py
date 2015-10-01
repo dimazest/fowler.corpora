@@ -10,8 +10,10 @@ import pandas as pd
 
 from chrono import Timer
 from more_itertools import peekable
+from nltk.corpus import brown, CategorizedTaggedCorpusReader
 from nltk.corpus.reader.bnc import BNCCorpusReader
 from nltk.parse.dependencygraph import DependencyGraph, DependencyGraphError
+from nltk.stem.snowball import SnowballStemmer
 from py.path import local
 
 from .util import co_occurrences
@@ -95,7 +97,8 @@ class Corpus:
                     continue
 
             logger.debug(
-                'All co-occurrence pairs: %.2f seconds',
+                '%s co-occurrence pairs: %.2f seconds',
+                len(co_occurrence_pairs),
                 timed.elapsed,
             )
 
@@ -264,6 +267,38 @@ class BNC:
 
             for (word, tag), stem in zip(words_tags, stems):
                 # TODO: should it be a class?
+                yield Token(word, stem, tag)
+
+        # Consider the whole file as one document!
+        yield it()
+
+
+class Brown:
+    def __init__(self, root, paths):
+        self.root = root
+        self.paths = paths
+
+    @classmethod
+    def init_kwargs(cls, root=None, fileids=None):
+        return dict(
+            root=brown.root if root is None else root,
+            paths=brown.fileids() if fileids is None else fileids,
+        )
+
+    def words_by_document(self, path):
+        stemmer = SnowballStemmer("english")
+
+        def it():
+            reader = CategorizedTaggedCorpusReader(
+                fileids=[path],
+                root=self.root,
+                cat_file='cats.txt',
+                tagset='brown',
+                encoding='ascii',
+            )
+
+            for word, tag in reader.tagged_words():
+                stem = stemmer.stem(word)
                 yield Token(word, stem, tag)
 
         # Consider the whole file as one document!
