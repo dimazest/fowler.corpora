@@ -16,7 +16,7 @@ def dependency_graph(tree):
         (
             'green\tJ\t0\tROOT',
             (
-                ('TOP', 'TOP'), (
+                ('TOP', None), (
                     (('J', 'ROOT'), ()),
                 )
             )
@@ -28,7 +28,7 @@ def dependency_graph(tree):
                 '\t'.join(('Mary', 'N', '2', 'OBJ')),
             ),
             (
-                ('TOP', 'TOP'),
+                ('TOP', None),
                 (
                     (
                         ('V', 'ROOT'),
@@ -44,6 +44,5 @@ def dependency_graph(tree):
 )
 def test_graph_signature(dependency_graph, expected_result):
     result = graph_signature(dependency_graph)
-    # pytest.set_trace()
 
     assert result == expected_result
