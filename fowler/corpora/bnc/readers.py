@@ -88,10 +88,7 @@ class Corpus:
             )
 
             with Timer() as timed:
-                co_occurrence_pairs = [
-                    t + c
-                    for t, cs in some_target_contexts for c in cs
-                ]
+                co_occurrence_pairs = list(some_target_contexts)
 
                 if not co_occurrence_pairs:
                     continue
