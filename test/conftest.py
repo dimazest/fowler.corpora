@@ -40,13 +40,30 @@ def brown_path(datadir):
 
 @pytest.fixture
 def dispatcher():
-    from fowler.corpora.main import dispatcher
+    from fowler.corpora.main import dispatcher_factory
 
-    return dispatcher
+    return dispatcher_factory()
+
+
+@pytest.fixture(
+    params=[
+        '-j1',
+        # ''
+    ],
+)
+def workers(request):
+    """The number of workers, e.g. `-j 1`."""
+    return request.param
 
 
 @pytest.fixture
-def dictionary_path(tmpdir, dispatcher, corpus):
+def limit():
+    """The number of corpus files to process, e.g ``--limit 100`."""
+    return ''
+
+
+@pytest.fixture
+def dictionary_path(tmpdir, dispatcher, corpus, limit, workers):
     path = str(tmpdir.join('dictinary.h5'))
     dispatcher.dispatch(
         'bnc dictionary '
@@ -54,10 +71,14 @@ def dictionary_path(tmpdir, dispatcher, corpus):
         '{tfl} '
         '--stem '
         '-o {output} '
+        '{limit} '
+        '{workers} '
         ''.format(
             corpus=corpus,
             output=path,
             tfl='' if corpus.startswith('bnc') else '--tag_first_letter',
+            limit=limit,
+            workers=workers,
         ).split()
     )
 
@@ -71,16 +92,15 @@ def dictionary(dictionary_path):
 
 
 @pytest.fixture
-def mintf():
-    """The minimal term probability to be included to the space."""
-    return 100
+def indexed_dictionary(dictionary):
+    return dictionary.set_index(['ngram', 'tag'])
 
 
 @pytest.fixture
-def tokens_path(dictionary, tmpdir, mintf):
+def tokens_path(dictionary, tmpdir):
     path = str(tmpdir.join('tokens.csv'))
 
-    dictionary[dictionary['count'] >= mintf][['ngram', 'tag']].to_csv(
+    dictionary[['ngram', 'tag']].to_csv(
         path,
         index=False,
         encoding='utf-8',
@@ -100,7 +120,7 @@ def target_path(tokens_path):
 
 
 @pytest.fixture
-def space_path(tmpdir, dispatcher, corpus, context_path, target_path):
+def space_path(tmpdir, dispatcher, corpus, context_path, target_path, limit, workers):
     path = str(tmpdir.join('space.h5'))
     dispatcher.dispatch(
         'bnc cooccurrence '
@@ -108,14 +128,18 @@ def space_path(tmpdir, dispatcher, corpus, context_path, target_path):
         '-t {target} '
         '-c {context} '
         '-o {output} '
-        '--no_p11n '
+        '{workers} '
+        '{limit} '
         '{tfl} '
+        '--stem '
         ''.format(
             corpus=corpus,
             target=target_path,
             context=context_path,
             output=path,
             tfl='' if corpus.startswith('bnc') else '--tag_first_letter',
+            limit=limit,
+            workers=workers,
         ).split()
     )
 

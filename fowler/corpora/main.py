@@ -23,67 +23,70 @@ from fowler.corpora.io import readline_folder as io_readline_folder
 from .dispatcher import Dispatcher
 
 
-dispatcher = Dispatcher()
+def dispatcher_factory():
+    dispatcher = Dispatcher()
+    command = dispatcher.command
+    dispatch = dispatcher.dispatch
+
+    dispatcher.nest(
+        'serafin03',
+        serafin03_main.dispatcher,
+        serafin03_main.__doc__,
+    )
+
+    dispatcher.nest(
+        'dictionary',
+        dictionary_main.dispatcher,
+        dictionary_main.__doc__,
+    )
+
+    dispatcher.nest(
+        'space',
+        space_main.dispatcher,
+        space_main.__doc__,
+    )
+
+    dispatcher.nest(
+        'wsd',
+        wsd_main.dispatcher,
+        wsd_main.__doc__,
+    )
+
+    dispatcher.nest(
+        'bnc',
+        bnc_main.dispatcher,
+        bnc_main.__doc__,
+    )
+
+    dispatcher.nest(
+        'ms-paraphrase',
+        ms_paraphrase_main.dispatcher,
+        ms_paraphrase_main.__doc__,
+    )
+
+    dispatcher.nest(
+        'categorical',
+        categorical_main.dispatcher,
+        categorical_main.__doc__,
+    )
+
+    dispatcher.nest(
+        'word2vec',
+        word2vec_main.dispatcher,
+        word2vec_main.__doc__,
+    )
+
+    dispatcher.nest(
+        'produce',
+        produce.dispatcher,
+        produce.__doc__,
+    )
+
+    return dispatcher
+
+dispatcher = dispatcher_factory()
 command = dispatcher.command
 dispatch = dispatcher.dispatch
-
-
-dispatcher.nest(
-    'serafin03',
-    serafin03_main.dispatcher,
-    serafin03_main.__doc__,
-)
-
-dispatcher.nest(
-    'dictionary',
-    dictionary_main.dispatcher,
-    dictionary_main.__doc__,
-)
-
-
-dispatcher.nest(
-    'space',
-    space_main.dispatcher,
-    space_main.__doc__,
-)
-
-dispatcher.nest(
-    'wsd',
-    wsd_main.dispatcher,
-    wsd_main.__doc__,
-)
-
-dispatcher.nest(
-    'bnc',
-    bnc_main.dispatcher,
-    bnc_main.__doc__,
-)
-
-dispatcher.nest(
-    'ms-paraphrase',
-    ms_paraphrase_main.dispatcher,
-    ms_paraphrase_main.__doc__,
-)
-
-dispatcher.nest(
-    'categorical',
-    categorical_main.dispatcher,
-    categorical_main.__doc__,
-)
-
-
-dispatcher.nest(
-    'word2vec',
-    word2vec_main.dispatcher,
-    word2vec_main.__doc__,
-)
-
-
-dispatcher.nest(
-    'produce',
-    produce.dispatcher,
-    produce.__doc__,
-)
 
 
 @command()
