@@ -156,7 +156,8 @@ def pmi(
     remove_missing=('', False, 'Remove items that are not in the dictionary.'),
     conditional_probability=('', False, 'Compute only P(c|t).'),
     keep_negative_values=('', False, 'Keep negative values.'),
-    times=('', ('', 'n', 'logn'), 'Multiply the resulted values by n or log(n+1).')
+    times=('', ('', 'n', 'logn'), 'Multiply the resulted values by n or log(n+1).'),
+    window_size=('', 10, 'The size of the window.'),
 ):
     """
     Weight elements using the positive PMI measure [3]. max(0, log(P(c|t) / P(c)))
@@ -223,11 +224,10 @@ def pmi(
         n = n[~missing_rows.values]
 
     # The elements in the matrix are P(c|t)
-    matrix = n / row_totals
+    matrix = n / row_totals / window_size
 
-    # TODO: fix counts!
-    # assert matrix.max() <= 1
-    logger.info('There are %s elements > 1!', matrix[matrix > 1].shape)
+    max_row_sum = matrix.sum(axis=1).max()
+    assert max_row_sum < 1.0 or np.isclose(max_row_sum, 1.0)
 
     if not conditional_probability:
         if not no_log:
