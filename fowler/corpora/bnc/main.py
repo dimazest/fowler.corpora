@@ -49,8 +49,10 @@ def uri_to_corpus_reader(uri, workers_count=None, limit=None):
         **query_dict
     )
 
+    corpus_reader_kwargs['paths'] = sorted(corpus_reader_kwargs['paths'])
+
     if limit:
-        corpus_kwargs['paths'] = corpus_kwargs['paths'][:limit]
+        corpus_reader_kwargs['paths'] = corpus_reader_kwargs['paths'][:limit]
 
     return CorpusReader(**corpus_reader_kwargs)
 
