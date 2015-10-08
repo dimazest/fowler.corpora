@@ -24,7 +24,6 @@ from zope.cachedescriptors.property import Lazy
 import fowler.corpora
 from fowler.corpora.execnet import ExecnetHub
 from fowler.corpora.models import read_space_from_file
-from fowler.corpora.space.util import read_tokens
 from fowler.corpora.util import inside_ipython
 
 
