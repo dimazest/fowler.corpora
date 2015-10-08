@@ -34,10 +34,22 @@ def write_space(f_name, context, targets, matrix):
 
     assert np.isfinite(matrix['count']).all()
 
-    with pd.get_store(f_name, mode='w', complevel=9, complib='blosc') as store:
+    assert context.reset_index().notnull().all().all(), 'There are NULL row labels.'
+    assert targets.reset_index().notnull().all().all(), 'There are NULL column labels.'
+
+    with pd.get_store(
+        f_name,
+        mode='w',
+        complevel=9,
+        complib='blosc',
+    ) as store:
+        # Reset index for context and tartgets, so the string "nan" is not
+        # converted to NULL! Once https://github.com/pydata/pandas/issues/9604
+        # is fixed, there is no need to reset the index.
         if context is not None:
-            store['context'] = context
-        store['targets'] = targets
+            store['context'] = context.reset_index()
+
+        store['targets'] = targets.reset_index()
         store['matrix'] = matrix
 
     # TODO it would be nice to write metadata, e.g. the command the file

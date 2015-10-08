@@ -28,6 +28,9 @@ class Space(Mapping):
     """
     def __init__(self, data_ij, row_labels, column_labels):
 
+        assert row_labels.reset_index().notnull().all().all(), 'There are NULL row labels.'
+        assert column_labels.reset_index().notnull().all().all(), 'There are NULL column labels.'
+
         self.row_labels = row_labels
         self.column_labels = column_labels
 
@@ -176,10 +179,15 @@ def read_space_from_file(f_name):
         matrix = store['matrix'].reset_index()
         data = matrix['count'].values
 
-        ij = matrix[['id_target', 'id_context']].values.T
+        row_labels = store['targets']
+        column_labels = store['context']
 
-        return Space(
-            (data, ij),
-            row_labels=store['targets'],
-            column_labels=store['context']
-        )
+    ij = matrix[['id_target', 'id_context']].values.T
+
+    return Space(
+        (data, ij),
+        # Set index that was reset in write_space.
+        # https://github.com/pydata/pandas/issues/9604
+        row_labels=row_labels.set_index(['ngram', 'tag']),
+        column_labels=column_labels.set_index(['ngram', 'tag']),
+    )
