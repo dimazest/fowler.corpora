@@ -282,9 +282,8 @@ def corpus(bnc_path):
     return bnc_path
 
 
-@pytest.mark.xfail(reason='BNC reader is wrongly setup.')
 def test_bnc_cooccurrence(space):
-    assert space.matrix.sum() == 29
+    assert space.matrix.sum() == 1480
 
 
 def test_bnc_ccg_transitive_verbs(bnc_ccg_path, dispatcher, tmpdir):

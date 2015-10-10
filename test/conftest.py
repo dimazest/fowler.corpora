@@ -30,7 +30,7 @@ def bnc_ccg_path(datadir):
 
 @pytest.fixture
 def ukwac_path(datadir):
-    return 'ukwac://{}'.format(datadir.join('WaCky'))
+    return 'dep-parsed-ukwac://{}'.format(datadir.join('WaCky'))
 
 
 @pytest.fixture
@@ -59,7 +59,7 @@ def workers(request):
 @pytest.fixture
 def limit():
     """The number of corpus files to process, e.g ``--limit 100`."""
-    return ''
+    return '--limit 50'
 
 
 @pytest.fixture

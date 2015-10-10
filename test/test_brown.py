@@ -67,6 +67,7 @@ def corpus(brown_path):
                 (('kelsey', 'N'), 6),
                 (('statement', 'N'), 44),
                 (('zurich', 'N'), 2),
+                (('nan', 'N'), None),
             ),
         ),
         (
@@ -76,6 +77,7 @@ def corpus(brown_path):
                 (('sandman', 'N'), 5),
                 (('kelsey', 'N'), 6),
                 (('statement', 'N'), 44),
+                (('nan', 'N'), 1),
             ),
         ),
         (
@@ -87,6 +89,7 @@ def corpus(brown_path):
                 (('sandman', 'N'), 5),
                 (('kelsey', 'N'), 6),
                 (('zurich', 'N'), 2),
+                (('nan', 'N'), 2),
             ),
         ),
     )
@@ -102,10 +105,6 @@ def test_dictionary(indexed_dictionary, counts):
 @pytest.mark.parametrize(
     ('limit', 'values'),
     (
-        (
-            '',
-            (),
-        ),
         (
             '--limit 2',
             (
@@ -126,11 +125,24 @@ def test_dictionary(indexed_dictionary, counts):
         ),
         (
             '--limit 83',
-            (),
+            (
+                # (('nan', ('beatrice', 'N')), 0),
+                # (('nan', ('when', 'C')), 0),
+            ),
         ),
         (
             '--limit 84',
-            (),
+            (
+                # (('nan', ('beatrice', 'N')), 1),
+                # (('nan', ('when', 'C')), 0),
+            ),
+        ),
+        (
+            '',
+            (
+                # (('nan', ('beatrice', 'N')), 1),
+                # (('nan', ('when', 'C')), 1),
+            ),
         ),
     )
 )
