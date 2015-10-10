@@ -135,7 +135,9 @@ def initialize_channel(channel):
 def sum_folder(channel):
     import pickle
     import logging
+
     from more_itertools import peekable
+    import pandas as pd
 
     from fowler.corpora.execnet import initialize_channel
 
@@ -154,7 +156,7 @@ def sum_folder(channel):
         if item == ('message', 'terminate'):
             if result is not None:
                 logger.debug('Sending the final result, size: %s', len(result))
-                channel.send(('result', pickle.dumps(result.reset_index())))
+                channel.send(('result', pickle.dumps(result)))
             break
 
         type_, data = item
@@ -171,18 +173,20 @@ def sum_folder(channel):
                 # and report it to the master.
                 # Same applies to the next() call above.
                 for i, r in intermediate_results:
-                    if (i % 10) == 9:
+                    logger.debug('Iteration: %s, result size: %s', i, len(result))
 
-                        result.sort('count', inplace=True, ascending=False)
+                    result = pd.concat(
+                        [result, r],
+                        copy=False,
+                    ).groupby(level=result.index.names).sum()
+
+                    if (i % 10) == 9:
+                        result.sort(ascending=False, inplace=True)
 
                         half = len(result) // 2
                         logger.debug('Sending a result. Result size: %s', half)
-                        channel.send(('result', pickle.dumps(result.tail(half).reset_index())))
+                        channel.send(('result', pickle.dumps(result.tail(half))))
                         result = result.head(-half)
-
-                    result = result.add(r, fill_value=0)
-
-                    logger.debug('Iteration: %s, result size: %s', i, len(result))
 
         channel.send(('message', 'send_next'))
 

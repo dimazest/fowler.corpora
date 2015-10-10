@@ -145,8 +145,7 @@ class Corpus:
                 counts.sum(),
             )
 
-            # TODO: it would be nice to return Series instead of DataFrame
-            yield counts.to_frame('count')
+            yield counts
 
     def words_by_document(self, path):
         words_by_document = self.corpus_reader.words_by_document(path)
@@ -183,10 +182,9 @@ class Corpus:
                 some_words,
                 columns=('ngram', 'tag'),
             )
-            result['count'] = 1
 
             logger.debug('Starting groupby.')
-            result = result.groupby(('ngram', 'tag')).sum()
+            result = result.groupby(['ngram', 'tag']).size()
             logger.debug('Finished groupby.')
 
             yield result
@@ -232,13 +230,12 @@ class Corpus:
                 result,
                 columns=columns,
             )
-            result['count'] = 1
 
             if self.tag_first_letter:
                 for column in 'verb_tag', 'subj_tag', 'obj_tag':
                     result[column] = result[column].str.get(0)
 
-            yield result.groupby(columns).sum()
+            yield result.groupby(columns).size()
 
 
 class BNC:
@@ -263,7 +260,6 @@ class BNC:
             stems = (s for s, _ in reader.tagged_words(stem=True))
 
             for (word, tag), stem in zip(words_tags, stems):
-                # TODO: should it be a class?
                 yield Token(word, stem, tag)
 
         # Consider the whole file as one document!
@@ -283,7 +279,7 @@ class Brown:
         )
 
     def words_by_document(self, path):
-        stemmer = SnowballStemmer("english")
+        stemmer = SnowballStemmer('english')
 
         def it():
             reader = CategorizedTaggedCorpusReader(

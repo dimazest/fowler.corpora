@@ -138,10 +138,9 @@ def cooccurrence(
         init_func=init,
     )
 
-    results = ([r.set_index(['id_target', 'id_context'])] for r in results if r is not None)
+    results = ([r] for r in results if r is not None)
     result = next(results)[0]
 
-    # TODO: should the chunks be equal to the number of workers?
     for i, chunk in enumerate(chunked(results, 100)):
         logger.info('Received result chunk #%s.', i)
         chunked_result = [c[0] for c in chunk]
@@ -150,13 +149,14 @@ def cooccurrence(
             result = pd.concat(
                 chunked_result + [result],
                 copy=False,
-            ).groupby(level=['id_target', 'id_context']).sum()
+            ).groupby(level=result.index.names).sum()
 
         logger.info(
             'Computed the result by merging a chunk of received results and the result in %.2f seconds.',
             timed.elapsed,
         )
 
+    result = result.to_frame('count')
     result.reset_index(inplace=True)
 
     write_space(output, context, targets, result)
@@ -168,7 +168,6 @@ def dictionary(
     corpus,
     dictionary_key,
     paths_progress_iter,
-    omit_tags=('', False, 'Do not use POS tags.'),
     output=('o', 'dictionary.h5', 'The output file.'),
 ):
     """Count tokens."""
@@ -194,22 +193,18 @@ def dictionary(
 
     result = list(result)
 
-    # This can be done in Corpus.words()
-    if omit_tags:
-        group_by = 'ngram',
-    else:
-        group_by = 'ngram', 'tag'
-
     result = pd.concat(result)
-    assert result['count'].notnull().all()
+    assert result.notnull().all()
 
-    result = result.groupby(group_by).sum()
-    assert result['count'].notnull().all()
+    result = result.groupby(level=result.index.names).sum()
+    assert result.notnull().all()
     assert result.index.is_unique
 
-    result.sort('count', ascending=False, inplace=True)
-    result.reset_index(inplace=True)
+    result.sort(ascending=False, inplace=True)
 
+    # TODO: A dictionary should be stored as a Series, not a DataFrame.
+    result = result.to_frame('count')
+    result.reset_index(inplace=True)
     assert result.notnull().all().all()
 
     result.to_hdf(
@@ -250,16 +245,11 @@ def transitive_verbs(
         init_func=init,
     )
 
-    result = (
-        pd.concat(r for r in result if r is not None)
-        .groupby(
-            ('verb', 'verb_stem', 'verb_tag', 'subj', 'subj_stem', 'subj_tag', 'obj', 'obj_stem', 'obj_tag'),
-            as_index=False,
-        )
-        .sum()
-        .sort('count', ascending=False)
-    )
+    result = pd.concat(r for r in result if r is not None)
+    result = result.groupby(level=result.index.names).sum()
+    result.sort(ascending=False)
 
+    result = result.to_frame('count').reset_index()
     result.to_hdf(
         output,
         dictionary_key,
