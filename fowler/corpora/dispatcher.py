@@ -278,7 +278,7 @@ class NewSpaceCreationMixin:
     global__targets = 't', 'targets.csv', 'The file with target words.'
 
     def read_file(self, f_name):
-        frame = pd.read_csv(f_name, encoding='utf8')
+        frame = pd.read_csv(f_name, encoding='utf8', na_filter=False)
 
         frame.set_index(frame.columns.tolist(), inplace=True)
         frame['id'] = pd.Series(np.arange(len(frame)), index=frame.index)
