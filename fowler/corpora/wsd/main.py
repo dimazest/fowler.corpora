@@ -89,7 +89,7 @@ def transitive_sentence(tagset):
     from .datasets import tag_mappings
 
     return (
-        ('TOP', 'TOP'),
+        ('TOP', None),
         (
             (
                 (tag_mappings[tagset]['V'], 'ROOT'),

@@ -24,9 +24,6 @@ def co_occurrences(words, window_size_before, window_size_after):
         for context in chain(before, after):
             yield target + context
 
-        if target[0].startswith('statement'):
-            logger.debug(target)
-
         before.append(target)
 
         try:

@@ -343,4 +343,12 @@ class DictionaryMixin:
 
     @staticmethod
     def get_dictionary(path, key):
-        return pd.read_hdf(path, key=key)
+        df = pd.read_hdf(
+            path,
+            key=key,
+            nan_rep='_____nan_____',
+        )
+
+        assert df.notnull().all().all()
+
+        return df

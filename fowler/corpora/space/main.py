@@ -23,7 +23,7 @@ def truncate(
     space,
     output,
     size=('', 2000, 'New vector length.'),
-    nvaa=('', False, 'Use only nouns, verbs, adjectives and adverbs'),
+    nvaa=('', False, 'Use only nouns, verbs, adjectives and adverbs as features.'),
     tagset=('', '', 'Tagset'),
 ):
     assert space.matrix.shape[1] >= size
