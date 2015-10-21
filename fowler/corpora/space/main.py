@@ -3,8 +3,6 @@ import logging
 import numpy as np
 import pandas as pd
 
-from scipy import sparse
-
 from fowler.corpora.dispatcher import Dispatcher, DictionaryMixin, SpaceMixin
 from fowler.corpora.models import Space, read_space_from_file
 
@@ -25,29 +23,50 @@ def truncate(
     size=('', 2000, 'New vector length.'),
     nvaa=('', False, 'Use only nouns, verbs, adjectives and adverbs as features.'),
     tagset=('', '', 'Tagset'),
+    dataset_targets=('', '', 'The dataset targets to select.'),
+    corpus_targets=('', '', 'The corpus targets to select.'),
+    corpus_target_count=('', 0, 'The number of corpus targets to be selected.'),
 ):
     assert space.matrix.shape[1] >= size
 
-    features = space.column_labels
+    dataset_targets = pd.read_csv(dataset_targets, encoding='utf-8', na_filter=False)
+    corpus_targets = pd.read_csv(corpus_targets, encoding='utf-8', na_filter=False)
+
+    assert len(corpus_targets) >= corpus_target_count
+    targets = dataset_targets
+    if corpus_target_count:
+        targets = pd.concat(
+            [
+                corpus_targets.head(corpus_target_count),
+                targets,
+            ]
+        ).drop_duplicates(['ngram', 'tag'])
+
+    column_labels = space.column_labels
     if nvaa:
         if tagset == 'bnc':
-            features = features[features.index.get_level_values('tag').isin(['SUBST', 'VERB', 'ADJ', 'ADV'])]
+            column_labels = column_labels[column_labels.index.get_level_values('tag').isin(['SUBST', 'VERB', 'ADJ', 'ADV'])]
         else:
-            features = features[features.index.get_level_values('tag').isin(['N', 'V', 'J', 'R'])]
+            column_labels = column_labels[column_labels.index.get_level_values('tag').isin(['N', 'V', 'J', 'R'])]
 
     # It's important to sort by id to make sure that the most frequent features are selected.
-    features = features.sort('id').head(size)
-    matrix = sparse.csc_matrix(space.matrix)[:, features['id']]
+    column_labels = column_labels.sort('id').head(size)
 
-    assert len(features) == size
+    matrix =  space.get_target_rows(*targets)
+    matrix = matrix[:, column_labels['id']]
 
-    # Reindex features
-    features['id'] = list(range(size))
+    assert len(column_labels) == size
+
+    row_labels = space.row_labels.loc[list(targets.itertuples(index=False))]
+
+    # Reindex labels
+    row_labels['id'] = list(range(len(row_labels)))
+    column_labels['id'] = list(range(size))
 
     new_space = Space(
         matrix,
-        row_labels=space.row_labels,
-        column_labels=features,
+        row_labels=row_labels,
+        column_labels=column_labels,
     )
 
     new_space.write(output)
