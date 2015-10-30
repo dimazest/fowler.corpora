@@ -114,27 +114,64 @@ jobs less than the CPU cores, for example, for a 4 core machine ``-j 3``.
 Extracting the data
 -------------------
 
-We will use the BNC to extract the co-occurrence matrix. The rows in the matrix
+We will use the Brown to extract the co-occurrence matrix. The rows in the matrix
 correspond to target words, while columns correspond to context words.
 
 Targets
 ~~~~~~~
 
-We will use a predefined set of words extracted from SimLex::
+The target words are taken from the dataset:
 
-    wget http://www.eecs.qmul.ac.uk/~dm303/static/data/dataset-targets_dataset.SimLex-999-tagset.ukwac.csv
-    head -n 5 dataset-targets_dataset.SimLex-999-tagset.ukwac.csv
-    ngram,tag
-    car,N
-    door,N
-    book,N
-    arm,N
+.. code-block:: bash
+
+    corpora bnc dictionary \
+    --corpus simlex999://SimLex-999.txt?tagset=brown \
+    --tag_first_letter \
+    --stem -v -j 2 \
+    -o dictionary_simlex_pos.h5
+
+``dictionary_simlex_pos.h5`` is a `Pandas`_ `DataFrame`_ with the following columns:
+
+    .. _Pandas: http://pandas.pydata.org/
+    .. _DataFrame: http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.html
+
+    ngram
+        a word or a stem.
+
+    tag
+        its part of speech tag.
+
+    count
+        the frequency of the word.
+
+We can access it the and extract the context words using IPython::
+
+    corpora ipython
+
+and executing the following code:
+
+.. code-block:: python
+
+    >>> import pandas as pd
+
+    >>> dictionary = pd.read_hdf('dictionary_simlex_pos.h5', key='dictionary')
+    >>> dictionary.head()
+    ngram tag  count
+    0   car   N     12
+    1  door   N     10
+    2  book   N      9
+    3   arm   N      9
+    4  give   V      9
+    >>> dictionary[['ngram', 'tag']].to_csv('targets_simlex_pos.csv', index=False)
+
+    >>> quit()
+
 
 Contexts
 ~~~~~~~~
 
 Context selection is more art than science, but a rather popular approach is to
-select the 3000 most frequent nouns, verbs, adjectives and adverbs.
+select the 3000 most frequent words.
 
 First we need to extract word frequencies:
 
@@ -142,29 +179,11 @@ First we need to extract word frequencies:
 
     corpora bnc dictionary \
     --corpus brown:// \
-    -o dictionary_brown_pos.h5 \
     --tag_first_letter \
-    --stem -v -j 2
+    --stem -v -j 2 \
+    -o dictionary_brown_pos.h5
 
-``data/dictionary_brwon_pos.h5`` is a `Pandas`_ `DataFrame`_ with the following columns:
-
-.. _Pandas: http://pandas.pydata.org/
-.. _DataFrame: http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.html
-
-ngram
-    a word or a stem.
-
-tag
-    its part of speech tag.
-
-count
-    the frequency of the word.
-
-We can access it the and extract the context words using IPython::
-
-    corpora ipython
-
-and executing the following code:
+And again, a ``.csv`` file is created:
 
 .. code-block:: python
 
@@ -178,10 +197,7 @@ and executing the following code:
     3    of   I  36410
     4   and   C  28850
     >>> contexts = dictionary[:3000]
-
     >>> contexts[['ngram', 'tag']].to_csv('contexts_brown_pos_3000.csv', index=False)
-
-    >>> quit()
 
 The space
 ~~~~~~~~~
@@ -192,11 +208,12 @@ get the first semantic space:
 .. code-block:: bash
 
     corpora bnc cooccurrence \
-    -t dataset-targets_dataset.SimLex-999-tagset.ukwac.csv \
+    -t targets_simlex_pos.csv \
     -c contexts_brown_pos_3000.csv \
     --corpus brown:// \
-    -o space_brown_simlex_3000.h5 \
-    --stem -j 2 -v
+    --stem -j 2 -v \
+    --tag_first_letter \
+    -o space_brown_simlex_3000.h5
 
 Experiments
 -----------
@@ -211,7 +228,27 @@ Now we are ready to run the first experiment:
     --composition_operator head \
     --output brown_simlex_3000.h5
 
-    Spearman correlation (head), cosine): rho=nan, p=nan, support=999
+    Spearman correlation (head), cosine): rho=-0.098, p=0.00203, support=999
+
+And access the results:
+
+.. code-block:: Python
+
+    >>> import pandas as pd
+
+    >>> results = pd.read_hdf('brown_simlex_3000.h5', key='dataset')
+    >>> results.head(10)
+        unit1           unit2       cos  inner_product  score
+    0     (old )          (new )  0.000000              0   1.58
+    1   (smart )  (intelligent )  0.000000              0   9.20
+    2    (hard )    (difficult )  0.000000              0   8.77
+    3   (happy )     (cheerful )  0.000000              0   9.55
+    4    (hard )         (easy )  0.000000              0   0.95
+    5    (fast )        (rapid )  0.825153           3314   8.75
+    6   (happy )         (glad )  0.000000              0   9.17
+    7   (short )         (long )  0.789176           8445   1.23
+    8  (stupid )         (dumb )  0.000000              0   9.58
+    9   (weird )      (strange )  0.000000              0   8.93
 
 .. Ignore
 
@@ -286,8 +323,8 @@ Conclusion
 A general workflow is the following:
 
 1. Decide what the target words are.
-2. Think of context words, possibly by extracting the (tagged) token counts from the corpus
-3. Extract the co-occurrence counts as an initial space
+2. Think of context words, possibly by extracting the (tagged) token counts from the corpus.
+3. Extract the co-occurrence counts as an initial space.
 4. Optionally modify the co-occurrence space, for example, by applying the PPMI weighting scheme.
 5. Run an experiment.
 
