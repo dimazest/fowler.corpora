@@ -213,6 +213,7 @@ def dictionary(
         mode='w',
         complevel=9,
         complib='zlib',
+        nan_rep='_____nan_____',
     )
 
 

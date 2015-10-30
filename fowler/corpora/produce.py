@@ -50,7 +50,6 @@ def filter_verbs(
 def select_targets(
     target,
     dataset_dictionary=('', '', 'Dataset dictionary filename.'),
-
 ):
     target_dictionary = pd.read_hdf(dataset_dictionary, 'dictionary')
     assert target_dictionary.set_index(['ngram', 'tag']).index.is_unique
