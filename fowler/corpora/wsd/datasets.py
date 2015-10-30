@@ -14,6 +14,9 @@ tag_mappings = {
     'bnc': {'N': 'SUBST', 'V': 'VERB', 'J': 'ADJ'},
     'bnc-ccg': {'N': 'N', 'V': 'V', 'J': 'J'},
     'ukwac': {'N': 'N', 'V': 'V', 'J': 'J'},
+    # TODO: Is Brown mappting correct?
+    # TODO: What do we do with adverbs?
+    'brown': {'N': 'N', 'V': 'V', 'J': 'R'},
 }
 
 

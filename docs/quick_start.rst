@@ -7,23 +7,29 @@ semantics experiments.
 The task
 --------
 
-The [wordsim353]_ data set consists of 353 word pairs judged by humans for
-similarity. You can download the data set from `here`__. These are the first 9
-records::
+The [SimLex-999]_ data set consists of 353 word pairs judged by humans for
+similarity. You can download the data set from `here`__.
 
-    curl -s http://www.eecs.qmul.ac.uk/~dm303/static/data/wordsim353/combined.csv | head
-    Word 1,Word 2,Human (mean)
-    love,sex,6.77
-    tiger,cat,7.35
-    tiger,tiger,10.00
-    book,paper,7.46
-    computer,keyboard,7.62
-    computer,internet,7.58
-    plane,car,5.77
-    train,car,6.31
-    telephone,communication,7.50
+::
 
-__ http://www.eecs.qmul.ac.uk/~dm303/static/data/wordsim353/combined.csv
+    wget http://www.eecs.qmul.ac.uk/~dm303/static/data/SimLex-999/SimLex-999.txt
+
+These are some of the records:
+
+.. csv-table::
+    :header-rows: 1
+
+    word1,   word2,   POS,     SimLex999,       conc(w1),        conc(w2),        concQ,   Assoc(USF),      SimAssoc333,      SD(SimLex)
+    old,     new,     A,       1.58,    2.72,    2.81,    2,       7.25,    1,       0.41
+    smart,   intelligent,     A,       9.2,     1.75,    2.46,    1,       7.11,    1,       0.67
+    hard,    difficult,       A,       8.77,    3.76,    2.21,    2,       5.94,    1,       1.19
+    happy,   cheerful,        A,       9.55,    2.56,    2.34,    1,       5.85,    1,       2.18
+    hard,    easy,    A,       0.95,    3.76,    2.07,    2,       5.82,    1,       0.93
+    fast,    rapid,   A,       8.75,    3.32,    3.07,    2,       5.66,    1,       1.68
+    happy,   glad,    A,       9.17,    2.56,    2.36,    1,       5.49,    1,       1.59
+    short,   long,    A,       1.23,    3.61,    3.18,    2,       5.36,    1,       1.58
+
+__ https://www.cl.cam.ac.uk/~fh295/SimLex-999.zip
 
 Our task is to predict the human judgment given a pair of words from the
 dataset. Refer, for example, to [Agirre09]_ for one way of solving it.
@@ -78,26 +84,28 @@ To see how good our similarity predictions are, we will use the Spearman
 Before we begin
 ---------------
 
-To avoid the mess, the data is organized to the following folders:
+..  Ignore
 
-* ``corpora`` is the folder for different corpora distributions, for example
-  ``corpora/BNC``.
-* ``downloads`` is for other resources, such as the wordsim 353 dataset.
-* ``data`` is the folder for the experiment data.
+    To avoid the mess, the data is organized to the following folders:
 
-If you use https://github.com/dimazest/fc deployment configuration, you
-should already have wordsim 353, otherwise you can get it from
-http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/wordsim353.zip
+    * ``corpora`` is the folder for different corpora distributions, for example
+      ``corpora/BNC``.
+    * ``downloads`` is for other resources, such as the wordsim 353 dataset.
+    * ``data`` is the folder for the experiment data.
 
-It takes a while to process the BNC and needs a powerful machine. If you are
-curious and want to go trough the tutorial quickly on your laptop, tell corpora
-to process only a part of the BNC files by referring to the BNC corpus as::
+    If you use https://github.com/dimazest/fc deployment configuration, you
+    should already have wordsim 353, otherwise you can get it from
+    http://www.cs.technion.ac.il/~gabr/resources/data/wordsim353/wordsim353.zip
 
-    bnc://${PWD}/corpora/BNC/Texts/\?fileids=\\w/\\w[ADGR07]\\w*/\\w*\\.xml
+    It takes a while to process the BNC and needs a powerful machine. If you are
+    curious and want to go trough the tutorial quickly on your laptop, tell corpora
+    to process only a part of the BNC files by referring to the BNC corpus as::
 
-If you want to use the whole corpus, refer to the BNC as::
+        bnc://${PWD}/corpora/BNC/Texts/\?fileids=\\w/\\w[ADGR07]\\w*/\\w*\\.xml
 
-    bnc://${PWD}/corpora/BNC/Texts/
+    If you want to use the whole corpus, refer to the BNC as::
+
+        bnc://${PWD}/corpora/BNC/Texts/
 
 Use the ``-v`` flag to write logs to ``/tmp/fowler.log``. If you run
 co-occurrence extraction on a laptop, to avoid lags, set the number of parallel
@@ -112,22 +120,15 @@ correspond to target words, while columns correspond to context words.
 Targets
 ~~~~~~~
 
-The words in the wordsim 353 dataset are the target words. Here is a way to get
-them:
+We will use a predefined set of words extracted from SimLex::
 
-.. code-block:: bash
-
-    # Get the first colum
-    cut downloads/wordsim353/combined.csv -d, -f 1 > t
-    # Append the second column
-    cut downloads/wordsim353/combined.csv -d, -f 2 >> t
-    # The header
-    echo ngram > data/targets_wordsim353.csv
-    # Get rid of duplicates and the column names ("Word 1", "Word 2")
-    # Lowercase the words and replace "troops" with its stem "troop"
-    # This transformation is needed because word sems will be used to extract co-occurences.
-    cat t | sort | uniq | grep -v Word | tr '[:upper:]' '[:lower:]' | sed -e 's/troops/troop/g' >> data/targets_wordsim353.csv
-    rm t
+    wget http://www.eecs.qmul.ac.uk/~dm303/static/data/dataset-targets_dataset.SimLex-999-tagset.ukwac.csv
+    head -n 5 dataset-targets_dataset.SimLex-999-tagset.ukwac.csv
+    ngram,tag
+    car,N
+    door,N
+    book,N
+    arm,N
 
 Contexts
 ~~~~~~~~
@@ -139,12 +140,13 @@ First we need to extract word frequencies:
 
 .. code-block:: bash
 
-    bin/corpora bnc dictionary \
-    --corpus bnc://${PWD}/corpora/BNC/Texts/\?fileids=\\w/\\w[ADGR07]\\w*/\\w*\\.xml \
-    -o data/dictionary_bnc_pos.h5 \
+    corpora bnc dictionary \
+    --corpus brown:// \
+    -o dictionary_brown_pos.h5 \
+    --tag_first_letter \
     --stem -v -j 2
 
-``data/dictionary_bnc_pos.h5`` is a `Pandas`_ `DataFrame`_ with the following columns:
+``data/dictionary_brwon_pos.h5`` is a `Pandas`_ `DataFrame`_ with the following columns:
 
 .. _Pandas: http://pandas.pydata.org/
 .. _DataFrame: http://pandas.pydata.org/pandas-docs/stable/generated/pandas.DataFrame.html
@@ -153,15 +155,14 @@ ngram
     a word or a stem.
 
 tag
-    its part of speech tag. In the BNC, nous are tagged as ``SUBST``, verbs
-    as ``VERB``, adjectives as ``ADV`` and adverbs as ``ADV``.
+    its part of speech tag.
 
 count
     the frequency of the word.
 
 We can access it the and extract the context words using IPython::
 
-    bin/corpora ipython
+    corpora ipython
 
 and executing the following code:
 
@@ -169,20 +170,16 @@ and executing the following code:
 
     >>> import pandas as pd
 
-    >>> dictionary = pd.read_hdf('data/dictionary_bnc_pos.h5', key='dictionary')
-    >>> dictionary.head()
-      ngram   tag    count
-    0   the   ART  1327711
-    1     ,   PUN  1143990
-    2     .   PUN  1047297
-    3    be  VERB   929343
-    4    of  PREP   667639
+    >>> dictionary = pd.read_hdf('dictionary_brown_pos.h5', key='dictionary')
+    ngram tag  count
+    0   the   A  69968
+    1     ,   ,  58333
+    2     .   .  49346
+    3    of   I  36410
+    4   and   C  28850
+    >>> contexts = dictionary[:3000]
 
-    >>> #  We are interested only in 3000 most frequent nouns, verbs, adjectives and adverbs!
-    >>> tags = dictionary['tag']
-    >>> contexts = dictionary[(tags == 'SUBST') | (tags == 'VERB') | (tags == 'ADJ') | (tags == 'ADV')][:3000]
-
-    >>> contexts[['ngram', 'tag']].to_csv('data/contexts_bnc_pos_3000.csv', index=False)
+    >>> contexts[['ngram', 'tag']].to_csv('contexts_brown_pos_3000.csv', index=False)
 
     >>> quit()
 
@@ -194,9 +191,11 @@ get the first semantic space:
 
 .. code-block:: bash
 
-    bin/corpora bnc cooccurrence -t data/targets_wordsim353.csv -c data/contexts_bnc_pos_3000.csv \
-    --corpus bnc://${PWD}/corpora/BNC/Texts/\?fileids=\\w/\\w[A0]\\w*/\\w*\\.xml \
-    -o data/space_bnc_wordsim_3000.h5 \
+    corpora bnc cooccurrence \
+    -t dataset-targets_dataset.SimLex-999-tagset.ukwac.csv \
+    -c contexts_brown_pos_3000.csv \
+    --corpus brown:// \
+    -o space_brown_simlex_3000.h5 \
     --stem -j 2 -v
 
 Experiments
@@ -206,82 +205,87 @@ Now we are ready to run the first experiment:
 
 .. code-block:: bash
 
-    bin/corpora similarity wordsim353 -s data/space_bnc_wordsim_3000.h5  \
-    --alter_experiment_data
+    corpora wsd similarity \
+    --space space_brown_simlex_3000.h5 \
+    --dataset simlex999://SimLex-999.txt?tagset=brown \
+    --composition_operator head \
+    --output brown_simlex_3000.h5
 
-    Spearman correlation: rho=-0.054, p=0.314
+    Spearman correlation (head), cosine): rho=nan, p=nan, support=999
 
-The score of -0.054 is very far fro the state-of-the-art, because of the tiny
-part of the corpus we've used.
+.. Ignore
 
-Tuning
-------
+    The score of -0.054 is very far fro the state-of-the-art, because of the tiny
+    part of the corpus we've used.
 
-The artistic part of the experiment is to tweak the initial co-occurrence
-counts. A common technique is to use positive pointwise mutual information (PPMI):
+    Tuning
+    ------
 
-.. background and motivation
+    The artistic part of the experiment is to tweak the initial co-occurrence
+    counts. A common technique is to use positive pointwise mutual information (PPMI):
 
-.. math::
+    .. background and motivation
 
-    ppmi(t, c) = max(0, \log(\frac{p(t|c)}{p(c)p(t)})) = max(0, log(\frac{count(t, c)N}{count(t)count(c)}))
+    .. math::
 
-where :math:`count(t, c)` is the co-occurrence frequency of a target word with
-a context word, :math:`count(t)` and :math:`count(c)` are the total number of
-times the target word was seen in the corpus and the total number of times the
-context word was seen in the corpus, :math:`N` is the total number of words.
+        ppmi(t, c) = max(0, \log(\frac{p(t|c)}{p(c)p(t)})) = max(0, log(\frac{count(t, c)N}{count(t)count(c)}))
 
-So far we know the co-occurrence counts :math:`count(t, c)` from the space file
-and the context counts :math:`count(c)` from the dictionary. Because our
-contexts are part of speech tagged, while targets are not, we need to retrieve the counts for targets:
+    where :math:`count(t, c)` is the co-occurrence frequency of a target word with
+    a context word, :math:`count(t)` and :math:`count(c)` are the total number of
+    times the target word was seen in the corpus and the total number of times the
+    context word was seen in the corpus, :math:`N` is the total number of words.
 
-.. code-block:: python
+    So far we know the co-occurrence counts :math:`count(t, c)` from the space file
+    and the context counts :math:`count(c)` from the dictionary. Because our
+    contexts are part of speech tagged, while targets are not, we need to retrieve the counts for targets:
 
-    >>> import pandas as pd
+    .. code-block:: python
 
-    >>> pd.read_hdf('data/dictionary_bnc_pos.h5', key='dictionary').groupby('ngram').sum().sort('count', ascending=False).reset_index().to_hdf('data/dictionary_bnc.h5', 'dictionary', mode='w', complevel=9, complib='zlib')
+        >>> import pandas as pd
 
-    >>> quit()
+        >>> pd.read_hdf('data/dictionary_bnc_pos.h5', key='dictionary').groupby('ngram').sum().sort('count', ascending=False).reset_index().to_hdf('data/dictionary_bnc.h5', 'dictionary', mode='w', complevel=9, complib='zlib')
 
-Now we are ready to weight the co-occurrence counts:
+        >>> quit()
 
-.. code-block:: bash
+    Now we are ready to weight the co-occurrence counts:
 
-    bin/corpora space pmi --column-dictionary data/dictionary_bnc_pos.h5 --dictionary data/dictionary_bnc.h5 \
-    -s data/space_bnc_wordsim_3000.h5 -o data/space_bnc_wordsim_3000_ppmi.h5
+    .. code-block:: bash
 
-And run the experiment:
+        bin/corpora space pmi --column-dictionary data/dictionary_bnc_pos.h5 --dictionary data/dictionary_bnc.h5 \
+        -s data/space_bnc_wordsim_3000.h5 -o data/space_bnc_wordsim_3000_ppmi.h5
 
-.. code-block:: bash
+    And run the experiment:
 
-    bin/corpora similarity wordsim353 -s data/space_bnc_wordsim_3000_ppmi.h5 \
-    --alter_experiment_data
+    .. code-block:: bash
 
-    Cosine similarity (Spearman): rho=0.032, p=0.55
+        bin/corpora similarity wordsim353 -s data/space_bnc_wordsim_3000_ppmi.h5 \
+        --alter_experiment_data
 
-The small result is due to the small size of the corpus.
+        Cosine similarity (Spearman): rho=0.032, p=0.55
 
-Integration with IPython notebook
----------------------------------
+    The small result is due to the small size of the corpus.
 
-This IPython notebook :download:`quick_start_nb.ipynb <quick_start_nb.ipynb>`
-shows how ``corpora`` integrates with IPython. Copy the url to
-http://nbviewer.ipython.org to render it.
+    Integration with IPython notebook
+    ---------------------------------
 
-Start IPython Notebook as:
+    This IPython notebook :download:`quick_start_nb.ipynb <quick_start_nb.ipynb>`
+    shows how ``corpora`` integrates with IPython. Copy the url to
+    http://nbviewer.ipython.org to render it.
 
-.. code-block:: bash
+    Start IPython Notebook as:
 
-    bin/corpora notebook
+    .. code-block:: bash
 
-to have access to ``fowler.corpora``.
+        bin/corpora notebook
+
+    to have access to ``fowler.corpora``.
 
 Conclusion
 ----------
 
 A general workflow is the following:
 
-1. Decide what are the target words
+1. Decide what the target words are.
 2. Think of context words, possibly by extracting the (tagged) token counts from the corpus
 3. Extract the co-occurrence counts as an initial space
 4. Optionally modify the co-occurrence space, for example, by applying the PPMI weighting scheme.
@@ -291,12 +295,11 @@ A general workflow is the following:
 References
 ----------
 
-.. [wordsim353] Lev Finkelstein, Evgeniy Gabrilovich, Yossi Matias, Ehud
-    Rivlin, Zach Solan, Gadi Wolfman, and Eytan Ruppin. 2002. `Placing search
-    in context`__: the concept revisited. ACM Transactions on Information
-    Systems, 20(1):116–131.
+.. [SimLex-999]  Felix Hill, Roi Reichart and Anna Korhonen.
+    `SimLex-999: Evaluating Semantic Models with (Genuine) Similarity Estimation`__.
+    Computational Linguistics. 2015
 
-    __ http://www.cs.technion.ac.il/~gabr/papers/context_search.pdf
+    __ http://arxiv.org/abs/1408.3456v1
 
 .. [Agirre09] Agirre, E., Alfonseca, E., Hall, K., Kravalova, J., Paşca, M., & Soroa,
     A. (2009, May). `A study on similarity and relatedness using distributional
