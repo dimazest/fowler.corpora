@@ -1,0 +1,124 @@
+package:
+  name: fowler.corpora
+  version: "0.2"
+
+source:
+  path: ../
+
+build:
+  # noarch_python: True
+  preserve_egg_dir: True
+  entry_points:
+    - corpora = fowler.corpora.main:dispatch
+
+  # If this is a new build for the same version, increment the build
+  # number. If you do not include this key, it defaults to 0.
+  # number: 1
+
+requirements:
+  build:
+    - python
+    - python-blosc
+    - chrono
+    - colored
+    - docutils
+    - execnet
+    - fowler.switchboard
+    - gensim
+    - google-ngram-downloader
+    - ipython
+    - jinja2
+    - joblib
+    - matplotlib
+    - more-itertools
+    - nltk
+    - notebook
+    - numexpr
+    - numpy
+    - openpyxl <1.9999
+    - opster
+    - pandas
+    - progress
+    - py
+    - pygments
+    - pytables
+    - scikit-learn
+    - scipy
+    - seaborn
+    - setuptools
+    - six
+    - tornado
+    - twython
+    - xlsxwriter
+    - xlwt-future
+    - zope.cachedescriptors
+
+  run:
+    - python
+    - python-blosc
+    - chrono
+    - colored
+    - docutils
+    - execnet
+    - fowler.switchboard
+    - gensim
+    - google-ngram-downloader
+    - ipython
+    - jinja2
+    - joblib
+    - matplotlib
+    - more-itertools
+    - nltk
+    - notebook
+    - numexpr
+    - numpy
+    - openpyxl <1.9999
+    - opster
+    - pandas
+    - progress
+    - py
+    - pygments
+    - pytables
+    - scikit-learn
+    - scipy
+    - seaborn
+    - setuptools
+    - six
+    - tornado
+    - twython
+    - xlsxwriter
+    - xlwt-future
+    - zope.cachedescriptors
+
+
+test:
+  # Python imports
+  imports:
+    - fowler
+    - fowler.corpora
+    - fowler.corpora.bnc
+    - fowler.corpora.dictionary
+    - fowler.corpora.ms_paraphrase
+    - fowler.corpora.serafin03
+    - fowler.corpora.space
+    - fowler.corpora.wsd
+
+  commands:
+    - corpora --help
+    - py.test test/ --boxed
+
+
+  # You can also put a file called run_test.py in the recipe that will be run
+  # at test time.
+
+  requires:
+    - pytest >=2.4.2
+
+about:
+  home: https://github.com/dimazest/fowler.corpora/
+  license: MIT License
+  summary: 'UNKNOWN'
+
+# See
+# http://docs.continuum.io/conda/build.html for
+# more information about meta.yaml
