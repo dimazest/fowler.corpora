@@ -20,7 +20,7 @@ You also need NLK data:
 
 .. code-block::
 
-    ~/miniconda3/bin/python 'import nltk; nltk.download("brown")'
+    ~/miniconda3/bin/python -c 'import nltk; nltk.download("brown")'
 
 Tha package itself
 ------------------

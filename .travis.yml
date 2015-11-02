@@ -13,7 +13,7 @@ install:
   - ~/miniconda3/bin/conda install -y -c https://conda.anaconda.org/dimazest python-blosc
   - ~/miniconda3/bin/conda install -y pip nltk cffi cython docutils gensim ipykernel ipython ipython_genutils jupyter lxml matplotlib notebook numexpr numpy openpyxl pandas patsy psutil pytables pyyaml pyzmq scikit-learn scipy seaborn
   - pip install coveralls
-  - ~/miniconda3/bin/python 'import nltk; nltk.download("brown")'
+  - ~/miniconda3/bin/python -c 'import nltk; nltk.download("brown")'
 
 script:
   - PYTEST_ADDOPTS="--cov=fowler.corpora --cov-report=xml" ~/miniconda3/bin/python setup.py test
