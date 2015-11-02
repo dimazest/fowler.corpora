@@ -1,74 +1,50 @@
 Installation
 ============
 
-.. warning:: This manual is in a very early alpha state!
+It's recommended to use Anaconda and install some packages with it. Refer to
+`miniconda homepage`__ for links to installers for other platforms.
 
-    It has not been tested and many problems may appear during the deployment
-    process.
-
-You can deploy ``fowler.corpora`` in two ways: in your current operating
-system, or inside of a virtual environment. While local deployment doesn't
-compromise performance, it's much easier to deploy in an virtual environment.
-
-Getting the deployment configuration:
+__ http://conda.pydata.org/miniconda.html
 
 .. code-block:: bash
 
-    git clone https://github.com/dimazest/fc.git
-    cd fc
+    # Install miniconda
+    wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
+    sh Miniconda3-latest-MacOSX-x86_64.sh -b
 
-System packages
----------------
+    # Conda-install some packages
+    wget https://bitbucket.org/dimazest/phd-buildout/raw/tip/requirements.txt
+    ~/miniconda3/bin/conda install --file requirements.txt pip
 
-Some systme libraries are needed to run the software. There are many ways to do
-it, here are some:
+Tha package itself
+------------------
 
-Mac OS X with Macports
-~~~~~~~~~~~~~~~~~~~~~~
-
-Macports is a preferd package manager on a Mac to deploy ``fowler.corpora``
-mainly because it provides packages for ``pandas``. ``atlas`` and friends.
-
-.. code-block:: bash
-
-    sudo port install py33-scikit-learn py33-pandas py33-matplotlib
-
-
-Virtual environment
-~~~~~~~~~~~~~~~~~~~
-
-Alternatively to a local install, you can create a virtual machine. you need to
-install `vagrant`_ and `virtualbox`_.
-
-.. _vagrant: http://www.vagrantup.com/downloads.html
-.. _virtualbox: https://www.virtualbox.org/wiki/Downloads
-
-Then you are ready to spin up a virtual machine and ssh to it:
+The package is available on `PyPi
+<https://pypi.python.org/pypi/fowler.corpora>`_ and can be isntalled with pip:
 
 .. code-block:: bash
 
-    vagrant up
-    vagrant ssh
+    pip install fowler.corpora
 
-    cd /vagrant  # The directry is shared between the virtual machine and the host OS.
+It's also possible to isnstal a development version right from `GitHub
+<https://github.com/dimazest/fowler.corpora/>`_:
+
+.. code-block:: bash
+
+    pip intall pip install https://github.com/dimazest/fowler.corpora/archive/master.zip
+
 
 The final step
 --------------
 
-.. code-block:: bash
-
-    python3.3 bootstrap.py
-    bin/buildout
-
-If everyrhing went fine, you should be able to run ``bin/corpora``:
+Run the package to see whether it works.
 
 .. code-block:: bash
 
-    bin/corpora
+    corpora -h
     usage: corpora <command> [options]
 
     commands:
-
      help             Show help for a given help topic or a help overview.
      ...
      ...
