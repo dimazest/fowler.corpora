@@ -10,7 +10,8 @@ before_install:
   - ./Miniconda3-latest-Linux-x86_64.sh -b
   - ~/miniconda3/bin/conda update -y conda
 install:
-  - ~/miniconda3/bin/conda install -y pip cffi cython gensim ipython lxml matplotlib numexpr numpy openpyxl pandas patsy psutil python-dateutil pyyaml scikit-learn scipy seaborn pytables nltk pyzmq docutils
+
+  - ~/miniconda3/bin/conda install -y pip cffi cython docutils gensim ipykernel ipython ipython_genutils jupyter lxml matplotlib notebook numexpr numpy openpyxl pandas patsy psutil pytables python-blosc pyyaml pyzmq scikit-learn scipy seaborn
   - pip install coveralls
 script:
   - PYTEST_ADDOPTS="--cov=fowler.corpora --cov-report=xml" ~/miniconda3/bin/python setup.py test
