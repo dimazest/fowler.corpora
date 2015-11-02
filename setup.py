@@ -6,15 +6,21 @@ from setuptools.command.test import test as TestCommand
 
 
 class PyTest(TestCommand):
+    user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
+    test_args = []
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.pytest_args = []
+
     def finalize_options(self):
         TestCommand.finalize_options(self)
-        self.test_args = 'test'
+        self.test_args = []
         self.test_suite = True
 
     def run_tests(self):
-        # import here, cause outside the eggs aren't loaded
         import pytest
-        errno = pytest.main(self.test_args)
+        errno = pytest.main(self.pytest_args)
         sys.exit(errno)
 
 
@@ -26,7 +32,7 @@ long_description = (
 
 setup(
     name='fowler.corpora',
-    version='0.1',
+    version='0.2',
     description='',
     long_description=long_description,
     # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
@@ -36,13 +42,12 @@ setup(
         'Intended Audience :: Science/Research',
         'License :: OSI Approved :: MIT License',
         'Operating System :: POSIX',
-        'Operating System :: Microsoft :: Windows',
         'Operating System :: MacOS :: MacOS X',
         'Topic :: Utilities',
         'Topic :: Text Processing :: Linguistic',
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.3',
+        'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: Implementation :: CPython',
     ],
     keywords='',
@@ -59,7 +64,6 @@ setup(
         'chrono',
         'colored',
         'docutils',
-        'eventlet',
         'execnet',
         'fowler.switchboard',
         'gensim',
@@ -78,7 +82,6 @@ setup(
         'progress',
         'py',
         'pygments',
-        'raven',
         'scikit-learn',
         'scipy',
         'seaborn',
@@ -93,6 +96,9 @@ setup(
         'nltk>=3.0.0',  # and it's dependencies
         'twython',
     ],
+    extras_require={
+        'raven': ['raven'],
+    },
     entry_points={
         'console_scripts': [
             'corpora = fowler.corpora.main:dispatch',
@@ -112,7 +118,7 @@ setup(
             'phraserel = fowler.corpora.bnc.readers:PhraseRel',
         ],
     },
-    tests_require=['pytest>=2.4.2', 'pytest-bdd', 'pytest-cov'],
+    tests_require=['pytest>=2.4.2', 'pytest-cov'],
     cmdclass={'test': PyTest},
 
 )
