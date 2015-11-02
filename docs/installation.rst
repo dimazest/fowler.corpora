@@ -24,14 +24,14 @@ The package is available on `PyPi
 
 .. code-block:: bash
 
-    pip install fowler.corpora
+    ~/miniconda3/bin/pip install fowler.corpora
 
 It's also possible to isnstal a development version right from `GitHub
 <https://github.com/dimazest/fowler.corpora/>`_:
 
 .. code-block:: bash
 
-    pip install https://github.com/dimazest/fowler.corpora/archive/master.zip
+    ~/miniconda3/bin/pip install https://github.com/dimazest/fowler.corpora/archive/master.zip
 
 
 The final step
@@ -41,7 +41,7 @@ Run the package to see whether it works.
 
 .. code-block:: bash
 
-    corpora -h
+    ~/miniconda3/bin/corpora -h
     usage: corpora <command> [options]
 
     commands:
