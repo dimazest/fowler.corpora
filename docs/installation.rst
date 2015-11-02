@@ -13,9 +13,14 @@ __ http://conda.pydata.org/miniconda.html
     sh Miniconda3-latest-MacOSX-x86_64.sh -b
 
     # Conda-install some packages
-    ~/miniconda3/bin/conda install -c https://conda.anaconda.org/dimazest python-blosc
     wget https://bitbucket.org/dimazest/phd-buildout/raw/tip/requirements.txt
-    ~/miniconda3/bin/conda install --file requirements.txt pip
+    ~/miniconda3/bin/conda install -c https://conda.anaconda.org/dimazest --file requirements.txt pip
+
+You also need NLK data:
+
+.. code-block::
+
+    ~/miniconda3/bin/python 'import nltk; nltk.download("brown")'
 
 Tha package itself
 ------------------
