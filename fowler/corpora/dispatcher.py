@@ -11,10 +11,6 @@ from logging.handlers import RotatingFileHandler
 import numpy as np
 import pandas as pd
 
-import raven
-from raven.conf import setup_logging
-from raven.handlers.logging import SentryHandler
-
 import opster
 import execnet
 
@@ -255,12 +251,17 @@ class Dispatcher(BaseDispatcher):
     def sentry_client(self):
         """Setntry client."""
         if os.environ.get('SENTRY_DSN', ''):
+            import raven
+
             return raven.Client()
 
     @Resource
     def sentry_handler(self):
         """Sentry log handler."""
         if self.sentry_client:
+            from raven.conf import setup_logging
+            from raven.handlers.logging import SentryHandler
+
             handler = SentryHandler(self.sentry_client)
             setup_logging(handler)
             return handler

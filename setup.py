@@ -59,7 +59,6 @@ setup(
         'chrono',
         'colored',
         'docutils',
-        'eventlet',
         'execnet',
         'fowler.switchboard',
         'gensim',
@@ -78,7 +77,6 @@ setup(
         'progress',
         'py',
         'pygments',
-        'raven',
         'scikit-learn',
         'scipy',
         'seaborn',
@@ -93,6 +91,9 @@ setup(
         'nltk>=3.0.0',  # and it's dependencies
         'twython',
     ],
+    extras_require={
+        'raven': ['raven'],
+    },
     entry_points={
         'console_scripts': [
             'corpora = fowler.corpora.main:dispatch',
@@ -112,7 +113,7 @@ setup(
             'phraserel = fowler.corpora.bnc.readers:PhraseRel',
         ],
     },
-    tests_require=['pytest>=2.4.2', 'pytest-bdd', 'pytest-cov'],
+    tests_require=['pytest>=2.4.2', 'pytest-cov'],
     cmdclass={'test': PyTest},
 
 )
