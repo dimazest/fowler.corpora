@@ -10,7 +10,7 @@ before_install:
   - ./Miniconda3-latest-Linux-x86_64.sh -b
   - ~/miniconda3/bin/conda update -y conda
 install:
-  - ~/miniconda3/bin/conda install -c https://conda.anaconda.org/dimazest python-blosc
+  - ~/miniconda3/bin/conda install -y -c https://conda.anaconda.org/dimazest python-blosc
   - ~/miniconda3/bin/conda install -y pip cffi cython docutils gensim ipykernel ipython ipython_genutils jupyter lxml matplotlib notebook numexpr numpy openpyxl pandas patsy psutil pytables python-blosc pyyaml pyzmq scikit-learn scipy seaborn
   - pip install coveralls
 script:
