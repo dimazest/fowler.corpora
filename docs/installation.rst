@@ -31,7 +31,7 @@ It's also possible to isnstal a development version right from `GitHub
 
 .. code-block:: bash
 
-    pip intall pip install https://github.com/dimazest/fowler.corpora/archive/master.zip
+    pip install https://github.com/dimazest/fowler.corpora/archive/master.zip
 
 
 The final step
