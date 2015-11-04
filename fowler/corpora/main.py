@@ -25,8 +25,6 @@ from .dispatcher import Dispatcher
 
 def dispatcher_factory():
     dispatcher = Dispatcher()
-    command = dispatcher.command
-    dispatch = dispatcher.dispatch
 
     dispatcher.nest(
         'serafin03',
