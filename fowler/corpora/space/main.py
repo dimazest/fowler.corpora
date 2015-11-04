@@ -136,12 +136,14 @@ def svd(
     n_components=('n', 300, 'Number of components.'),
     n_iter=('', 5, 'Number of iterations for randomized SVD solver.'),
     random_state=('', 0, 'Random number generator seed control. 0 for undefined.'),
+    l2_normalize=('', False, 'L2-normalize vectors before decomposition.'),
 ):
     """SVD."""
     space.svd(
         n_components=n_components,
         n_iter=n_iter,
         random_state=random_state or None,
+        l2_normalize=l2_normalize,
     ).write(output)
 
 
