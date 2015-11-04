@@ -88,6 +88,7 @@ class Space(Mapping):
         column_labels = pd.DataFrame(
             {
                 'ngram': list(range(n_components)),
+                'tag': ['_'] * n_components,
                 'id': list(range(n_components)),
             }
         ).set_index('ngram')
