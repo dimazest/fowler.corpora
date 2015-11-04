@@ -94,8 +94,14 @@ class Space(Mapping):
 
         return Space(reduced_matrix, self.row_labels, column_labels)
 
-    def svd(self, n_components, **kwargs):
+    def svd(self, n_components, l2_normalize=False, **kwargs):
         """Perform dimensionality reduction using SVD."""
+        matrix = self.matrix
+
+        if l2_normalize:
+            matrix = matrix.astype(float)
+            matrix = normalize(matrix, norm='l2')
+
         svd = TruncatedSVD(n_components=n_components, **kwargs)
         reduced_matrix = svd.fit_transform(self.matrix)
 
