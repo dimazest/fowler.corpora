@@ -9,8 +9,8 @@ __ http://conda.pydata.org/miniconda.html
 .. code-block:: bash
 
     # Install miniconda
-    wget http://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh
-    sh Miniconda3-latest-MacOSX-x86_64.sh -b
+    wget https://repo.continuum.io/miniconda/Miniconda3-3.7.3-MacOSX-x86_64.sh
+    sh Miniconda3-3.7.3-MacOSX-x86_64.sh -b
 
     # Conda-install some packages
     wget https://bitbucket.org/dimazest/phd-buildout/raw/tip/requirements.txt
