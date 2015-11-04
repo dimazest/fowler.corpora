@@ -6,7 +6,8 @@ python:
 
 before_install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-3.7.3-Linux-x86_64.sh
-  - sh Miniconda3-3.7.3-Linux-x86_64.sh -b
+  - chmod +x Miniconda3-3.7.3-Linux-x86_64.sh
+  - ./Miniconda3-3.7.3-Linux-x86_64.sh -b
   - ~/miniconda3/bin/conda update -y conda
 install:
   - ~/miniconda3/bin/conda install -y -c https://conda.anaconda.org/dimazest python-blosc
