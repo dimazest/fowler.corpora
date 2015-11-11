@@ -255,6 +255,7 @@ def pmi(
 def ittf(
     space,
     output,
+    dictionary,
     raw_space=('', '', 'Space with feature co-occurrence counts.'),
     times=('', ('n', 'logn'), 'Multiply the resulted values by n or logn.'),
 ):
@@ -266,7 +267,7 @@ def ittf(
 
     n = space.matrix.todense()
 
-    ittf = np.log(feature_cardinality) - np.log(n + 1)
+    ittf = np.log(len(dictionary)) - np.log(feature_cardinality)
 
     if times == 'n':
         matrix = np.multiply(n, ittf)
