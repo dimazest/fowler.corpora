@@ -4,6 +4,7 @@ import pandas as pd
 
 from colored import style
 from scipy import stats
+from scipy.spatial import distance
 from sklearn.metrics import pairwise
 
 from fowler.corpora.util import Worker
@@ -12,21 +13,20 @@ from fowler.corpora.util import Worker
 logger = logging.getLogger(__name__)
 
 
-def cosine_similarity(s1, s2):
-    return pairwise.cosine_similarity(s1, s2)[0][0]
-
-
-def inner_product(s1, s2):
-    return s1.dot(s2.T)[0, 0]
-
-
 class SimilarityExperiment(Worker):
+
     def evaluate(self, dataset, vectorizer):
         pairs = list(dataset.dependency_graphs_pairs())
 
         # TODO: Refactor to mimic scikit-learn pipeline.
         sent_vectors = (
-            (g1, vectorizer.vectorize(g1), g2, vectorizer.vectorize(g2), score) + tuple(extra)
+            (
+                g1,
+                vectorizer.vectorize(g1).toarray().flatten(),
+                g2,
+                vectorizer.vectorize(g2).toarray().flatten(),
+                score,
+            ) + tuple(extra)
             for g1, g2, score, *extra in pairs
         )
 
@@ -35,8 +35,12 @@ class SimilarityExperiment(Worker):
                 (
                     str(s1.tree()),
                     str(s2.tree()),
-                    cosine_similarity(s1_vect, s2_vect),
-                    inner_product(s1_vect, s2_vect),
+
+                    1 / (1 + distance.euclidean(s1_vect, s2_vect)),
+                    -distance.cosine(s1_vect, s2_vect) + 1,
+                    -distance.correlation(s1_vect, s2_vect) + 1,
+                    s1_vect.dot(s2_vect.T),
+
                     score,
                 ) + tuple(extra)
                 for s1, s1_vect, s2, s2_vect, score, *extra in self.progressify(
@@ -46,8 +50,15 @@ class SimilarityExperiment(Worker):
                 )
             ],
             columns=(
-                'unit1', 'unit2',
-                'cos', 'inner_product', 'score',
+                'unit1',
+                'unit2',
+
+                'eucliedean',
+                'cos',
+                'correlation',
+                'inner_product',
+
+                'score',
             ) + getattr(dataset, 'extra_fields', tuple()),
         )
 
