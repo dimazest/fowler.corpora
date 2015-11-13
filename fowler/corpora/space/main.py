@@ -160,6 +160,7 @@ def pmi(
     keep_negative_values=('', False, 'Keep negative values.'),
     times=('', ('', 'n', 'logn'), 'Multiply the resulted values by n or log(n+1).'),
     window_size=('', 10, 'The size of the window.'),
+    cds=('', float('nan'), 'Context discounting smoothing cooficient.'),
 ):
     """
     Weight elements using the positive PMI measure [3]. max(0, log(P(c|t) / P(c)))
@@ -208,40 +209,65 @@ def pmi(
         if not remove_missing:
             raise ValueError('These rows are not finite!', row_totals[missing_rows])
         else:
-            logger.warning('Removing the following rows: %s', row_totals[missing_rows])
-            row_totals = row_totals[~missing_rows]
+            logger.warning('Not finite rows: %s', row_totals[missing_rows])
 
-    row_totals = row_totals.values[:, np.newaxis]
+    N = dictionary['count'].sum()
 
-    # This are context probabilities in the whole Corpora P(c)
-    column_totals = (
-        column_dictionary.loc[space.column_labels.sort('id').index].values.flatten() /
-        dictionary['count'].sum()
-    )
+    row_totals[missing_rows] = 1
+    row_totals = row_totals.values[:, np.newaxis] / N
+
+    if np.isnan(cds):
+        # Use dictionary for context total counts.
+        column_totals = (
+            column_dictionary.loc[space.column_labels.index].values.flatten() / N
+        )
+    else:
+        # Use co-occurrence matrix for context co-occurrence counts.
+
+        # Prepare for the Context Distribution Smoothing.
+        smoothed_context_counts = np.array(space.matrix.sum(axis=0)).flatten() ** cds
+
+        # This are context probabilities in the whole Corpora P(c)
+        column_totals = smoothed_context_counts / smoothed_context_counts.sum()
 
     # Elements in the matrix are N(c, t): the co-occurrence counts
     n = space.matrix.astype(float).todense()
 
-    if remove_missing:
-        n = n[~missing_rows.values]
+    # n[missing_rows] = 0
 
-    # The elements in the matrix are P(c|t)
-    matrix = n / row_totals / window_size
+    # The elements in the matrix are P(c, t)
+    matrix = n / (N * window_size)
 
-    max_row_sum = matrix.sum(axis=1).max()
-    assert max_row_sum < 1.0 or np.isclose(max_row_sum, 1.0)
+    matrix_sum = matrix.sum()
+    assert matrix_sum < 1.0 or np.isclose(matrix_sum, 1.0)
+
+    # # Check that P(c|t) <= 1.
+    # max_row_sum = (matrix / (column_totals * row_totals)).sum(axis=1).max()
+    # assert max_row_sum < 1.0 or np.isclose(max_row_sum, 1.0)
 
     if not conditional_probability:
         if not no_log:
-            # The elements in the matrix are log(P(c|t) / P(c))
-            matrix = np.log(matrix) - np.log(column_totals)
-            if keep_negative_values:
-                matrix[matrix == -np.inf] = -np.log(dictionary['count'].sum())
-            else:
+            # PMI
+            # Smotthing: Pretned that unseen pairs occurred once.
+            matrix[matrix == 0] = 1 / (N * window_size)
+            # The elements in the matrix are log(P(c, t))
+            matrix = np.log(matrix)
+
+            # log(P(c, t)) - (log(P(c)) + log(P(t)))
+            matrix -= np.log(column_totals) + np.log(row_totals)
+
+            if not keep_negative_values:
+                # PPMI
                 matrix[matrix < 0] = 0.0
         else:
-            # The elements in the matrix are P(c|t) / P(c)
-            matrix /= column_totals
+            # Ratio
+            # The elements in the matrix are P(c,t) / ((P(c) * P(t)))
+            matrix /= column_totals * row_totals
+    else:
+        # Conditional: P(c|t)
+        matrix /= row_totals
+        max_row_sum = (matrix).sum(axis=1).max()
+        assert max_row_sum < 1.0 or np.isclose(max_row_sum, 1.0)
 
     if times == 'n':
         matrix = np.multiply(n, matrix)
