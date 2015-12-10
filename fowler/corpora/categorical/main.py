@@ -166,17 +166,18 @@ def transitive_verb_space(
     row_labels = pd.DataFrame(
         {
             'ngram': [l[0] for l in verb_labels],
-            'ngram_tag': [l[1] for l in verb_labels],
+            'tag': [l[1] for l in verb_labels],
             'id': [i for i, _ in enumerate(verb_labels)],
         }
-    ).set_index(['ngram', 'ngram_tag'])
+    ).set_index(['ngram', 'tag'])
 
     column_labels = pd.DataFrame(
         {
             'ngram': list(range(matrix.shape[1])),
+            'tag': list(range(matrix.shape[1])),
             'id': list(range(matrix.shape[1])),
         }
-    ).set_index('ngram')
+    ).set_index(['ngram', 'tag'])
 
     space = Space(
         matrix,
