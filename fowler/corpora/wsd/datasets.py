@@ -194,9 +194,3 @@ class Tagger:
     def J(self, v):
         """Adjective."""
         return self.tag(v, 'J')
-
-
-# TODO: remove
-dataset_types = {
-    'ks13': KS13Dataset,
-}
