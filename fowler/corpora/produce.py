@@ -5,6 +5,7 @@ import pandas as pd
 from nltk.corpus import stopwords
 
 from fowler.corpora.dispatcher import Dispatcher
+from fowler.corpora.wsd.datasets import tag_mappings
 
 
 class ProduceDispatcher(Dispatcher):
@@ -34,9 +35,11 @@ def filter_stopwords(
 def filter_verbs(
     target,
     targets=('', '', 'Targets filename.'),
+    tagset=('', '', 'Tagset.')
 ):
     targets = pd.read_csv(targets, encoding='utf-8')
-    verbs = targets[targets['tag'] == 'V']
+    verbs = targets[targets['tag'] == tag_mappings[tagset]['V']]
+
     verbs.to_csv(
         target,
         encoding='utf-8',
