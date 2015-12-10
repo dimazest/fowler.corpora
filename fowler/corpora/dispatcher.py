@@ -305,7 +305,10 @@ class SpaceMixin:
 
     @Resource
     def space(self):
-        return read_space_from_file(self.kwargs['space'])
+        try:
+            return read_space_from_file(self.kwargs['space'])
+        except AttributeError:
+            raise ValueError('Could not read the space file.')
 
     @property
     def space_file(self):
