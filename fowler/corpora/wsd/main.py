@@ -3,18 +3,14 @@ import logging
 from itertools import chain
 
 import colored
-import pandas as pd
 
 from scipy import sparse
 
 from fowler.corpora.bnc.main import uri_to_corpus_reader
-from fowler.corpora.bnc.readers import KS13
 
 from fowler.corpora.dispatcher import Dispatcher, Resource, SpaceMixin
 from fowler.corpora.models import read_space_from_file
-from fowler.corpora.util import display
 
-from .datasets import dataset_types
 from .experiments import SimilarityExperiment
 
 
@@ -52,33 +48,6 @@ class WSDDispatcher(Dispatcher, SpaceMixin):
     def verb_space(self):
         if self.kwargs['verb_space']:
             return read_space_from_file(self.kwargs['verb_space'])
-
-    @Resource
-    def gs12_data(self):
-        """The data set grouped by 'adj_subj', 'subj', 'verb', 'landmark', 'adj_obj', 'obj'.
-
-        The mean of the input values per group is calculated.
-
-        """
-        index_cols = 'adj_subj', 'subj', 'verb', 'landmark', 'adj_obj', 'obj'
-
-        data = pd.read_csv(
-            self.kwargs['gs12_data'],
-            sep=' ',
-            usecols=index_cols + ('annotator_score', ),
-        )
-        grouped = data.groupby(index_cols, as_index=False).mean()
-
-        grouped['obj'][grouped['obj'] == 'papers'] = 'paper'
-
-        if self.google_vectors:
-            grouped = grouped[grouped['obj'] != 'offence']
-            grouped = grouped[grouped['obj'] != 'favour']
-
-        if self.limit:
-            grouped = grouped.head(self.limit)
-
-        return grouped
 
 
 dispatcher = WSDDispatcher()
@@ -191,59 +160,3 @@ def similarity(
         dataset=dataset,
         vectorizer=vectorizer,
     ).to_hdf(output, key=key)
-
-
-def gs12_similarity(args):
-    (
-        (as_, adj_subj),
-        (s, subj),
-        (v, verb),
-        (l, landmark),
-        (ao, adj_obj),
-        (o, obj),
-        composition_operator,
-        np_composition,
-    ) = args
-
-    def compose(a, n):
-        return {
-            'add': lambda: a + n,
-            'mult': lambda: a.multiply(n),
-        }[np_composition]()
-
-    return gs11_similarity(
-        (
-            (v, verb), (s, compose(adj_subj, subj)), (o, compose(adj_obj, obj)), (l, landmark), composition_operator,
-        )
-    )
-
-
-def gs12(
-    pool,
-    space,
-    composition_operator,
-    np_composition=('', 'mult', 'Operation used to compose adjective with noun. [add|mult]'),
-    gs12_data=('', 'downloads/compdistmeaning/GS2012data.txt', 'The GS2012 dataset.'),
-):
-    similarity_experiment(
-        space,
-        pool,
-        gs12_data,
-        verb_columns=('verb', 'landmark'),
-        similarity_input=lambda verb_vectors, t: (
-            (
-                (as_, space[t.A(as_)]),
-                (s, space[t.S(s)]),
-                (v, verb_vectors[v]),
-                (l, verb_vectors[l]),
-                (ao, space[t.A(ao)]),
-                (o, space[t.S(o)]),
-                composition_operator,
-                np_composition,
-            )
-            for as_, s, v, l, ao, o in gs12_data[['adj_subj', 'subj', 'verb', 'landmark', 'adj_obj', 'obj']].values
-        ),
-        similarity_function=gs12_similarity,
-        input_column='annotator_score',
-        composition_operator=composition_operator,
-    )
