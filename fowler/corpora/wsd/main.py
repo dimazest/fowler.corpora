@@ -87,10 +87,13 @@ class CompositionalVectorizer:
         'frobenious-add', 'frobenious-mult', 'frobenious-outer',
     }
 
-    def __init__(self, space, operator, tagset):
+    def __init__(self, space, operator, tagset, verb_space=None, sloppy=True):
         self.space = space
         self.operator = operator  # TODO: should be differenct classes and register using entrypoints.
         self.tagset = tagset
+
+        self.verb_space = verb_space
+        self.sloppy = sloppy
 
     def vectorize(self, dependency_graph):
         nodes = dependency_graph.nodes
@@ -109,17 +112,57 @@ class CompositionalVectorizer:
             assert graph_signature(dependency_graph) == transitive_sentence(self.tagset)
 
             subject = self.node_to_vector(nodes[1])
-            verb = self.node_to_vector(nodes[2])
             object_ = self.node_to_vector(nodes[3])
 
-            if self.operator == 'kron':
-                verb_matrix = sparse.kron(verb, verb, format='csr')
+            length = self.space.matrix.shape[1]
+
+            if self.operator in ('kron', 'relational'):
+
+                if self.operator == 'kron':
+                    verb = self.node_to_vector(nodes[2])
+                    verb_matrix = sparse.kron(verb, verb, format='csr')
+                else:
+                    assert (length ** 2) == self.verb_space.matrix.shape[1]
+
+                    try:
+                        verb_matrix = self.node_to_vector(nodes[2], space=self.verb_space)
+                    except KeyError:
+                        logger.exception('Could not retrieve verb matrix for %s.', nodes[2]['lemma'])
+                        verb_matrix = sparse.csr_matrix((1, length ** 2), dtype=float)
+
                 subject_object = sparse.kron(subject, object_, format='csr')
 
                 return verb_matrix.multiply(subject_object)
 
             else:
-                raise NotImplemented('Operator {} is not implemented'.format(self.operator))
+                assert (length ** 2) == self.verb_space.matrix.shape[1]
+
+                try:
+                    verb_matrix = self.node_to_vector(nodes[2], space=self.verb_space)
+                except KeyError:
+                    logger.exception('Could not retrieve verb matrix for %s.', nodes[2]['lemma'])
+                    verb_matrix = sparse.csr_matrix((length, length), dtype=float)
+                else:
+                    verb_matrix = sparse.csr_matrix(
+                        verb_matrix
+                        .todense()
+                        .reshape((length, length))
+                    )
+
+                def copy_object():
+                    return subject.T.multiply(verb_matrix.dot(object_.T)).T
+
+                def copy_subject():
+                    return subject.dot(verb_matrix).multiply(object_)
+
+                return {
+                    'copy-object': copy_object,
+                    'copy-subject': copy_subject,
+                    'frobenious-add': lambda: copy_object() + copy_subject(),
+                    'frobenious-mult': lambda: copy_object().multiply(copy_subject()),
+                    'frobenious-outer': lambda: sparse.kron(copy_object(), copy_subject()),
+                }[self.operator]()
+
         else:
             raise ValueError('Operator {} is not supported'.format(self.operator))
 
@@ -129,8 +172,17 @@ class CompositionalVectorizer:
             operator=self.operator,
         )
 
-    def node_to_vector(self, node):
-        return self.space[node['lemma'], node['tag']]
+    def node_to_vector(self, node, space=None):
+        if space is None:
+            space = self.space
+        try:
+            return space[node['lemma'], node['tag']]
+        except:
+            if self.sloppy:
+                logger.warning('Could not retrieve: %s %s', node['lemma'], node['tag'])
+                return sparse.csr_matrix((1, space.matrix.shape[1]), dtype=float)
+            else:
+                raise
 
 
 @command()
@@ -142,7 +194,8 @@ def similarity(
         space,
         verb_space,
         output=('o', 'sentence_similarity.h5', 'Result output file.'),
-        key=('', 'dataset', 'The key of the result in the output file.')
+        key=('', 'dataset', 'The key of the result in the output file.'),
+        sloppy=('', False, 'Be strict: not allow missing words.')
 ):
 
     if dataset.vectorizer == 'lexical':
@@ -152,6 +205,8 @@ def similarity(
         space,
         composition_operator,
         tagset=dataset.tagset,
+        verb_space=verb_space,
+        sloppy=sloppy,
     )
 
     experiment = SimilarityExperiment(show_progress_bar=not no_p11n, pool=pool)
