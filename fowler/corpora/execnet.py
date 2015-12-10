@@ -134,16 +134,13 @@ def initialize_channel(channel):
 
 def sum_folder(channel):
     import pickle
-    import logging
 
     from more_itertools import peekable
     import pandas as pd
 
-    from fowler.corpora.execnet import initialize_channel
+    from fowler.corpora.execnet import logger, initialize_channel
 
     _, data = initialize_channel(channel)
-
-    logger = logging.getLogger('execnet.fum_folder')
 
     kwargs = data.get('kwargs', {})
     instance = data['instance']
@@ -193,6 +190,7 @@ def sum_folder(channel):
 
 def verb_space_builder(channel):
     import pickle
+
     from scipy import sparse
 
     from fowler.corpora.execnet import logger, initialize_channel
@@ -224,12 +222,13 @@ def verb_space_builder(channel):
                 )
 
             for subj_stem, subj_tag, obj_stem, obj_tag, count in group[['subj_stem', 'subj_tag', 'obj_stem', 'obj_tag', 'count']].values:
+                # XXX consider only the triples for which `count > 1000`.
 
                 try:
                     subject_vector = space[subj_stem, subj_tag]
                     object_vector = space[obj_stem, obj_tag]
                 except KeyError:
-                    # logger.exception('Could not retrieve an argument vector.')
+                    # Don't log the expensions as there are many of them!
                     continue
 
                 if not subject_vector.size:
@@ -241,7 +240,9 @@ def verb_space_builder(channel):
                     continue
 
                 subject_object_tensor = sparse.kron(subject_vector, object_vector)
-                t = subject_object_tensor * count
+
+                # XXX multiply by the count?
+                t = subject_object_tensor
 
                 if verb_stem not in result:
                     result[verb_stem, verb_tag] = t
