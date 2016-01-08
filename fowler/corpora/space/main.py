@@ -158,9 +158,12 @@ def pmi(
     remove_missing=('', False, 'Remove items that are not in the dictionary.'),
     conditional_probability=('', False, 'Compute only P(c|t).'),
     keep_negative_values=('', False, 'Keep negative values.'),
+    neg=('', 1.0, 'The K parameter for shifted PPMI.'),
+    log_base=('', np.e, 'The logarithm base to use.'),
     times=('', ('', 'n', 'logn'), 'Multiply the resulted values by n or log(n+1).'),
     window_size=('', 10, 'The size of the window.'),
     cds=('', float('nan'), 'Context discounting smoothing cooficient.'),
+    smoothing=('', ('minprob', 'chance', 'compress'), 'How to deal with unseen co-occurrence prbailty.'),
 ):
     """
     Weight elements using the positive PMI measure [3]. max(0, log(P(c|t) / P(c)))
@@ -170,10 +173,6 @@ def pmi(
 
     `--dictionary` provides word frequencies for rows. In case columns are
     labelled differently, provide `--column-dictionary`.
-
-    `--keep-negative-values` keeps negative values but replaces negative
-    infinity with 0. This is equivalent to replacing P(c, t) with just P(c) when
-    P(c, t) is 0.
 
     [1] Mitchell, Jeff, and Mirella Lapata. "Vector-based Models of Semantic
     Composition." ACL. 2008.
@@ -186,6 +185,22 @@ def pmi(
     [3] http://en.wikipedia.org/wiki/Pointwise_mutual_information
 
     """
+
+    if log_base == np.e:
+        log = np.log
+        log1p = np.log1p
+    else:
+        def log(x, out=None):
+            result = np.log(x, out)
+            result /= np.log(log_base)
+
+            return result
+
+        def log1p(x, out=None):
+            result = np.log1p(x, out)
+            result /= np.log(log_base)
+
+            return result
 
     def set_index(dictionary):
         dictionary.set_index(
@@ -233,8 +248,6 @@ def pmi(
     # Elements in the matrix are N(c, t): the co-occurrence counts
     n = space.matrix.astype(float).todense()
 
-    # n[missing_rows] = 0
-
     # The elements in the matrix are P(c, t)
     matrix = n / (N * window_size)
 
@@ -248,17 +261,36 @@ def pmi(
     if not conditional_probability:
         if not no_log:
             # PMI
-            # Smotthing: Pretned that unseen pairs occurred once.
-            matrix[matrix == 0] = 1 / (N * window_size)
-            # The elements in the matrix are log(P(c, t))
-            matrix = np.log(matrix)
+            zero_counts = matrix == 0
 
-            # log(P(c, t)) - (log(P(c)) + log(P(t)))
-            matrix -= np.log(column_totals) + np.log(row_totals)
+            if smoothing == 'minprob':
+                # Pretned that unseen pairs occurred once.
+                matrix[zero_counts] = 1 / (N * window_size)
+
+            if smoothing != 'compress':
+                # The elements in the matrix are log(P(c, t))
+                log(matrix, matrix)
+
+                # log(P(c, t)) - (log(P(c)) + log(P(t)))
+                matrix -= log(column_totals)
+                matrix -= log(row_totals)
+            else:
+                matrix /= column_totals * row_totals
+                matrix = log1p(matrix, matrix)
+
+            if smoothing in ('chance', 'compress'):
+                matrix[zero_counts] = 0
 
             if not keep_negative_values:
                 # PPMI
+                if smoothing == 'compress':
+                    matrix -= log(2)
+
+                if neg != 1.0:
+                    matrix -= log(neg)
+
                 matrix[matrix < 0] = 0.0
+
         else:
             # Ratio
             # The elements in the matrix are P(c,t) / ((P(c) * P(t)))
