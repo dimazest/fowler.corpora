@@ -26,3 +26,17 @@ The implemented experiments are:
 * Sentence similarity
 
   * `KS14 <http://compling.eecs.qmul.ac.uk/wp-content/uploads/2015/07/KS2014.txt>`_
+
+Chnagelog
+---------
+
+0.3
+~~~
+
+* Documentation update: installation instructions, similarity experiment quick
+  start.
+* Correlation and Eucliedean similarities are computed.
+* PMI variants and parameters.
+* Frobenious operators.
+* Word2vec space import.
+
