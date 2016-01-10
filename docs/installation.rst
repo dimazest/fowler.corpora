@@ -18,11 +18,11 @@ __ http://conda.pydata.org/miniconda.html
 
 You also need NLK data:
 
-.. code-block::
+.. code-block:: bash
 
     ~/miniconda3/bin/python -c 'import nltk; nltk.download("brown")'
 
-Tha package itself
+The package itself
 ------------------
 
 The package is available on `PyPi
@@ -32,7 +32,7 @@ The package is available on `PyPi
 
     ~/miniconda3/bin/pip install fowler.corpora
 
-It's also possible to isnstal a development version right from `GitHub
+It's also possible to install a development version right from `GitHub
 <https://github.com/dimazest/fowler.corpora/>`_:
 
 .. code-block:: bash
