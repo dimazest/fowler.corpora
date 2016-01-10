@@ -229,7 +229,7 @@ KS14
     Spearman correlation (frobenious-outer), cosine): rho=0.522, p=0.00000, support=108
 
 GS11
-====
+----
 
 .. code-block:: bash
 
