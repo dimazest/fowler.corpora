@@ -20,7 +20,7 @@ from fowler.corpora.dispatcher import Dispatcher, NewSpaceCreationMixin, Diction
 from fowler.corpora.execnet import sum_folder
 from fowler.corpora.space.util import write_space
 
-from .readers import Corpus
+from .corpus import Corpus
 
 
 logger = logging.getLogger(__name__)
