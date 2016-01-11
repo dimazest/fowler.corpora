@@ -32,7 +32,7 @@ long_description = (
 
 setup(
     name='fowler.corpora',
-    version='0.2',
+    version='0.3',
     description='',
     long_description=long_description,
     # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
