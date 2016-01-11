@@ -24,7 +24,6 @@ def corpus(brown_path):
             (
                 (('sandman', 'N'), None),
                 (('kelsey', 'N'), 2),
-                (('statement', 'N'), 17),
             ),
         ),
         (
