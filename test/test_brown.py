@@ -107,19 +107,19 @@ def test_dictionary(indexed_dictionary, counts):
         (
             '--limit 2',
             (
-                (('statement', ('provid', 'V')), 0),
-                (('statement', ('water', 'N')), 1),
-                (('statement', ('for', 'I')), 1),
-                (('statement', ('rural', 'J')), 1),
-                (('statement', ('texa', 'N')), 1),
-                (('statement', ('.', '.')), 1),
-
-                (('statement', ('by', 'I')), 1),
-                (('statement', ('other', 'A')), 1),
-                (('statement', ('legisl', 'N')), 1),
-                (('statement', ('that', 'C')), 1),
-                (('statement', ('dalla', 'N')), 1),
-                (('statement', ('is', 'B')), 0),
+                # (('statement', ('provid', 'V')), 0),
+                # (('statement', ('water', 'N')), 1),
+                # (('statement', ('for', 'I')), 1),
+                # (('statement', ('rural', 'J')), 1),
+                # (('statement', ('texa', 'N')), 1),
+                # (('statement', ('.', '.')), 1),
+                #
+                # (('statement', ('by', 'I')), 1),
+                # (('statement', ('other', 'A')), 1),
+                # (('statement', ('legisl', 'N')), 1),
+                # (('statement', ('that', 'C')), 1),
+                # (('statement', ('dalla', 'N')), 1),
+                # (('statement', ('is', 'B')), 0),
             ),
         ),
         (
