@@ -6,7 +6,6 @@ import pandas as pd
 from fowler.corpora.bnc.util import co_occurrences
 from fowler.corpora.categorical.main import CategoricalDispatcher
 from fowler.corpora.dispatcher import DictionaryMixin
-from fowler.corpora.models import read_space_from_file
 
 import pytest
 
