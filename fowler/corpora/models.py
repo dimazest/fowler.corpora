@@ -62,7 +62,8 @@ class Space(Mapping):
                 'id_target': coo.row,
                 'id_context': coo.col,
             }
-        ).set_index(['id_target', 'id_context'])
+        )
+        matrix.set_index(['id_target', 'id_context'], inplace=True)
 
         write_space(file_name, self.column_labels, self.row_labels, matrix)
 

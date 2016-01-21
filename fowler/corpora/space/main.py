@@ -37,7 +37,8 @@ def truncate(
 
     # It's important to sort by id to make sure that the most frequent features are selected.
     features = features.sort('id').head(size)
-    matrix = sparse.csc_matrix(space.matrix)[:, features['id']]
+
+    matrix = space.matrix[:, features['id'].values]
 
     assert len(features) == size
 
