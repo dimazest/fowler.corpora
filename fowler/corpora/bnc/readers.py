@@ -897,10 +897,9 @@ class MSRParaphraseCorpus():
 
     vectorizer = 'compositional'
 
-    def __init__(self, paths, tagset, split):
+    def __init__(self, paths, tagset):
         self.paths = paths
         self.tagset = tagset
-        self.split = split
 
     @classmethod
     def init_kwargs(cls, root=None, tagset='ukwac', split=None):
@@ -908,13 +907,23 @@ class MSRParaphraseCorpus():
         if root is None:
             root = os.path.join(getcwd(), 'MSRParaphraseCorpus')
 
-        return {
-            'paths': [
+        if split is None:
+            paths = [
                 (os.path.join(root, 'msr_paraphrase_train.txt'), 'train'),
                 (os.path.join(root, 'msr_paraphrase_test.txt'), 'test'),
-            ],
+            ]
+        elif split == 'train':
+            paths = [
+                (os.path.join(root, 'msr_paraphrase_train.txt'), 'train'),
+            ]
+        elif split == 'test':
+            paths = [
+                (os.path.join(root, 'msr_paraphrase_test.txt'), 'test'),
+            ]
+
+        return {
+            'paths': paths,
             'tagset': tagset,
-            'split': split,
         }
 
     def read_file(self):
@@ -933,9 +942,6 @@ class MSRParaphraseCorpus():
 
         logger.warn('Replacng `Treasury\\x12s` with `Treasurys`.')
         df['#1 String'] = df['#1 String'].str.replace('Treasury\x12s', 'Treasurys')
-
-        if self.split:
-            df = df[df['split'] == self.split]
 
         return df
 
