@@ -116,6 +116,7 @@ setup(
             'gs12 = fowler.corpora.bnc.readers:GS12',
             'ks13 = fowler.corpora.bnc.readers:KS13',
             'phraserel = fowler.corpora.bnc.readers:PhraseRel',
+            'msparaphrase = fowler.corpora.bnc.readers:MSRParaphraseCorpus',
         ],
     },
     tests_require=['pytest>=2.4.2', 'pytest-cov'],

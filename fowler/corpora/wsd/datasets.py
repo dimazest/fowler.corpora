@@ -13,7 +13,9 @@ logger = logging.getLogger(__name__)
 tag_mappings = {
     'bnc': {'N': 'SUBST', 'V': 'VERB', 'J': 'ADJ'},
     'bnc-ccg': {'N': 'N', 'V': 'V', 'J': 'J'},
-    'ukwac': {'N': 'N', 'V': 'V', 'J': 'J'},
+    # TODO: it should become upenn.
+    #       http://www.comp.leeds.ac.uk/amalgam/tagsets/upenn.html
+    'ukwac': {t: t for t in 'NVJP,CDMRT.I-:EW`\'$ULF#S'},
     # TODO: Is Brown mappting correct?
     # TODO: What do we do with adverbs?
     'brown': {'N': 'N', 'V': 'V', 'J': 'R'},

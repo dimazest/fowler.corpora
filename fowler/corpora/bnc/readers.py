@@ -1,3 +1,4 @@
+import csv
 import gzip
 import logging
 import os.path
@@ -9,11 +10,14 @@ from os import getcwd
 import pandas as pd
 
 from more_itertools import peekable
+from py.path import local
+
 from nltk.corpus import brown, CategorizedTaggedCorpusReader
 from nltk.corpus.reader.bnc import BNCCorpusReader
 from nltk.parse.dependencygraph import DependencyGraph, DependencyGraphError
+from nltk.parse.stanford import StanfordDependencyParser
 from nltk.stem.snowball import SnowballStemmer
-from py.path import local
+
 
 
 logger = logging.getLogger(__name__)
@@ -598,7 +602,6 @@ class GS11(SingleFileDatasetMixIn):
     vectorizer = 'compositional'
     default_file_name = 'GS2011data.txt'
 
-
     def read_file(self, group=False):
         # TODO: should be moved away from here.
         from fowler.corpora.wsd.datasets import tag_mappings
@@ -887,3 +890,87 @@ class MEN(SingleFileDatasetMixIn):
         )
 
         return DependencyGraph(template.format(w=w, t=t))
+
+
+class MSRParaphraseCorpus():
+    # TODO: Corpus readers should define tag mapping!
+
+    vectorizer = 'compositional'
+
+    def __init__(self, paths, tagset):
+        self.paths = paths
+        self.tagset = tagset
+
+    @classmethod
+    def init_kwargs(cls, root=None, tagset='ukwac'):
+
+        if root is None:
+            root = os.path.join(getcwd(), 'MSRParaphraseCorpus')
+
+        return {
+            'paths': [
+                (os.path.join(root, 'msr_paraphrase_train.txt'), 'train'),
+                (os.path.join(root, 'msr_paraphrase_test.txt'), 'test'),
+            ],
+            'tagset': tagset,
+        }
+
+    def read_file(self):
+        dfs = []
+        for path, split in self.paths:
+            df = pd.read_csv(
+                path,
+                sep='\t',
+                quoting=csv.QUOTE_NONE,
+                encoding='utf-8-sig',
+            )
+            df['split'] = split
+            dfs.append(df)
+
+        df = pd.concat(dfs)
+
+        return df
+
+    def words_by_document(self, path):
+        # Part of CorpusReader
+
+        def words_iter():
+            for g1, g2, _ in self.dependency_graphs_pairs():
+                for g in g1, g2:
+                    for node in g.nodes.values():
+                        if not node['address']:
+                            continue
+
+                        yield (
+                            node['word'],
+                            node['lemma'],
+                            node['tag'],
+                        )
+
+        yield words_iter()
+
+    def dependency_graphs_pairs(self):
+        # Part of Dataset
+        from fowler.corpora.wsd.datasets import tag_mappings
+
+        df = self.read_file()
+        parser = StanfordDependencyParser()
+
+        def parse(string):
+            dg = next(parser.raw_parse(string))
+
+            for node in dg.nodes.values():
+                if not node['address']:
+                    continue
+
+                node['original_tag'] = node['tag']
+                node['tag'] = tag_mappings[self.tagset][node['tag'][0]]
+
+            return dg
+
+        for _, row in df.iterrows():
+            yield (
+                parse(row['#1 String']),
+                parse(row['#2 String']),
+                row['Quality'],
+            )

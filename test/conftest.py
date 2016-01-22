@@ -34,8 +34,13 @@ def ukwac_path(datadir):
 
 
 @pytest.fixture
-def brown_path(datadir):
+def brown_path():
     return 'brown://'
+
+
+@pytest.fixture
+def msparaphrase_path(datadir):
+    return 'msparaphrase://{}'.format(datadir.join('MSRParaphraseCorpus'))
 
 
 @pytest.fixture
