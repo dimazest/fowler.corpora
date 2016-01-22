@@ -929,6 +929,9 @@ class MSRParaphraseCorpus():
 
         df = pd.concat(dfs)
 
+        logger.warn('Replacng `Treasury\\x12s` with `Treasurys`.')
+        df['#1 String'] = df['#1 String'].str.replace('Treasury\x12s', 'Treasurys')
+
         return df
 
     def words_by_document(self, path):
