@@ -195,7 +195,7 @@ def similarity(
         verb_space,
         output=('o', 'sentence_similarity.h5', 'Result output file.'),
         key=('', 'dataset', 'The key of the result in the output file.'),
-        sloppy=('', False, 'Be strict: not allow missing words.')
+        sloppy=('', False, 'Allow missing words.')
 ):
 
     if dataset.vectorizer == 'lexical':

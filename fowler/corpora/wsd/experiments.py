@@ -68,7 +68,7 @@ class SimilarityExperiment(Worker):
                 'unit1',
                 'unit2',
 
-                'eucliedean',
+                'euclidean',
                 'cos',
                 'correlation',
                 'inner_product',
