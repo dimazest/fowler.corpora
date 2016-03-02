@@ -232,11 +232,11 @@ def verb_space_builder(channel):
                     continue
 
                 if not subject_vector.size:
-                    logger.warning('Subject %s %s is empty!', subj_stem, subj_tag)
+                    # logger.warning('Subject %s %s is empty!', subj_stem, subj_tag)
                     continue
 
                 if not object_vector.size:
-                    logger.warning('Object %s %s is empty!', obj_stem, obj_tag)
+                    # logger.warning('Object %s %s is empty!', obj_stem, obj_tag)
                     continue
 
                 subject_object_tensor = sparse.kron(subject_vector, object_vector)
