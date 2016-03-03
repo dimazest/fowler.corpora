@@ -177,7 +177,7 @@ class CompositionalVectorizer:
             space = self.space
         try:
             return space[node['lemma'], node['tag']]
-        except:
+        except KeyError:
             if self.sloppy:
                 logger.warning('Could not retrieve: %s %s', node['lemma'], node['tag'])
                 return sparse.csr_matrix((1, space.matrix.shape[1]), dtype=float)
