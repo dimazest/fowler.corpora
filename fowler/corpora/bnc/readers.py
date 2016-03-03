@@ -896,6 +896,7 @@ class MSRParaphraseCorpus():
     # TODO: Corpus readers should define tag mapping!
 
     vectorizer = 'compositional'
+    extra_fields = 'split',
 
     def __init__(self, paths, tagset):
         self.paths = paths
