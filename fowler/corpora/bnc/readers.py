@@ -988,4 +988,5 @@ class MSRParaphraseCorpus():
                 parse(row['#1 String']),
                 parse(row['#2 String']),
                 row['Quality'],
+                row['split'],
             )
