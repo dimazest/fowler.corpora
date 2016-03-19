@@ -1008,9 +1008,11 @@ class ANDailment(SingleFileDatasetMixIn):
         def extract_head(row, side, argument_type):
             parser = StanfordDependencyParser()
 
-            argument = row[side].split(row['rule_{}'.format(side)])[0]
-            dg = next(parser.raw_parse(argument))
+            argument = row[side].split(
+                row['rule_{}'.format(side)]
+            )[0 if argument_type == 'subj' else 1]
 
+            dg = next(parser.raw_parse(argument))
             return dg.root['lemma']
 
         df['lhs_subj'] = df.apply(extract_head, args=('lhs', 'subj'), axis=1)
