@@ -44,6 +44,11 @@ def msparaphrase_path(datadir):
 
 
 @pytest.fixture
+def ANDailment_path(datadir):
+    return 'ANDailment://{}'.format(datadir.join('ANDailment/ANDailment.csv'))
+
+
+@pytest.fixture
 def dispatcher():
     from fowler.corpora.main import dispatcher_factory
 

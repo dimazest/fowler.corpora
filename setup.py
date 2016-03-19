@@ -117,6 +117,7 @@ setup(
             'ks13 = fowler.corpora.bnc.readers:KS13',
             'phraserel = fowler.corpora.bnc.readers:PhraseRel',
             'msparaphrase = fowler.corpora.bnc.readers:MSRParaphraseCorpus',
+            'andailment = fowler.corpora.bnc.readers:ANDailment',
         ],
     },
     tests_require=['pytest>=2.4.2', 'pytest-cov'],

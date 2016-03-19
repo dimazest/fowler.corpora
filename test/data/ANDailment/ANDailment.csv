@@ -1,0 +1,11 @@
+rule_lhs,rule_rhs,lhs,rhs,entails
+go in,sit in,everybody go in the park,everybody sit in the park,0
+identify,reveal,your computer identify your browser,your computer reveal your browser,1
+introduce,present,the opportunity introduce itself,the opportunity present itself,1
+lash,sweep through,Hurricane Rita lash western Louisiana and eastern Texas,Hurricane Rita sweep through western Louisiana and eastern Texas,1
+present,introduce,the opportunity present itself,the opportunity introduce itself,0
+reveal,identify,your computer reveal your browser,your computer identify your browser,0
+sit in,go in,everybody sit in the park,everybody go in the park,1
+sweep through,lash,Hurricane Rita sweep through western Louisiana and eastern Texas,Hurricane Rita lash western Louisiana and eastern Texas,0
+undermine,weaken,Pervez Musharraf undermine the Constitution,Pervez Musharraf weaken the Constitution,1
+weaken,undermine,Pervez Musharraf weaken the Constitution,Pervez Musharraf undermine the Constitution,0

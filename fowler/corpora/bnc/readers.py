@@ -990,3 +990,101 @@ class MSRParaphraseCorpus():
                 row['Quality'],
                 row['split'],
             )
+
+
+class ANDailment(SingleFileDatasetMixIn):
+
+    vectorizer = 'compositional'
+    default_file_name = 'ANDailment.cvs'
+
+    def read_file(self, group=False):
+        # TODO: should be moved away from here.
+        from fowler.corpora.wsd.datasets import tag_mappings
+
+        df = pd.read_csv(
+            self.paths[0],
+        )
+
+        def extract_head(row, side, argument_type):
+            parser = StanfordDependencyParser()
+
+            argument = row[side].split(row['rule_{}'.format(side)])[0]
+            dg = next(parser.raw_parse(argument))
+
+            return dg.root['lemma']
+
+        df['lhs_subj'] = df.apply(extract_head, args=('lhs', 'subj'), axis=1)
+        df['lhs_obj'] = df.apply(extract_head, args=('lhs', 'obj'), axis=1)
+
+        df['rhs_subj'] = df.apply(extract_head, args=('rhs', 'subj'), axis=1)
+        df['rhs_obj'] = df.apply(extract_head, args=('rhs', 'obj'), axis=1)
+
+        for item, tag in (
+            ('lhs_subj', 'N'),
+            ('rhs_subj', 'N'),
+            ('rule_lhs', 'V'),
+            ('rule_rhs', 'V'),
+            ('obj', 'N'),
+            ('lhs_obj', 'N'),
+            ('rhs_obj', 'N'),
+        ):
+            df['{}_tag'.format(item)] = tag_mappings[self.tagset][tag]
+
+        return df
+
+    def words_by_document(self, path):
+        # Part of CorpusReader
+        df = self.read_file()
+
+        def words_iter(rows):
+            for _, row in rows:
+                for item in (
+                    'adj_subj', 'subj', 'verb', 'adj_obj', 'obj', 'landmark'
+                ):
+                    word = stem = row[item]
+                    t = row['{}_tag'.format(item)]
+                    yield word, stem, t
+
+        yield words_iter(df.iterrows())
+
+    def dependency_graphs_pairs(self):
+        # Part of Dataset
+        df = self.read_file(group=True)
+
+        for _, row in df.iterrows():
+            yield (
+                self.sentence_to_graph(
+                    row['adj_subj'], row['adj_subj_tag'],
+                    row['subj'], row['subj_tag'],
+                    row['verb'], row['verb_tag'],
+                    row['adj_obj'], row['adj_obj_tag'],
+                    row['obj'], row['obj_tag'],
+                ),
+                self.sentence_to_graph(
+                    row['adj_subj'], row['adj_subj_tag'],
+                    row['subj'], row['subj_tag'],
+                    row['landmark'], row['landmark_tag'],
+                    row['adj_obj'], row['adj_obj_tag'],
+                    row['obj'], row['obj_tag'],
+                ),
+                row['annotator_score']
+            )
+
+    def sentence_to_graph(self, sa, sa_t, s, s_t, v, v_t, oa, oa_t, o, o_t):
+        template = (
+            '{sa}\t{sa_t}\t2\tamod\n'
+            '{s}\t{s_t}\t3\tSBJ\n'
+            '{v}\t{v_t}\t0\tROOT\n'
+            '{oa}\t{oa_t}\t2\tamod\n'
+            '{o}\t{o_t}\t3\tOBJ\n'
+        )
+
+        return DependencyGraph(
+            template.format(
+                sa=sa, sa_t=sa_t,
+                s=s, s_t=s_t,
+                v=v, v_t=v_t,
+                oa=oa, oa_t=oa_t,
+                o=o, o_t=o_t,
+            )
+        )
