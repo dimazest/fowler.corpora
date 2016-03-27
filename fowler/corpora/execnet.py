@@ -244,7 +244,7 @@ def verb_space_builder(channel):
                 # XXX multiply by the count?
                 t = subject_object_tensor
 
-                if verb_stem not in result:
+                if (verb_stem, verb_tag) not in result:
                     result[verb_stem, verb_tag] = t
                 else:
                     result[verb_stem, verb_tag] += t
