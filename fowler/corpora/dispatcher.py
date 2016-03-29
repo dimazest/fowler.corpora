@@ -198,13 +198,13 @@ class Dispatcher(BaseDispatcher):
     def logger(self):
         logging.captureWarnings(True)
         logger = logging.getLogger()
-        handler = RotatingFileHandler(
-            filename=self.logger_filename,
-            backupCount=self.logger_backup_count,
-        )
-        formatter = logging.Formatter('%(asctime)-6s: %(name)s - %(levelname)s - %(process)d - %(message)s')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        # handler = RotatingFileHandler(
+        #     filename=self.logger_filename,
+        #     backupCount=self.logger_backup_count,
+        # )
+        # formatter = logging.Formatter('%(asctime)-6s: %(name)s - %(levelname)s - %(process)d - %(message)s')
+        # handler.setFormatter(formatter)
+        # logger.addHandler(handler)
 
         if self.sentry_handler:
             logger.addHandler(self.sentry_handler)

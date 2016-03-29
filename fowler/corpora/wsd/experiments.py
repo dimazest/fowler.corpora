@@ -28,12 +28,15 @@ def tree(dg):
         return node['lemma'], node['tag'], tuple(_tree(dg, dep) for dep in deps)
 
 
+def kl(p, q, alpha=0.99):
+    return stats.entropy(p, alpha * q + (1 - alpha) * p)
+
+
 class SimilarityExperiment(Worker):
 
     def evaluate(self, dataset, vectorizer):
         pairs = list(dataset.dependency_graphs_pairs())
 
-        # TODO: Refactor to mimic scikit-learn pipeline.
         sent_vectors = (
             (
                 g1,
@@ -56,6 +59,9 @@ class SimilarityExperiment(Worker):
                     1 - distance.correlation(s1_vect, s2_vect),
                     s1_vect.dot(s2_vect.T),
 
+                    kl(s1_vect, s2_vect),
+                    kl(s2_vect, s1_vect),
+
                     score,
                 ) + tuple(extra)
                 for s1, s1_vect, s2, s2_vect, score, *extra in self.progressify(
@@ -72,6 +78,9 @@ class SimilarityExperiment(Worker):
                 'cos',
                 'correlation',
                 'inner_product',
+
+                'entropy_s1_s2',
+                'entropy_s2_s1',
 
                 'score',
             ) + getattr(dataset, 'extra_fields', tuple()),

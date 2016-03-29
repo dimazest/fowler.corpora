@@ -997,7 +997,7 @@ class ANDailment(SingleFileDatasetMixIn):
     vectorizer = 'compositional'
     default_file_name = 'ANDailment.cvs'
 
-    def read_file(self, group=False):
+    def read_file(self):
         # TODO: should be moved away from here.
         from fowler.corpora.wsd.datasets import tag_mappings
 
@@ -1026,7 +1026,6 @@ class ANDailment(SingleFileDatasetMixIn):
             ('rhs_subj', 'N'),
             ('rule_lhs', 'V'),
             ('rule_rhs', 'V'),
-            ('obj', 'N'),
             ('lhs_obj', 'N'),
             ('rhs_obj', 'N'),
         ):
@@ -1041,9 +1040,10 @@ class ANDailment(SingleFileDatasetMixIn):
         def words_iter(rows):
             for _, row in rows:
                 for item in (
-                    'adj_subj', 'subj', 'verb', 'adj_obj', 'obj', 'landmark'
+                    'lhs_subj', 'rhs_subj', 'lhs_obj', 'rhs_obj',
                 ):
-                    word = stem = row[item]
+                    word = row[item]
+                    stem = word.lower()
                     t = row['{}_tag'.format(item)]
                     yield word, stem, t
 
@@ -1051,42 +1051,36 @@ class ANDailment(SingleFileDatasetMixIn):
 
     def dependency_graphs_pairs(self):
         # Part of Dataset
-        df = self.read_file(group=True)
+        df = self.read_file()
 
+        # DOTO: get rid of .lower()
         for _, row in df.iterrows():
             yield (
                 self.sentence_to_graph(
-                    row['adj_subj'], row['adj_subj_tag'],
-                    row['subj'], row['subj_tag'],
-                    row['verb'], row['verb_tag'],
-                    row['adj_obj'], row['adj_obj_tag'],
-                    row['obj'], row['obj_tag'],
+                    row['lhs_subj'].lower(), row['lhs_subj_tag'],
+                    row['rule_lhs'].lower(), row['rule_lhs_tag'],
+                    row['lhs_obj'].lower(), row['lhs_obj_tag'],
                 ),
                 self.sentence_to_graph(
-                    row['adj_subj'], row['adj_subj_tag'],
-                    row['subj'], row['subj_tag'],
-                    row['landmark'], row['landmark_tag'],
-                    row['adj_obj'], row['adj_obj_tag'],
-                    row['obj'], row['obj_tag'],
+                    row['rhs_subj'].lower(), row['rhs_subj_tag'],
+                    row['rule_rhs'].lower(), row['rule_rhs_tag'],
+                    row['rhs_obj'].lower(), row['rhs_obj_tag'],
                 ),
-                row['annotator_score']
+                row['entails']
             )
 
-    def sentence_to_graph(self, sa, sa_t, s, s_t, v, v_t, oa, oa_t, o, o_t):
+    def sentence_to_graph(self, s, s_t, v, v_t, o, o_t):
         template = (
-            '{sa}\t{sa_t}\t2\tamod\n'
-            '{s}\t{s_t}\t3\tSBJ\n'
+            '{s}\t{s_t}\t2\tSBJ\n'
             '{v}\t{v_t}\t0\tROOT\n'
-            '{oa}\t{oa_t}\t2\tamod\n'
-            '{o}\t{o_t}\t3\tOBJ\n'
+            '{o}\t{o_t}\t2\tOBJ\n'
         )
 
         return DependencyGraph(
             template.format(
-                sa=sa, sa_t=sa_t,
                 s=s, s_t=s_t,
                 v=v, v_t=v_t,
-                oa=oa, oa_t=oa_t,
                 o=o, o_t=o_t,
-            )
+            ),
+            cell_separator='\t',
         )

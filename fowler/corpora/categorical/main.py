@@ -2,6 +2,7 @@
 import logging
 import pickle
 
+import numpy as np
 import pandas as pd
 
 from progress.bar import Bar
@@ -125,7 +126,6 @@ def transitive_verb_space(
         channel.send(data_to_send)
 
     groups = transitive_verb_arguments.groupby(
-        # ['subj_stem', 'subj_tag', 'obj_stem', 'obj_tag'],
         ['verb_stem', 'verb_tag']
     )
 
@@ -167,6 +167,72 @@ def transitive_verb_space(
         {
             'ngram': [l[0] for l in verb_labels],
             'tag': [l[1] for l in verb_labels],
+            'id': [i for i, _ in enumerate(verb_labels)],
+        }
+    ).set_index(['ngram', 'tag'])
+
+    column_labels = pd.DataFrame(
+        {
+            'ngram': list(range(matrix.shape[1])),
+            'tag': list(range(matrix.shape[1])),
+            'id': list(range(matrix.shape[1])),
+        }
+    ).set_index(['ngram', 'tag'])
+
+    space = Space(
+        matrix,
+        row_labels=row_labels,
+        column_labels=column_labels,
+    )
+
+    space.write(output)
+
+
+@command()
+def relgrams_verb_space(
+    space,
+    relgrams_relation_arguments=('', 'ANDailment_argument_counts.csv', ''),
+    output=('o', 'space.h5', 'Output verb vector space.'),
+):
+    relgrams_relation_arguments = pd.read_csv(relgrams_relation_arguments, index_col='relation')
+
+    groups = relgrams_relation_arguments.groupby(level='relation')
+
+    def iter_arguments(df, kind):
+        arguments = df[df['argument_type'] == kind]
+
+        for _, (argument, count) in arguments[['argument', 'count']].iterrows():
+            try:
+                yield space[argument, 'N'] * count
+            except (KeyError, TypeError):
+                continue
+
+    result = {}
+    for relation, arguments in groups:
+
+        print(relation)
+
+        subject = np.sum(iter_arguments(arguments, 'subjects'))
+        object_ = np.sum(iter_arguments(arguments, 'objects'))
+
+        assert not isinstance(subject, float)
+
+        result[relation] = sparse.kron(subject, object_)
+
+    result = list(result.items())
+
+    # A hack to make sure that all the vectors have the same shape.
+    verb_shape = result[0][1].shape
+
+    verb_labels = [l for l, v in result if v.shape == verb_shape]
+    verb_vectors = [v for _, v in result if v.shape == verb_shape]
+
+    matrix = sparse.vstack(verb_vectors)
+
+    row_labels = pd.DataFrame(
+        {
+            'ngram': verb_labels,
+            'tag': 'V',  # TODO: figure out real tag.
             'id': [i for i, _ in enumerate(verb_labels)],
         }
     ).set_index(['ngram', 'tag'])

@@ -10,21 +10,21 @@ logger = logging.getLogger(__name__)
 
 
 def setup_logging(channel):
-    import logging as this_logging
-    from logging.handlers import RotatingFileHandler
+    # import logging as this_logging
+    # from logging.handlers import RotatingFileHandler
 
-    this_logging.captureWarnings(True)
-    logger = this_logging.getLogger()
-    handler = RotatingFileHandler(
-        filename='/tmp/fowler.corpora_worker',
-        backupCount=10,
-    )
-    formatter = this_logging.Formatter('%(asctime)-6s: %(name)s - %(levelname)s - %(process)d - %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    # this_logging.captureWarnings(True)
+    # logger = this_logging.getLogger()
+    # handler = RotatingFileHandler(
+    #     filename='/tmp/fowler.corpora_worker',
+    #     backupCount=10,
+    # )
+    # formatter = this_logging.Formatter('%(asctime)-6s: %(name)s - %(levelname)s - %(process)d - %(message)s')
+    # handler.setFormatter(formatter)
+    # logger.addHandler(handler)
 
-    logger.setLevel(this_logging.DEBUG)
-    logger.debug('Logger is set up.')
+    # logger.setLevel(this_logging.DEBUG)
+    # logger.debug('Logger is set up.')
 
     channel.send(('message', 'Logger is set up.'))
 
@@ -209,9 +209,6 @@ def verb_space_builder(channel):
 
         type_, data = item
         if type_ == 'task':
-            # for (subj_stem, subj_tag, obj_stem, obj_tag), group in pickle.loads(data):
-
-            # (subj_stem, subj_tag, obj_stem, obj_tag), group = pickle.loads(data)
             (verb_stem, verb_tag), group = pickle.loads(data)
 
             logger.debug(
@@ -232,11 +229,9 @@ def verb_space_builder(channel):
                     continue
 
                 if not subject_vector.size:
-                    # logger.warning('Subject %s %s is empty!', subj_stem, subj_tag)
                     continue
 
                 if not object_vector.size:
-                    # logger.warning('Object %s %s is empty!', obj_stem, obj_tag)
                     continue
 
                 subject_object_tensor = sparse.kron(subject_vector, object_vector)
