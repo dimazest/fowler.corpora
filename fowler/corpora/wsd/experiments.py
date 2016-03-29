@@ -30,67 +30,93 @@ def tree(dg):
 
 class SimilarityExperiment(Worker):
 
-    def evaluate(self, dataset, vectorizer):
+    def evaluate(self, dataset, vectorizer, high_dim_kron=False):
         pairs = list(dataset.dependency_graphs_pairs())
 
         # TODO: Refactor to mimic scikit-learn pipeline.
         sent_vectors = (
             (
                 g1,
-                vectorizer.vectorize(g1).toarray().flatten(),
+                vectorizer.vectorize(g1),
                 g2,
-                vectorizer.vectorize(g2).toarray().flatten(),
+                vectorizer.vectorize(g2),
                 score,
             ) + tuple(extra)
             for g1, g2, score, *extra in pairs
         )
 
-        result = pd.DataFrame.from_records(
-            [
+        if not high_dim_kron:
+            sent_vectors = (
+                (g1, v1.toarray().flatten(), g2, v2.toarray().flatten(), score) + tuple(extra)
+                for g1, v1, g2, v2, score, *extra in sent_vectors
+            )
+            result_values = (
                 (
-                    tree(s1),
-                    tree(s2),
+                    g1,
+                    g2,
 
-                    1 / (1 + distance.euclidean(s1_vect, s2_vect)),
-                    1 - distance.cosine(s1_vect, s2_vect),
-                    1 - distance.correlation(s1_vect, s2_vect),
-                    s1_vect.dot(s2_vect.T),
+                    1 / (1 + distance.euclidean(v1, v2)),
+                    1 - distance.cosine(v1, v2),
+                    1 - distance.correlation(v1, v2),
+                    v1.dot(v2.T),
 
                     score,
                 ) + tuple(extra)
-                for s1, s1_vect, s2, s2_vect, score, *extra in self.progressify(
-                    sent_vectors,
+                for g1, v1, g2, v2, score, *extra in sent_vectors
+            )
+            result_columns = (
+                    'euclidean',
+                    'cos',
+                    'correlation',
+                    'inner_product',
+                )
+        else:
+            result_values = (
+                (
+                    g1,
+                    g2,
+
+                    (v1 * s1).dot(v2 * s2).T * (v1 * o1).dot((v2 * o2).T),
+
+                    score,
+                ) + tuple(extra)
+                for g1, (s1, v1, o1), g2, (s2, v2, o2), score, *extra in sent_vectors
+            )
+            result_columns = (
+                    'inner_product',
+                )
+
+        result = pd.DataFrame.from_records(
+            [
+                (tree(g1), tree(g2)) + tuple(rest)
+                for g1, g2, *rest in self.progressify(
+                    result_values,
                     description='Similarity',
-                    max=len(pairs)
+                    max=len(pairs),
                 )
             ],
             columns=(
-                'unit1',
-                'unit2',
-
-                'euclidean',
-                'cos',
-                'correlation',
-                'inner_product',
-
-                'score',
-            ) + getattr(dataset, 'extra_fields', tuple()),
+                ('unit1', 'unit2', ) + result_columns + ('score', ) + getattr(dataset, 'extra_fields', tuple())
+            )
         )
 
         if not result.notnull().all().all():
             logger.warning('Null values in similarity scores.')
 
-        rho, p = stats.spearmanr(result[['cos', 'score']])
-        print(
-            'Spearman correlation {info}, cosine): '
-            '{style.BOLD}rho={rho:.3f}{style.RESET}, p={p:.5f}, support={support}'
-            .format(
-                rho=rho,
-                p=p,
-                style=style,
-                info=vectorizer.info(),
-                support=len(result),
+        for column in result_columns:
+
+            rho, p = stats.spearmanr(result[[column, 'score']])
+            print(
+                'Spearman correlation {info}, {column}: '
+                '{style.BOLD}rho={rho:.3f}{style.RESET}, p={p:.5f}, support={support}'
+                .format(
+                    rho=rho,
+                    p=p,
+                    style=style,
+                    info=vectorizer.info(),
+                    support=len(result),
+                    column=column,
+                )
             )
-        )
 
         return result
