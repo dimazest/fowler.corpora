@@ -87,13 +87,14 @@ class CompositionalVectorizer:
         'frobenious-add', 'frobenious-mult', 'frobenious-outer',
     }
 
-    def __init__(self, space, operator, tagset, verb_space=None, sloppy=True):
+    def __init__(self, space, operator, tagset, verb_space=None, sloppy=True, high_dim_kron=False):
         self.space = space
         self.operator = operator  # TODO: should be differenct classes and register using entrypoints.
         self.tagset = tagset
 
         self.verb_space = verb_space
         self.sloppy = sloppy
+        self.high_dim_kron = high_dim_kron
 
     def vectorize(self, dependency_graph):
         nodes = dependency_graph.nodes
@@ -120,6 +121,10 @@ class CompositionalVectorizer:
 
                 if self.operator == 'kron':
                     verb = self.node_to_vector(nodes[2])
+
+                    if self.high_dim_kron:
+                        return subject.toarray().flatten(), verb.toarray().flatten(), object_.toarray().flatten()
+
                     verb_matrix = sparse.kron(verb, verb, format='csr')
                 else:
                     assert (length ** 2) == self.verb_space.matrix.shape[1]
@@ -201,17 +206,25 @@ def similarity(
     if dataset.vectorizer == 'lexical':
         assert composition_operator == 'head'
 
+    # Kron is too slow for vector spaces with more than 3K dimensions, however,
+    # it's possible to calculation innter product based similarity without doing
+    # Kron products.
+    high_dim_kron = (space.matrix.shape[1] > 3000) and composition_operator == 'kron'
+
     vectorizer = CompositionalVectorizer(
         space,
         composition_operator,
         tagset=dataset.tagset,
         verb_space=verb_space,
         sloppy=sloppy,
+        high_dim_kron=high_dim_kron,
     )
+
 
     experiment = SimilarityExperiment(show_progress_bar=not no_p11n, pool=pool)
 
     experiment.evaluate(
         dataset=dataset,
         vectorizer=vectorizer,
+        high_dim_kron=high_dim_kron,
     ).to_hdf(output, key=key)
