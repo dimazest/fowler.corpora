@@ -281,10 +281,10 @@ def entailment_direction_verb_object_vectors(
 
     df = dataset.read_file()
 
-    df['kl_rhs'] = df['rule_rhs'].apply(kl)
     df['kl_lhs'] = df['rule_lhs'].apply(kl)
+    df['kl_rhs'] = df['rule_rhs'].apply(kl)
 
-    correct = (df['kl_rhs'] > df['kl_lhs']) == df['entails']
+    correct = (df['kl_lhs'] > df['kl_rhs']) == df['entails']
     accuracy = correct.sum() / len(correct)
 
     print('Accuracy: {:.3f}, suport {}.'.format(accuracy, len(correct)))
