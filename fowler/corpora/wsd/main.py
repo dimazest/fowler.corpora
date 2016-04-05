@@ -6,6 +6,7 @@ import colored
 import pandas as pd
 
 from scipy import sparse
+from scipy.stats import entropy
 
 from fowler.corpora.bnc.main import uri_to_corpus_reader
 
@@ -250,3 +251,40 @@ def entailment_direction(
         space=space,
         argument_counts=argument_counts,
     ).to_hdf(output, key=key)
+
+
+@command()
+def entailment_direction_verb_object_vectors(
+    dataset,
+    argument_counts=('', 'ANDailment_argument_counts.h5', ''),
+):
+    argument_counts = pd.read_hdf(argument_counts, key='arguments')
+
+    objects = (
+        argument_counts.loc[(slice(None), slice(None), 'objects'), slice(None)]
+        .reset_index('argument_type', drop=True)['count']
+    )
+    objects = objects[objects.index.get_level_values('argument') != '']
+
+    p_object = objects.groupby(level='argument').sum() / objects.sum()
+    assert p_object.index.is_unique
+
+    p_object_given_verb = (
+        objects
+        .groupby(level=('relation'))
+        .apply(lambda df: df.reset_index('relation', drop=True) / df.sum())
+    )
+
+    def kl(verb):
+        verb_objects = p_object_given_verb.loc[verb]
+        return entropy(verb_objects, p_object.loc[verb_objects.index])
+
+    df = dataset.read_file()
+
+    df['kl_rhs'] = df['rule_rhs'].apply(kl)
+    df['kl_lhs'] = df['rule_lhs'].apply(kl)
+
+    correct = (df['kl_rhs'] > df['kl_lhs']) == df['entails']
+    accuracy = correct.sum() / len(correct)
+
+    print('Accuracy: {:.3f}, suport {}.'.format(accuracy, len(correct)))
