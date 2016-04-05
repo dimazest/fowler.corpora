@@ -194,7 +194,14 @@ def relgrams_verb_space(
     relgrams_relation_arguments=('', 'ANDailment_argument_counts.csv', ''),
     output=('o', 'space.h5', 'Output verb vector space.'),
 ):
-    relgrams_relation_arguments = pd.read_csv(relgrams_relation_arguments, index_col='relation')
+    relgrams_relation_arguments = pd.read_hdf(
+        relgrams_relation_arguments,
+        key='arguments',
+    )
+    relgrams_relation_arguments.reset_index(
+        ('argument', 'argument_type'),
+        inplace=True,
+    )
 
     groups = relgrams_relation_arguments.groupby(level='relation')
 

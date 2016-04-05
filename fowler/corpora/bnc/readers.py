@@ -995,19 +995,18 @@ class MSRParaphraseCorpus():
 class ANDailment(SingleFileDatasetMixIn):
 
     vectorizer = 'compositional'
-    default_file_name = 'ANDailment.cvs'
+    default_file_name = 'ANDailment.csv'
+    extra_fields = 'is_temporal', 'is_bidirectional'
 
     def read_file(self):
-        # TODO: should be moved away from here.
         from fowler.corpora.wsd.datasets import tag_mappings
 
         df = pd.read_csv(
             self.paths[0],
         )
 
+        parser = StanfordDependencyParser()
         def extract_head(row, side, argument_type):
-            parser = StanfordDependencyParser()
-
             argument = row[side].split(
                 row['rule_{}'.format(side)]
             )[0 if argument_type == 'subj' else 1]
@@ -1066,7 +1065,9 @@ class ANDailment(SingleFileDatasetMixIn):
                     row['rule_rhs'].lower(), row['rule_rhs_tag'],
                     row['rhs_obj'].lower(), row['rhs_obj_tag'],
                 ),
-                row['entails']
+                row['entails'],
+                row['is_temporal'],
+                row['is_bidirectional'],
             )
 
     def sentence_to_graph(self, s, s_t, v, v_t, o, o_t):

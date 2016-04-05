@@ -6,6 +6,7 @@ import pandas as pd
 from colored import style
 from scipy import stats
 from scipy.spatial import distance
+from sklearn.metrics import pairwise_distances
 
 from fowler.corpora.util import Worker
 
@@ -128,3 +129,94 @@ class SimilarityExperiment(Worker):
             )
 
         return result
+
+
+class EntailmentDirectionExperiment(Worker):
+
+    def verb_objects_avg_distance(self, verb, object_, argument_counts, space):
+        verb_objects = argument_counts.loc[verb, 'objects']
+        objects = set(space.row_labels.index.levels[0].intersection(verb_objects['argument']).drop_duplicates())
+        verb_objects = verb_objects[verb_objects['argument'].isin(objects)]
+
+        verb_objects = pd.DataFrame(
+            [(r['argument'], r['count']) for _, r in verb_objects.iterrows() if (r['argument'], 'N') in space],
+            columns=('argument', 'count'),
+        )
+
+        try:
+            object_vector = space[object_, 'N']
+        except KeyError:
+            print('Could not retrieve the vector for {}.'.format(object_))
+        else:
+
+            for metric in 'correlation', 'cosine':
+                distances = pairwise_distances(
+                    space.get_target_rows(
+                        *((o, 'N') for o in verb_objects['argument'])
+                    ).todense(),
+                    object_vector.todense(),
+                    metric=metric,
+                )
+
+                distances = (distances.flatten() * verb_objects['count'] / verb_objects['count'].sum())
+
+                yield metric, 'sum', distances.sum()
+                yield metric, 'mean', distances.mean()
+
+
+    def evaluate(self, dataset, space, argument_counts):
+        pairs = list(dataset.dependency_graphs_pairs())
+
+        verb_specificity = (
+            (
+                g1,
+                self.verb_objects_avg_distance(
+                    verb=g1.nodes[2]['lemma'],
+                    object_=g1.nodes[3]['lemma'],
+                    argument_counts=argument_counts,
+                    space=space,
+                ),
+                g2,
+                self.verb_objects_avg_distance(
+                    verb=g2.nodes[2]['lemma'],
+                    object_=g2.nodes[3]['lemma'],
+                    argument_counts=argument_counts,
+                    space=space,
+                ),
+
+                score,
+            ) + tuple(extra)
+            for g1, g2, score, *extra in pairs
+        )
+
+
+        results = (
+            tuple((g1, g1_score, g2, g2_score, score) + tuple(extra) for g1_score, g2_score in zip(g1_scores, g2_scores))
+            for g1, g1_scores, g2, g2_scores, score, *extra
+            in self.progressify(
+                verb_specificity,
+                description='Entailment',
+                max=len(pairs),
+            )
+        )
+
+        results = [
+            (tree(g1), tree(g2), similarity, aggregate_function, g1_score, g2_score, score) + tuple(extra)
+            for g1, (similarity, aggregate_function, g1_score), g2, (_, _, g2_score), score, *extra
+            in chain.from_iterable(results)
+        ]
+
+        results = pd.DataFrame.from_records(
+            results,
+            columns=(
+                'unit1',
+                'unit2',
+                'distance',
+                'aggregator',
+                'v1_diversity',
+                'v2_diversity',
+                'score',
+            ) + getattr(dataset, 'extra_fields', tuple())
+        )
+
+        return results

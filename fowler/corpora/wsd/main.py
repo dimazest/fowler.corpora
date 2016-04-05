@@ -3,6 +3,7 @@ import logging
 from itertools import chain
 
 import colored
+import pandas as pd
 
 from scipy import sparse
 
@@ -11,7 +12,7 @@ from fowler.corpora.bnc.main import uri_to_corpus_reader
 from fowler.corpora.dispatcher import Dispatcher, Resource, SpaceMixin
 from fowler.corpora.models import read_space_from_file
 
-from .experiments import SimilarityExperiment
+from .experiments import SimilarityExperiment, EntailmentDirectionExperiment
 
 
 logger = logging.getLogger(__name__)
@@ -227,4 +228,25 @@ def similarity(
         dataset=dataset,
         vectorizer=vectorizer,
         high_dim_kron=high_dim_kron,
+    ).to_hdf(output, key=key)
+
+
+@command()
+def entailment_direction(
+    dataset,
+    space,
+    pool,
+    no_p11n,
+    argument_counts=('', 'ANDailment_argument_counts.h5', ''),
+    output=('o', 'sentence_similarity.h5', 'Result output file.'),
+    key=('', 'dataset', 'The key of the result in the output file.'),
+):
+    argument_counts = pd.read_hdf(argument_counts, key='arguments')
+    argument_counts.reset_index('argument', inplace=True)
+    argument_counts.sort_index(inplace=True)
+
+    EntailmentDirectionExperiment(show_progress_bar=not no_p11n, pool=pool).evaluate(
+        dataset=dataset,
+        space=space,
+        argument_counts=argument_counts,
     ).to_hdf(output, key=key)
