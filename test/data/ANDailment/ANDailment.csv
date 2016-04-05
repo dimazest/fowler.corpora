@@ -1,11 +1,463 @@
-rule_lhs,rule_rhs,lhs,rhs,entails
-go in,sit in,everybody go in the park,everybody sit in the park,0
-identify,reveal,your computer identify your browser,your computer reveal your browser,1
-introduce,present,the opportunity introduce itself,the opportunity present itself,1
-lash,sweep through,Hurricane Rita lash western Louisiana and eastern Texas,Hurricane Rita sweep through western Louisiana and eastern Texas,1
-present,introduce,the opportunity present itself,the opportunity introduce itself,0
-reveal,identify,your computer reveal your browser,your computer identify your browser,0
-sit in,go in,everybody sit in the park,everybody go in the park,1
-sweep through,lash,Hurricane Rita sweep through western Louisiana and eastern Texas,Hurricane Rita lash western Louisiana and eastern Texas,0
-undermine,weaken,Pervez Musharraf undermine the Constitution,Pervez Musharraf weaken the Constitution,1
-weaken,undermine,Pervez Musharraf weaken the Constitution,Pervez Musharraf undermine the Constitution,0
+rule_lhs,rule_rhs,lhs,rhs,entails,is_temporal,is_bidirectional
+abandon,evacuate,the entrepreneur abandon the property,the entrepreneur evacuate the property,0,False,False
+accept,handle,the Customer accept that change,the Customer handle that change,1,False,False
+access,browse,the individuals access the site,the individuals browse the site,0,False,False
+access,take advantage of,hackers access your computer,hackers take advantage of your computer,1,False,False
+acknowledge,recognize,everybody acknowledge his influence,everybody recognize his influence,1,False,False
+add to,enhance,these things add to the image,these things enhance the image,1,False,True
+admit to,reveal to,Olympic gold medalist Michael Phelps admit to regrettable behavior,Olympic gold medalist Michael Phelps reveal to regrettable behavior,1,False,True
+advance into,invade,Iraq advance into Iran,Iraq invade Iran,0,False,False
+advocate,campaign for,Civilians advocate office,Civilians campaign for office,0,False,False
+affect,hurt,Neutering affect my pet,Neutering hurt my pet,0,False,False
+affect,matter to,our priorities affect our community,our priorities matter to our community,1,False,False
+agree with,go along with,the general public agree with the decision,the general public go along with the decision,1,False,False
+aim for,hope for,Egypt aim for a long-term truce,Egypt hope for a long-term truce,1,False,False
+alleviate,help ease,These exercises alleviate pain,These exercises help ease pain,1,False,True
+allow for,guarantee,zonealarm allow for a cheap firewall,zonealarm guarantee a cheap firewall,0,False,False
+appear in,play in,Marc Crosas appear in the game,Marc Crosas play in the game,0,False,False
+appear in,play in,Johnson appear in the third game,Johnson play in the third game,0,False,False
+apply for,file for,Students apply for more than one award,Students file for more than one award,1,False,True
+appreciate,be thankful for,Customers appreciate the suggestion,Customers be thankful for the suggestion,0,False,False
+approach,turn to,the supervisor approach him,the supervisor turn to him,1,False,True
+approve,pass,Congress approve the Comprehensive Everglades Restoration Plan,Congress pass the Comprehensive Everglades Restoration Plan,1,False,True
+arise on,form on,The first mammals arise on Earth,The first mammals form on Earth,0,False,False
+arrange,facilitate,My parents arrange a marriage,My parents facilitate a marriage,1,False,False
+arrange,schedule,My parents arrange a marriage,My parents schedule a marriage,1,False,True
+arrive at,enter,Monkey arrive at the cave,Monkey enter the cave,0,True,False
+arrive at,head for,Delegates arrive at the venue,Delegates head for the venue,0,True,False
+assist in,participate in,small businesses assist in the rulemaking process,small businesses participate in the rulemaking process,1,False,True
+attack,shoot,John/Roman attack him,John/Roman shoot him,0,False,False
+attend,enter,Walker attend the game,Walker enter the game,0,False,False
+attend,participate in,The family attend the Unitarian church,The family participate in the Unitarian church,0,False,False
+attend to,take care of,mom and dad attend to the baby,mom and dad take care of the baby,0,False,False
+attest to,witness,A police officer attest to the incident,A police officer witness the incident,1,False,False
+avoid,steer clear of,Most people avoid him,Most people steer clear of him,0,False,False
+await,prepare for,Other co-defendants await trial,Other co-defendants prepare for trial,0,False,False
+batter,lash,Hurricane Rita batter western Louisiana and eastern Texas,Hurricane Rita lash western Louisiana and eastern Texas,1,False,True
+battle,beat,the Raiders battle the Texans,the Raiders beat the Texans,0,False,False
+be appropriate for,be open to,The survey be appropriate for students,The survey be open to students,0,False,False
+be found in,exist in,Similar laws be found in Massachusetts,Similar laws exist in Massachusetts,1,False,True
+be gonna keep,plan to keep,The new owners be gonna keep the name,The new owners plan to keep the name,0,False,False
+be inside,get inside,users be inside the library,users get inside the library,1,True,False
+be kind to,care for,the athlete be kind to his team,the athlete care for his team,0,False,False
+be open for,serve up,The lounge be open for lunch and dinner,The lounge serve up lunch and dinner,1,False,False
+be open to,be appropriate for,The survey be open to students,The survey be appropriate for students,1,False,False
+be present in,occur in,the child element be present in the parent,the child element occur in the parent,1,False,True
+be proficient in,converse in,students be proficient in Spanish,students converse in Spanish,0,False,False
+be protective of,watch over,FINRA be protective of its members,FINRA watch over its members,0,False,False
+be re-elected as,stay on as,Lula be re-elected as President of Brazil,Lula stay on as President of Brazil,1,False,True
+be thankful for,appreciate,Customers be thankful for the suggestion,Customers appreciate the suggestion,1,False,False
+beam with,radiate,Storytellers beam with respect,Storytellers radiate respect,1,False,True
+beat,battle,the Raiders beat the Texans,the Raiders battle the Texans,1,False,False
+beat,defeat,Sox beat the Yankees,Sox defeat the Yankees,1,False,True
+beat,defeat,the Raiders beat the Texans,the Raiders defeat the Texans,1,False,True
+beat,face,Sox beat the Yankees,Sox face the Yankees,1,False,False
+beat,take on,the Raiders beat the Texans,the Raiders take on the Texans,1,True,False
+begin on,start from,The warranties begin on the date,The warranties start from the date,1,False,True
+believe in,trust,Syl believe in him,Syl trust him,1,False,True
+benefit from,take advantage of,Guests benefit from the room and laundry services,Guests take advantage of the room and laundry services,0,False,False
+boost,maximize,Obama boost the defense budget,Obama maximize the defense budget,0,False,False
+bring out,show off,The boys bring out their stuff,The boys show off their stuff,0,False,False
+browse,access,the individuals browse the site,the individuals access the site,1,False,False
+build,form,a settler build his cabin,a settler form his cabin,1,False,False
+build,produce,A child build a new world,A child produce a new world,1,False,True
+build up over,gather over,the team build up over the past week,the team gather over the past week,1,False,False
+campaign for,advocate,Civilians campaign for office,Civilians advocate office,1,False,False
+care about,reach out to,the project care about patients,the project reach out to patients,0,False,False
+care for,be kind to,the athlete care for his team,the athlete be kind to his team,1,False,False
+care for,provide for,a generation care for their community,a generation provide for their community,0,False,False
+change up,overhaul,Blogger change up their system,Blogger overhaul their system,0,False,False
+charge,impose,Most cards charge a fee,Most cards impose a fee,1,False,True
+climb on,climb up,the little girl climb on his back,the little girl climb up his back,1,False,True
+climb on,get on,the crew climb on stage,the crew get on stage,1,False,False
+climb up,climb on,the little girl climb up his back,the little girl climb on his back,1,False,True
+clinch,win,the Pats clinch that game,the Pats win that game,1,False,False
+collect,obtain,our website collect aggregate information,our website obtain aggregate information,1,False,False
+come across,find out about,the team come across a chamber,the team find out about a chamber,1,False,False
+come along for,settle in for,his wife come along for the ride,his wife settle in for the ride,1,True,False
+come out of,go on in,strange things come out of America,strange things go on in America,1,False,False
+come up with,develop,Organizations come up with new revenue streams,Organizations develop new revenue streams,1,False,True
+commend,congratulate,McCain commend the victor,McCain congratulate the victor,1,False,False
+communicate with,get to know,children communicate with one another,children get to know one another,1,False,True
+complement,fit in with,The logo complement the designs,The logo fit in with the designs,1,False,False
+compliment,suit,the color of the dress compliment her skin tone,the color of the dress suit her skin tone,1,False,False
+comprehend,perceive,The disciples comprehend his glory,The disciples perceive his glory,1,False,False
+comprise,consist of,The target group comprise volunteers,The target group consist of volunteers,0,False,False
+conduct,engage in,the Corporation conduct any activities,the Corporation engage in any activities,1,False,True
+conduct,organize,the Corporation conduct any activities,the Corporation organize any activities,1,False,True
+configure,set up,the administrator configure the site,the administrator set up the site,0,False,False
+confuse,fool,This feature confuse a user,This feature fool a user,0,False,False
+congratulate,commend,McCain congratulate the victor,McCain commend the victor,0,False,False
+consider,investigate,These committees consider legislation,These committees investigate legislation,0,False,False
+consider,think about,Canada consider this change,Canada think about this change,1,False,True
+consist of,comprise,The target group consist of volunteers,The target group comprise volunteers,1,False,False
+contact,speak to,The parties contact each other,The parties speak to each other,0,False,False
+contain,supply,This page contain links,This page supply links,1,False,True
+contribute to,participate in,students contribute to a practicum,students participate in a practicum,0,False,False
+control,seize control of,The military junta control Thailand,The military junta seize control of Thailand,0,True,False
+control,set,Each bank control its own Prime Rate,Each bank set its own Prime Rate,1,False,True
+converse in,be proficient in,students converse in Spanish,students be proficient in Spanish,1,False,False
+count,keep track of,my father count the days,my father keep track of the days,1,False,False
+cover,describe,This list cover all possible interactions,This list describe all possible interactions,0,False,False
+create for,design for,our people create for centuries,our people design for centuries,0,False,False
+cut,manage,the government cut funding,the government manage funding,1,False,False
+decide on,pick,Fans decide on their favorite drivers,Fans pick their favorite drivers,1,False,True
+defeat,beat,Sox defeat the Yankees,Sox beat the Yankees,1,False,True
+defeat,beat,the Raiders defeat the Texans,the Raiders beat the Texans,1,False,True
+defend,guard,Iran defend itself,Iran guard itself,1,False,False
+demonstrate for,show for,Our study demonstrate for the first time,Our study show for the first time,1,False,True
+denounce,oppose,the groups denounce this situation,the groups oppose this situation,1,False,False
+depend upon,vary with,The menu depend upon the availability of ingredients,The menu vary with the availability of ingredients,1,False,False
+describe,cover,This list describe all possible interactions,This list cover all possible interactions,1,False,False
+describe,present,This section describe a sample application,This section present a sample application,0,False,False
+describe,provide information about,One of the authors describe the book,One of the authors provide information about the book,1,False,False
+design for,create for,our people design for centuries,our people create for centuries,1,False,False
+determine,shape,the circumstances determine their condition,the circumstances shape their condition,1,False,False
+develop,come up with,Organizations develop new revenue streams,Organizations come up with new revenue streams,1,False,True
+devour,eat,the big fish devour the little fish,the big fish eat the little fish,1,False,False
+die by,die from,Women die by childbirth,Women die from childbirth,1,False,True
+die from,die by,Women die from childbirth,Women die by childbirth,1,False,True
+die of,suffer,A dog die of health problems,A dog suffer health problems,1,False,False
+dig for,search for,others dig for facts,others search for facts,1,False,False
+disagree with,dislike,A federal appeals court disagree with this decision,A federal appeals court dislike this decision,1,False,True
+disagree with,dispute,A federal appeals court disagree with this decision,A federal appeals court dispute this decision,0,False,False
+disappear with,take off with,just disappear with the wind,just take off with the wind,1,False,True
+discuss,explain,Friedman discuss his life,Friedman explain his life,0,False,False
+discuss,share,the students discuss their answer,the students share their answer,1,False,False
+discuss,share,The scientists discuss their work,The scientists share their work,1,False,False
+discuss,talk about,The learner discuss cultures,The learner talk about cultures,1,False,True
+dislike,disagree with,A federal appeals court dislike this decision,A federal appeals court disagree with this decision,1,False,True
+dispute,disagree with,A federal appeals court dispute this decision,A federal appeals court disagree with this decision,1,False,False
+do like,prefer,Shrubs do like full sun,Shrubs prefer full sun,1,False,False
+do something for,help out,the military do something for the family,the military help out the family,0,False,False
+draw,handle,the policemen draw their guns,the policemen handle their guns,1,False,False
+draw conclusion about,make prediction about,Users draw conclusion about the future,Users make prediction about the future,0,False,False
+drop on,fall upon,Her head drop on her breast,Her head fall upon her breast,1,False,True
+eat,devour,the big fish eat the little fish,the big fish devour the little fish,0,False,False
+eavesdrop on,snoop on,Kevin eavesdrop on Mary,Kevin snoop on Mary,1,False,False
+elaborate on,outline,This paper elaborate on the computer program,This paper outline the computer program,0,False,False
+end in,turn into,Saturday night end in Sunday morning,Saturday night turn into Sunday morning,1,False,True
+engage in,conduct,the Corporation engage in any activities,the Corporation conduct any activities,1,False,True
+engage in,participate in,The FDA engage in meetings,The FDA participate in meetings,1,False,True
+engage in,take part in,Others engage in applied research,Others take part in applied research,1,False,True
+enhance,add to,these things enhance the image,these things add to the image,1,False,True
+ensure,facilitate,these elements ensure your success,these elements facilitate your success,1,False,False
+enter,arrive at,Monkey enter the cave,Monkey arrive at the cave,1,True,False
+enter,attend,Walker enter the game,Walker attend the game,1,False,False
+enter,get into,the race enter the final stretch,the race get into the final stretch,1,False,True
+enter,go into,a girl enter the room,a girl go into the room,1,False,True
+enter,join,Immigrants enter our country,Immigrants join our country,1,False,True
+enter,join,others enter their ranks,others join their ranks,1,False,True
+enter,move into,Bantu-speaking people enter the area,Bantu-speaking people move into the area,0,False,False
+enter,type,the user enter their credentials,the user type their credentials,0,False,False
+evacuate,abandon,the entrepreneur evacuate the property,the entrepreneur abandon the property,1,False,False
+evolve over,increase over,The number of visitors evolve over the years,The number of visitors increase over the years,0,False,False
+exist in,be found in,Similar laws exist in Massachusetts,Similar laws be found in Massachusetts,1,False,True
+expect,wait for,dont expect a whole lot,dont wait for a whole lot,1,False,False
+explain,discuss,Friedman explain his life,Friedman discuss his life,1,False,False
+face,beat,Sox face the Yankees,Sox beat the Yankees,0,False,False
+facilitate,arrange,My parents facilitate a marriage,My parents arrange a marriage,0,False,False
+facilitate,ensure,these elements facilitate your success,these elements ensure your success,0,False,False
+facilitate,speed,A fan facilitate air circulation,A fan speed air circulation,1,False,True
+fall down,tumble down,the dude fall down the stairs,the dude tumble down the stairs,0,False,False
+fall upon,drop on,Her head fall upon her breast,Her head drop on her breast,1,False,True
+favor,push for,an economic policy favor the rich,an economic policy push for the rich,1,False,True
+favor,support,an economic policy favor the rich,an economic policy support the rich,1,False,False
+feature,incorporate,The site feature listings,The site incorporate listings,1,False,True
+file for,apply for,Students file for more than one award,Students apply for more than one award,1,False,True
+find out about,come across,the team find out about a chamber,the team come across a chamber,0,False,False
+fit in with,complement,The logo fit in with the designs,The logo complement the designs,0,False,False
+fit in with,mesh with,The logo fit in with the designs,The logo mesh with the designs,0,False,False
+fit up to,hold about,"the black 8-gigabyte iPhone 3G model fit up to 2,000 songs","the black 8-gigabyte iPhone 3G model hold about 2,000 songs",1,False,True
+flee from,retreat from,Jewish refugees flee from Nazi Germany,Jewish refugees retreat from Nazi Germany,1,False,False
+flick on,turn on,Leo flick on the radio,Leo turn on the radio,1,False,False
+focus on,invest in,the West focus on alternatives,the West invest in alternatives,0,False,False
+follow after,take place after,The program follow after lunch,The program take place after lunch,1,False,True
+fool,confuse,This feature fool a user,This feature confuse a user,1,False,False
+fool,trick,This feature fool a user,This feature trick a user,1,False,True
+forget about,neglect,Robert forget about his family,Robert neglect his family,1,False,False
+form,build,a settler form his cabin,a settler build his cabin,0,False,False
+form on,arise on,The first mammals form on Earth,The first mammals arise on Earth,1,False,False
+function as,work as,Theophylline function as a bronchodilator,Theophylline work as a bronchodilator,0,False,False
+gain control of,seize control of,The military junta gain control of Thailand,The military junta seize control of Thailand,0,False,False
+gather over,build up over,the team gather over the past week,the team build up over the past week,0,False,False
+gather with,join with,All our family gather with him,All our family join with him,1,False,True
+gaze in,stare in,the husband gaze in disbelief,the husband stare in disbelief,1,False,True
+get inside,be inside,users get inside the library,users be inside the library,0,True,False
+get into,enter,the race get into the final stretch,the race enter the final stretch,1,False,True
+get on,climb on,the crew get on stage,the crew climb on stage,0,False,False
+get out of,run out of,Bruno get out of the room,Bruno run out of the room,0,False,False
+get to know,communicate with,children get to know one another,children communicate with one another,1,False,True
+go about,go around,Jesus go about all Galilee,Jesus go around all Galilee,1,False,True
+go along with,agree with,the general public go along with the decision,the general public agree with the decision,0,False,False
+go around,go about,Jesus go around all Galilee,Jesus go about all Galilee,1,False,True
+go in,sit in,everybody go in the park,everybody sit in the park,0,True,False
+go into,enter,a girl go into the room,a girl enter the room,1,False,True
+go into,move into,The Netherlands go into recession,The Netherlands move into recession,1,False,True
+go on in,come out of,strange things go on in America,strange things come out of America,0,False,False
+grow,plant,The women grow corn,The women plant corn,1,False,True
+grow in,rise in,online casinos grow in popularity,online casinos rise in popularity,1,False,True
+guarantee,allow for,zonealarm guarantee a cheap firewall,zonealarm allow for a cheap firewall,1,False,False
+guard,defend,Iran guard itself,Iran defend itself,0,False,False
+guide,teach,This three-day course guide students,This three-day course teach students,0,False,False
+handle,accept,the Customer handle that change,the Customer accept that change,0,False,False
+handle,draw,the policemen handle their guns,the policemen draw their guns,0,False,False
+happen to,kill,the crash happen to him,the crash kill him,0,False,False
+harm,kill,The FBI harm Randy Weaver,The FBI kill Randy Weaver,0,False,False
+head for,arrive at,Delegates head for the venue,Delegates arrive at the venue,1,True,False
+head for,head to,Hurricane Rita head for Texas,Hurricane Rita head to Texas,1,False,True
+head for,leave for,her grandfather head for England,her grandfather leave for England,1,True,False
+head to,head for,Hurricane Rita head to Texas,Hurricane Rita head for Texas,1,False,True
+head towards,ride to,Our group head towards the finish,Our group ride to the finish,0,False,False
+hear about,hear of,Every Christian hear about spiritual warfare,Every Christian hear of spiritual warfare,1,False,True
+hear about,know of,others hear about your experience,others know of your experience,1,True,False
+hear about,recommend,your healthcare provider hear about Betaseron,your healthcare provider recommend Betaseron,0,True,False
+hear of,hear about,Every Christian hear of spiritual warfare,Every Christian hear about spiritual warfare,1,False,True
+hear of,know about,he/she hear of a subject,he/she know about a subject,0,True,False
+hear of,study,The Department of Health hear of the report,The Department of Health study the report,0,False,False
+help control,regulate,The EPA help control tap water,The EPA regulate tap water,0,False,False
+help ease,alleviate,These exercises help ease pain,These exercises alleviate pain,1,False,True
+help out,do something for,the military help out the family,the military do something for the family,1,False,False
+hijack,take over,Chakotay hijack the ship,Chakotay take over the ship,1,False,False
+hold about,fit up to,"the black 8-gigabyte iPhone 3G model hold about 2,000 songs","the black 8-gigabyte iPhone 3G model fit up to 2,000 songs",1,False,True
+holler for,shout for,the animals holler for joy,the animals shout for joy,1,False,True
+hope for,aim for,Egypt hope for a long-term truce,Egypt aim for a long-term truce,0,False,False
+hope for,love to see,Egypt hope for a long-term truce,Egypt love to see a long-term truce,1,False,True
+hurt,affect,Neutering hurt my pet,Neutering affect my pet,1,False,False
+identify,select,Kubrick identify his next film,Kubrick select his next film,0,False,False
+impose,charge,Most cards impose a fee,Most cards charge a fee,1,False,True
+incapacitate,overwhelm,his drugs incapacitate him,his drugs overwhelm him,1,False,False
+incorporate,feature,The site incorporate listings,The site feature listings,1,False,True
+increase over,evolve over,The number of visitors increase over the years,The number of visitors evolve over the years,1,False,False
+increase with,worsen with,The risks increase with age,The risks worsen with age,1,False,True
+introduce,present,the opportunity introduce itself,the opportunity present itself,1,False,True
+invade,advance into,Iraq invade Iran,Iraq advance into Iran,1,False,False
+invest in,focus on,the West invest in alternatives,the West focus on alternatives,1,False,False
+invest in,look for,the West invest in alternatives,the West look for alternatives,1,False,False
+investigate,consider,These committees investigate legislation,These committees consider legislation,1,False,False
+involve,mention,The article involve the king,The article mention the king,0,False,False
+join,enter,others join their ranks,others enter their ranks,1,False,True
+join,enter,Immigrants join our country,Immigrants enter our country,1,False,True
+join,serve in,Anderson join the U.S. Air Force,Anderson serve in the U.S. Air Force,0,True,False
+join with,gather with,All our family join with him,All our family gather with him,1,False,True
+keep track of,count,my father keep track of the days,my father count the days,0,False,False
+kill,happen to,the crash kill him,the crash happen to him,1,False,False
+kill,harm,The FBI kill Randy Weaver,The FBI harm Randy Weaver,1,False,False
+know about,hear of,he/she know about a subject,he/she hear of a subject,1,True,False
+know about,pay attention to,No one know about Joseph,No one pay attention to Joseph,1,False,False
+know of,hear about,others know of your experience,others hear about your experience,0,True,False
+lash,batter,Hurricane Rita lash western Louisiana and eastern Texas,Hurricane Rita batter western Louisiana and eastern Texas,1,False,True
+lash,sweep through,Hurricane Rita lash western Louisiana and eastern Texas,Hurricane Rita sweep through western Louisiana and eastern Texas,0,False,False
+learn,memorize,children learn songs,children memorize songs,0,False,False
+learn in,learn through,students learn in a problem-based curriculum,students learn through a problem-based curriculum,1,False,True
+learn through,learn in,students learn through a problem-based curriculum,students learn in a problem-based curriculum,1,False,True
+leave for,head for,her grandfather leave for England,her grandfather head for England,0,True,False
+like to purchase,wish to buy,Consumers like to purchase a pair,Consumers wish to buy a pair,1,False,True
+listen to,pay attention to,the public listen to the warning,the public pay attention to the warning,1,False,False
+look for,invest in,the West look for alternatives,the West invest in alternatives,0,False,False
+look into,review,the planning board look into the application,the planning board review the application,0,False,False
+love to see,hope for,Egypt love to see a long-term truce,Egypt hope for a long-term truce,1,False,True
+make off with,manage to steal,The thieves make off with TVs,The thieves manage to steal TVs,1,False,True
+make off with,steal,The thieves make off with TVs,The thieves steal TVs,1,False,True
+make prediction about,draw conclusion about,Users make prediction about the future,Users draw conclusion about the future,1,False,False
+make sense to,resonate with,His stories make sense to adults,His stories resonate with adults,1,False,True
+manage,cut,the government manage funding,the government cut funding,0,False,False
+manage to steal,make off with,The thieves manage to steal TVs,The thieves make off with TVs,1,False,True
+matter to,affect,our priorities matter to our community,our priorities affect our community,0,False,False
+maximize,boost,Obama maximize the defense budget,Obama boost the defense budget,1,False,False
+memorize,learn,children memorize songs,children learn songs,1,False,False
+mention,involve,The article mention the king,The article involve the king,1,False,False
+mention,talk about,The Gita mention the caste system,The Gita talk about the caste system,1,False,True
+mesh with,fit in with,The logo mesh with the designs,The logo fit in with the designs,1,False,False
+mind,resent,the Chinese mind British rule,the Chinese resent British rule,0,False,False
+mistreat,wrong,his friend mistreat him,his friend wrong him,1,False,True
+move in to,start live in,Families move in to a house,Families start live in a house,1,False,True
+move into,enter,Bantu-speaking people move into the area,Bantu-speaking people enter the area,1,False,False
+move into,go into,The Netherlands move into recession,The Netherlands go into recession,1,False,True
+need to build,need to create,Students need to build their credit history,Students need to create their credit history,1,False,True
+need to change,need to upgrade,Bose need to change this product,Bose need to upgrade this product,0,False,False
+need to create,need to build,Students need to create their credit history,Students need to build their credit history,1,False,True
+need to figure out,need to work out,Customers need to figure out their options,Customers need to work out their options,1,False,True
+need to upgrade,need to change,Bose need to upgrade this product,Bose need to change this product,1,False,False
+need to work out,need to figure out,Customers need to work out their options,Customers need to figure out their options,1,False,True
+neglect,forget about,Robert neglect his family,Robert forget about his family,0,False,False
+negotiate with,partner with,Ford negotiate with Microsoft,Ford partner with Microsoft,0,False,False
+notice,witness,one of the other workers notice him,one of the other workers witness him,1,False,True
+obtain,collect,our website obtain aggregate information,our website collect aggregate information,0,False,False
+occur in,be present in,the child element occur in the parent,the child element be present in the parent,1,False,True
+offer guidance on,offer help with,This site offer guidance on a variety of subjects,This site offer help with a variety of subjects,1,False,False
+offer help with,offer guidance on,This site offer help with a variety of subjects,This site offer guidance on a variety of subjects,0,False,False
+offer something for,provide something for,the menu offer something for all tastes,the menu provide something for all tastes,1,False,True
+oppose,denounce,the groups oppose this situation,the groups denounce this situation,0,False,False
+opt for,prefer,elephants opt for peanuts,elephants prefer peanuts,1,True,False
+organize,conduct,the Corporation organize any activities,the Corporation conduct any activities,1,False,True
+outline,elaborate on,This paper outline the computer program,This paper elaborate on the computer program,1,False,False
+overhaul,change up,Blogger overhaul their system,Blogger change up their system,1,False,False
+overwhelm,incapacitate,his drugs overwhelm him,his drugs incapacitate him,0,False,False
+participate in,assist in,small businesses participate in the rulemaking process,small businesses assist in the rulemaking process,1,False,True
+participate in,attend,The family participate in the Unitarian church,The family attend the Unitarian church,1,False,False
+participate in,contribute to,students participate in a practicum,students contribute to a practicum,1,False,False
+participate in,engage in,The FDA participate in meetings,The FDA engage in meetings,1,False,True
+partner with,negotiate with,Ford partner with Microsoft,Ford negotiate with Microsoft,1,False,False
+pass,approve,Congress pass the Comprehensive Everglades Restoration Plan,Congress approve the Comprehensive Everglades Restoration Plan,1,False,True
+pay attention to,know about,No one pay attention to Joseph,No one know about Joseph,0,False,False
+pay attention to,listen to,the public pay attention to the warning,the public listen to the warning,0,False,False
+perceive,comprehend,The disciples perceive his glory,The disciples comprehend his glory,0,False,False
+persevere in,remain steadfast in,the Catholic missionaries persevere in their work,the Catholic missionaries remain steadfast in their work,1,False,True
+pick,decide on,Fans pick their favorite drivers,Fans decide on their favorite drivers,1,False,True
+pick,recognize,Fans pick their favorite drivers,Fans recognize their favorite drivers,1,False,False
+plan,prepare for,the same group plan this attack,the same group prepare for this attack,0,True,False
+plan,schedule,Bush plan a prime-time address,Bush schedule a prime-time address,0,False,False
+plan to keep,be gonna keep,The new owners plan to keep the name,The new owners be gonna keep the name,0,False,False
+plan to visit,take bus to,the team plan to visit New Jersey,the team take bus to New Jersey,0,True,False
+plant,grow,The women plant corn,The women grow corn,1,False,True
+play in,appear in,Marc Crosas play in the game,Marc Crosas appear in the game,1,False,False
+play in,appear in,Johnson play in the third game,Johnson appear in the third game,1,False,False
+plop in,relax in,Crystal plop in her chair,Crystal relax in her chair,1,False,False
+post,publish,others post a reply,others publish a reply,0,False,False
+post,upload,Ive post another video,Ive upload another video,0,False,False
+pray to,worship,these people pray to our God,these people worship our God,0,False,False
+prefer,do like,Shrubs prefer full sun,Shrubs do like full sun,0,False,False
+prefer,opt for,elephants prefer peanuts,elephants opt for peanuts,0,True,False
+prepare for,await,Other co-defendants prepare for trial,Other co-defendants await trial,1,False,False
+prepare for,plan,the same group prepare for this attack,the same group plan this attack,1,True,False
+present,describe,This section present a sample application,This section describe a sample application,1,False,False
+present,introduce,the opportunity present itself,the opportunity introduce itself,1,False,True
+produce,build,A child produce a new world,A child build a new world,1,False,True
+provide for,care for,a generation provide for their community,a generation care for their community,1,False,False
+provide information about,describe,One of the authors provide information about the book,One of the authors describe the book,0,False,False
+provide something for,offer something for,the menu provide something for all tastes,the menu offer something for all tastes,1,False,True
+publish,post,others publish a reply,others post a reply,1,False,False
+publish article in,write for,a contributing editor publish article in The New York Times,a contributing editor write for The New York Times,1,False,True
+punch,smash,Josiah punch him,Josiah smash him,1,False,True
+pursue,seek,His company pursue approval,His company seek approval,1,False,True
+pursue,seek,others pursue medical care,others seek medical care,1,False,True
+push for,favor,an economic policy push for the rich,an economic policy favor the rich,1,False,True
+put on,wear,most of the men put on beards,most of the men wear beards,0,True,False
+radiate,beam with,Storytellers radiate respect,Storytellers beam with respect,1,False,True
+reach out to,care about,the project reach out to patients,the project care about patients,1,False,False
+read through,review,Don read through our guide,Don review our guide,0,False,False
+recognize,acknowledge,everybody recognize his influence,everybody acknowledge his influence,0,False,False
+recognize,pick,Fans recognize their favorite drivers,Fans pick their favorite drivers,0,False,False
+recommend,hear about,your healthcare provider recommend Betaseron,your healthcare provider hear about Betaseron,1,True,False
+reconsider,reevaluate,Council reconsider this initiative,Council reevaluate this initiative,0,False,False
+redo,revamp,the county redo its ordinances,the county revamp its ordinances,0,False,False
+reevaluate,reconsider,Council reevaluate this initiative,Council reconsider this initiative,1,False,False
+reexamine,want to reconsider,Council reexamine this initiative,Council want to reconsider this initiative,1,True,False
+reflect,represent,Websites reflect their owners,Websites represent their owners,0,False,False
+regain,resume,Mladin regain the lead,Mladin resume the lead,1,False,True
+regulate,help control,The EPA regulate tap water,The EPA help control tap water,1,False,False
+relax in,plop in,Crystal relax in her chair,Crystal plop in her chair,0,False,False
+remain at,remain on,All traffic remain at your site,All traffic remain on your site,1,False,True
+remain in,stay in,Spanish troops remain in Afghanistan,Spanish troops stay in Afghanistan,1,False,True
+remain on,remain at,All traffic remain on your site,All traffic remain at your site,1,False,True
+remain steadfast in,persevere in,the Catholic missionaries remain steadfast in their work,the Catholic missionaries persevere in their work,1,False,True
+represent,reflect,Websites represent their owners,Websites reflect their owners,1,False,False
+resent,mind,the Chinese resent British rule,the Chinese mind British rule,1,False,False
+reset,restart,Johnny reset the job,Johnny restart the job,1,False,True
+resonate with,make sense to,His stories resonate with adults,His stories make sense to adults,1,False,True
+restart,reset,Johnny restart the job,Johnny reset the job,1,False,True
+resume,regain,Mladin resume the lead,Mladin regain the lead,1,False,True
+retreat from,flee from,Jewish refugees retreat from Nazi Germany,Jewish refugees flee from Nazi Germany,0,False,False
+revamp,redo,the county revamp its ordinances,the county redo its ordinances,1,False,False
+reveal to,admit to,Olympic gold medalist Michael Phelps reveal to regrettable behavior,Olympic gold medalist Michael Phelps admit to regrettable behavior,1,False,True
+review,look into,the planning board review the application,the planning board look into the application,1,False,False
+review,read through,Don review our guide,Don read through our guide,1,False,False
+ride to,head towards,Our group ride to the finish,Our group head towards the finish,1,False,False
+rise in,grow in,online casinos rise in popularity,online casinos grow in popularity,1,False,True
+roll down,run down,A shiver roll down my spine,A shiver run down my spine,1,False,True
+run down,roll down,A shiver run down my spine,A shiver roll down my spine,1,False,True
+run out of,get out of,Bruno run out of the room,Bruno get out of the room,1,False,False
+schedule,arrange,My parents schedule a marriage,My parents arrange a marriage,1,False,True
+schedule,plan,Bush schedule a prime-time address,Bush plan a prime-time address,1,False,False
+search for,dig for,others search for facts,others dig for facts,0,False,False
+seek,pursue,His company seek approval,His company pursue approval,1,False,True
+seek,pursue,others seek medical care,others pursue medical care,1,False,True
+seize control of,control,The military junta seize control of Thailand,The military junta control Thailand,1,True,False
+seize control of,gain control of,The military junta seize control of Thailand,The military junta gain control of Thailand,1,False,False
+seize control of,win control of,The military junta seize control of Thailand,The military junta win control of Thailand,1,False,False
+select,identify,Kubrick select his next film,Kubrick identify his next film,1,False,False
+serve in,join,Anderson serve in the U.S. Air Force,Anderson join the U.S. Air Force,1,True,False
+serve up,be open for,The lounge serve up lunch and dinner,The lounge be open for lunch and dinner,0,False,False
+set,control,Each bank set its own Prime Rate,Each bank control its own Prime Rate,1,False,True
+set up,configure,the administrator set up the site,the administrator configure the site,1,False,False
+settle in for,come along for,his wife settle in for the ride,his wife come along for the ride,0,True,False
+shape,determine,the circumstances shape their condition,the circumstances determine their condition,0,False,False
+share,discuss,the students share their answer,the students discuss their answer,0,False,False
+share,discuss,The scientists share their work,The scientists discuss their work,0,False,False
+shoot,attack,John/Roman shoot him,John/Roman attack him,1,False,False
+shout for,holler for,the animals shout for joy,the animals holler for joy,1,False,True
+show for,demonstrate for,Our study show for the first time,Our study demonstrate for the first time,1,False,True
+show off,bring out,The boys show off their stuff,The boys bring out their stuff,1,False,False
+sit in,go in,everybody sit in the park,everybody go in the park,1,True,False
+smash,punch,Josiah smash him,Josiah punch him,1,False,True
+snoop on,eavesdrop on,Kevin snoop on Mary,Kevin eavesdrop on Mary,0,False,False
+speak to,contact,The parties speak to each other,The parties contact each other,1,False,False
+speak to,talk to,Nas speak to MTV News,Nas talk to MTV News,1,False,True
+speed,facilitate,A fan speed air circulation,A fan facilitate air circulation,1,False,True
+speed,speed up,A fan speed air circulation,A fan speed up air circulation,1,False,True
+speed up,speed,A fan speed up air circulation,A fan speed air circulation,1,False,True
+stand at,step up to,Christine stand at the window,Christine step up to the window,1,True,False
+stare in,gaze in,the husband stare in disbelief,the husband gaze in disbelief,1,False,True
+start from,begin on,The warranties start from the date,The warranties begin on the date,1,False,True
+start live in,move in to,Families start live in a house,Families move in to a house,1,False,True
+stay in,remain in,Spanish troops stay in Afghanistan,Spanish troops remain in Afghanistan,1,False,True
+stay on as,be re-elected as,Lula stay on as President of Brazil,Lula be re-elected as President of Brazil,1,False,True
+steal,make off with,The thieves steal TVs,The thieves make off with TVs,1,False,True
+steer clear of,avoid,Most people steer clear of him,Most people avoid him,1,False,False
+step up to,stand at,Christine step up to the window,Christine stand at the window,0,True,False
+stop off at,swing by,Better stop off at the library,Better swing by the library,0,False,False
+study,hear of,The Department of Health study the report,The Department of Health hear of the report,1,False,False
+suffer,die of,A dog suffer health problems,A dog die of health problems,0,False,False
+suit,compliment,the color of the dress suit her skin tone,the color of the dress compliment her skin tone,0,False,False
+supply,contain,This page supply links,This page contain links,1,False,True
+support,favor,an economic policy support the rich,an economic policy favor the rich,0,False,False
+support,vote for,voters support the Democratic Party,voters vote for the Democratic Party,0,False,False
+sweep through,lash,Hurricane Rita sweep through western Louisiana and eastern Texas,Hurricane Rita lash western Louisiana and eastern Texas,1,False,False
+swing by,stop off at,Better swing by the library,Better stop off at the library,1,False,False
+take advantage of,access,hackers take advantage of your computer,hackers access your computer,0,False,False
+take advantage of,benefit from,Guests take advantage of the room and laundry services,Guests benefit from the room and laundry services,1,False,False
+take bus to,plan to visit,the team take bus to New Jersey,the team plan to visit New Jersey,1,True,False
+take care of,attend to,mom and dad take care of the baby,mom and dad attend to the baby,1,False,False
+take off with,disappear with,just take off with the wind,just disappear with the wind,1,False,True
+take on,beat,the Raiders take on the Texans,the Raiders beat the Texans,0,True,False
+take over,hijack,Chakotay take over the ship,Chakotay hijack the ship,0,False,False
+take part in,engage in,Others take part in applied research,Others engage in applied research,1,False,True
+take part in,vote in,Only registered users take part in polls,Only registered users vote in polls,0,False,False
+take place after,follow after,The program take place after lunch,The program follow after lunch,1,False,True
+talk about,discuss,The learner talk about cultures,The learner discuss cultures,1,False,True
+talk about,mention,The Gita talk about the caste system,The Gita mention the caste system,1,False,True
+talk to,speak to,Nas talk to MTV News,Nas speak to MTV News,1,False,True
+teach,guide,This three-day course teach students,This three-day course guide students,1,False,False
+think about,consider,Canada think about this change,Canada consider this change,1,False,True
+think about,worry about,Researchers think about a cancer risk,Researchers worry about a cancer risk,0,False,False
+travel to,visit,the team travel to Iowa City,the team visit Iowa City,0,True,False
+trick,fool,This feature trick a user,This feature fool a user,1,False,True
+trust,believe in,Syl trust him,Syl believe in him,1,False,True
+tumble down,fall down,the dude tumble down the stairs,the dude fall down the stairs,1,False,False
+turn into,end in,Saturday night turn into Sunday morning,Saturday night end in Sunday morning,1,False,True
+turn on,flick on,Leo turn on the radio,Leo flick on the radio,0,False,False
+turn to,approach,the supervisor turn to him,the supervisor approach him,1,False,True
+type,enter,the user type their credentials,the user enter their credentials,1,False,False
+undermine,weaken,Pervez Musharraf undermine the Constitution,Pervez Musharraf weaken the Constitution,1,False,True
+upload,post,Ive upload another video,Ive post another video,1,False,False
+vary with,depend upon,The menu vary with the availability of ingredients,The menu depend upon the availability of ingredients,0,False,False
+visit,travel to,the team visit Iowa City,the team travel to Iowa City,1,True,False
+vote for,support,voters vote for the Democratic Party,voters support the Democratic Party,1,False,False
+vote in,take part in,Only registered users vote in polls,Only registered users take part in polls,1,False,False
+wait for,expect,dont wait for a whole lot,dont expect a whole lot,0,False,False
+want to reconsider,reexamine,Council want to reconsider this initiative,Council reexamine this initiative,0,True,False
+watch over,be protective of,FINRA watch over its members,FINRA be protective of its members,1,False,False
+weaken,undermine,Pervez Musharraf weaken the Constitution,Pervez Musharraf undermine the Constitution,1,False,True
+wear,put on,most of the men wear beards,most of the men put on beards,1,True,False
+win,clinch,the Pats win that game,the Pats clinch that game,0,False,False
+win control of,seize control of,The military junta win control of Thailand,The military junta seize control of Thailand,0,False,False
+wish to buy,like to purchase,Consumers wish to buy a pair,Consumers like to purchase a pair,1,False,True
+witness,attest to,A police officer witness the incident,A police officer attest to the incident,0,False,False
+witness,notice,one of the other workers witness him,one of the other workers notice him,1,False,True
+work as,function as,Theophylline work as a bronchodilator,Theophylline function as a bronchodilator,1,False,False
+worry about,think about,Researchers worry about a cancer risk,Researchers think about a cancer risk,1,False,False
+worsen with,increase with,The risks worsen with age,The risks increase with age,1,False,True
+worship,pray to,these people worship our God,these people pray to our God,1,False,False
+write for,publish article in,a contributing editor write for The New York Times,a contributing editor publish article in The New York Times,1,False,True
+wrong,mistreat,his friend wrong him,his friend mistreat him,1,False,True
