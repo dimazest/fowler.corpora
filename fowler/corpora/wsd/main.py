@@ -280,6 +280,7 @@ def entailment_direction_verb_object_vectors(
         return entropy(verb_objects, p_object.loc[verb_objects.index])
 
     df = dataset.read_file()
+    df = df.loc[~df['is_bidirectional'] & ~df['is_temporal']]
 
     df['kl_lhs'] = df['rule_lhs'].apply(kl)
     df['kl_rhs'] = df['rule_rhs'].apply(kl)
@@ -287,4 +288,4 @@ def entailment_direction_verb_object_vectors(
     correct = (df['kl_lhs'] > df['kl_rhs']) == df['entails']
     accuracy = correct.sum() / len(correct)
 
-    print('Accuracy: {:.3f}, suport {}.'.format(accuracy, len(correct)))
+    print('Accuracy: {:.3f}, support {}.'.format(accuracy, len(correct)))
