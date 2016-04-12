@@ -4,7 +4,9 @@ from itertools import chain
 
 import colored
 import pandas as pd
+import numpy as np
 
+from numpy import matlib
 from scipy import sparse
 from scipy.stats import entropy
 
@@ -89,7 +91,7 @@ class CompositionalVectorizer:
         'frobenious-add', 'frobenious-mult', 'frobenious-outer',
     }
 
-    def __init__(self, space, operator, tagset, verb_space=None, sloppy=True, high_dim_kron=False):
+    def __init__(self, space, operator, tagset, verb_space=None, sloppy=True, high_dim_kron=False, ignore_subject=False):
         self.space = space
         self.operator = operator  # TODO: should be differenct classes and register using entrypoints.
         self.tagset = tagset
@@ -97,6 +99,7 @@ class CompositionalVectorizer:
         self.verb_space = verb_space
         self.sloppy = sloppy
         self.high_dim_kron = high_dim_kron
+        self.ignore_subject = ignore_subject
 
     def vectorize(self, dependency_graph):
         nodes = dependency_graph.nodes
@@ -108,14 +111,24 @@ class CompositionalVectorizer:
             return self.node_to_vector(nodes[head_address])
 
         elif self.operator in ('add', 'mult'):
+            if self.ignore_subject:
+                raise ValueError(
+                    'Can not ignore subject as {} is not grammar aware compositional method. '
+                    'Do not use the --ignore_subject flag.'
+                    ''.format(self.operator)
+                )
+
             tokens = tuple((node['lemma'], node['tag']) for node in nodes.values() if node['address'])
             return getattr(self.space, self.operator)(*tokens)
 
         elif self.operator in self.transitive_operators:
             assert graph_signature(dependency_graph) == transitive_sentence(self.tagset)
 
-            subject = self.node_to_vector(nodes[1])
             object_ = self.node_to_vector(nodes[3])
+            if self.ignore_subject:
+                subject = sparse.csr_matrix(matlib.ones(object_.shape))
+            else:
+                subject = self.node_to_vector(nodes[1])
 
             length = self.space.matrix.shape[1]
 
@@ -202,7 +215,8 @@ def similarity(
         verb_space,
         output=('o', 'sentence_similarity.h5', 'Result output file.'),
         key=('', 'dataset', 'The key of the result in the output file.'),
-        sloppy=('', False, 'Allow missing words.')
+        sloppy=('', False, 'Allow missing words.'),
+        ignore_subject=('', False, 'Do not take subject into account, use the vector of ones instead.'),
 ):
 
     if dataset.vectorizer == 'lexical':
@@ -220,6 +234,7 @@ def similarity(
         verb_space=verb_space,
         sloppy=sloppy,
         high_dim_kron=high_dim_kron,
+        ignore_subject=ignore_subject,
     )
 
 
@@ -257,30 +272,32 @@ def entailment_direction(
 def entailment_direction_verb_object_vectors(
     dataset,
     argument_counts=('', 'ANDailment_argument_counts.h5', ''),
+    argument_filter=('', '', ''),
 ):
     argument_counts = pd.read_hdf(argument_counts, key='arguments')
 
-    objects = (
-        argument_counts.loc[(slice(None), slice(None), 'objects'), slice(None)]
-        .reset_index('argument_type', drop=True)['count']
-    )
-    objects = objects[objects.index.get_level_values('argument') != '']
+    if argument_filter:
+        argument_counts = argument_counts.loc[(slice(None), slice(None), argument_filter), slice(None)]
 
-    p_object = objects.groupby(level='argument').sum() / objects.sum()
-    assert p_object.index.is_unique
+    arguments = argument_counts.groupby(level=['relation', 'argument']).sum()['count']
 
-    p_object_given_verb = (
-        objects
+    arguments = arguments[arguments.index.get_level_values('argument') != '']
+
+    p_argument = arguments.groupby(level='argument').sum() / arguments.sum()
+    assert p_argument.index.is_unique
+
+    p_argument_given_verb = (
+        arguments
         .groupby(level=('relation'))
         .apply(lambda df: df.reset_index('relation', drop=True) / df.sum())
     )
 
     def kl(verb):
-        verb_objects = p_object_given_verb.loc[verb]
-        return entropy(verb_objects, p_object.loc[verb_objects.index])
+        verb_arguments = p_argument_given_verb.loc[verb]
+        return entropy(verb_arguments, p_argument.loc[verb_arguments.index])
 
     def n(verb):
-        return objects.loc[verb].sum()
+        return arguments.loc[verb].sum()
 
     df = dataset.read_file()
     df = df.loc[~df['is_bidirectional'] & ~df['is_temporal']]
@@ -296,4 +313,10 @@ def entailment_direction_verb_object_vectors(
         correct = (df['{}_lhs'.format(column_prefix)] > df['{}_rhs'.format(column_prefix)]) == df['entails']
         accuracy = correct.sum() / len(correct)
 
-        print('{}: accuracy {:.3f}, support {}.'.format(method, accuracy, len(correct)))
+        print('{}: accuracy {:.3f}, support {}, {argument_filter}.'.format(
+                method,
+                accuracy,
+                len(correct),
+                argument_filter=argument_filter,
+            )
+        )
