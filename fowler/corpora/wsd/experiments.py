@@ -66,6 +66,8 @@ class SimilarityExperiment(Worker):
                     v1.dot(v2.T),
                     kl(v1, v2),
                     kl(v2, v1),
+                    stats.entropy(v1),
+                    stats.entropy(v2),
 
                     score,
                 ) + tuple(extra)
@@ -78,6 +80,8 @@ class SimilarityExperiment(Worker):
                     'inner_product',
                     'entropy_s1_s2',
                     'entropy_s2_s1',
+                    'entropy_s1',
+                    'entropy_s2',
                 )
         else:
             result_values = (
