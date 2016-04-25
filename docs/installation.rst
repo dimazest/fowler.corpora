@@ -30,14 +30,14 @@ The package is available on `PyPi
 
 .. code-block:: bash
 
-    ~/miniconda3/bin/pip install fowler.corpora
+    ~/miniconda3/bin/conda install fowler.corpora
 
 It's also possible to install a development version right from `GitHub
 <https://github.com/dimazest/fowler.corpora/>`_:
 
 .. code-block:: bash
 
-    ~/miniconda3/bin/pip install https://github.com/dimazest/fowler.corpora/archive/master.zip
+    ~/miniconda3/bin/conda install https://github.com/dimazest/fowler.corpora/archive/master.zip
 
 
 The final step
